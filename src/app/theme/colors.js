@@ -1,13 +1,9 @@
-// Tokens de color de la marca "Al Horno".
-// Migrados desde las variables CSS (--ah-*) que venían en el export de Figma/Tailwind.
-// Se usan de 2 formas en el proyecto:
-//   1) Como paleta del tema de Material UI (ver theme.js) -> para el panel administrativo
-//   2) Como objeto plano (lightColors / darkColors) -> para los componentes del landing,
-//      que manejan su propio estado local "isDark" (igual que en el diseño original de Figma)
-
 export const lightColors = {
   bg: '#FAF5EE',
   sidebar: '#FAF3E9',
+  sidebarBorder: '#e4d9c8',
+  textOnSidebar: '#2E1810',
+  sidebarAccent: 'rgba(192,133,82,0.15)',
   surface: '#FFFFFF',
   surface2: '#F0EBE3',
   accent: '#C08552',
@@ -22,6 +18,7 @@ export const lightColors = {
   success: '#6e8b3d',
   warning: '#f2a93c',
   danger: '#c0392b',
+  dangerDim: 'rgba(192,57,43,0.12)',
   info: '#2e7d8c',
   buttonText: '#FFFFFF',
 }
@@ -29,6 +26,9 @@ export const lightColors = {
 export const darkColors = {
   bg: '#1A0D07',
   sidebar: '#241811',
+  sidebarBorder: '#3d2c21',
+  textOnSidebar: '#F3E9DC',
+  sidebarAccent: 'rgba(168,93,51,0.15)',
   surface: '#2E1810',
   surface2: '#32251f',
   accent: '#A85D33',
@@ -43,12 +43,11 @@ export const darkColors = {
   success: '#7fb539',
   warning: '#f2a93c',
   danger: '#d9534f',
+  dangerDim: 'rgba(217,83,79,0.15)',
   info: '#2e7d8c',
   buttonText: '#FFFFFF',
 }
 
-// Helper que usan todos los componentes del landing: recibe el booleano isDark
-// y devuelve el set de colores correspondiente.
 export function getColors(isDark) {
   return isDark ? darkColors : lightColors
 }

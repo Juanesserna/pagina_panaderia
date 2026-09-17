@@ -1,10 +1,8 @@
 import { createContext, useContext, useMemo, useState } from 'react'
 import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
-import { lightTheme, darkTheme } from '../theme/theme'
+import { lightTheme, darkTheme } from '@app/theme/theme'
 
-// Contexto para que cualquier componente del panel administrativo pueda
-// leer el modo actual o cambiarlo (ej: un switch en el Header).
 const ColorModeContext = createContext({
   mode: 'light',
   toggleMode: () => {},

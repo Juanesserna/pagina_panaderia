@@ -26,12 +26,23 @@ function buildTheme(mode) {
       text: {
         primary: c.text,
         secondary: c.textMuted,
+        disabled: c.textDim,
       },
       success: { main: c.success },
       warning: { main: c.warning },
-      error: { main: c.danger },
+      error: { main: c.danger, dim: c.dangerDim },
       info: { main: c.info },
       divider: c.border,
+      // Namespace custom para el sidebar, que maneja su propio esquema de color
+      // (fondo, borde y texto distintos al resto del panel)
+      ahSidebar: {
+        main: c.sidebar,
+        border: c.sidebarBorder,
+        contrastText: c.textOnSidebar,
+        hover: c.sidebarAccent,
+      },
+      ahSurface2: c.surface2,
+      accentDim: c.accentDim,
     },
     shape: {
       borderRadius: 4,

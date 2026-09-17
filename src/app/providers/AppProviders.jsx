@@ -1,5 +1,5 @@
-import ThemeProvider from './ThemeProvider'
+import ThemeProvider from "./ThemeProvider";
 
 export default function AppProviders({ children }) {
-  return <ThemeProvider>{children}</ThemeProvider>
+  return <ThemeProvider>{children}</ThemeProvider>;
 }
