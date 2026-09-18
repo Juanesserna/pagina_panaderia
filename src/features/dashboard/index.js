@@ -1,2 +1,2 @@
-// src/features/produccion/index.js
-export { default as ProduccionPage } from './pages/ProduccionPage'
+// src/features/dashboard/index.js
+export { default as DashboardPage } from './pages/DashboardPage'
