@@ -132,15 +132,16 @@ export function Sidebar({ activePage, onNavigate, collapsed, onToggle }) {
               <ListItemButton
                 onClick={() => handleGroupClick(group)}
                 title={collapsed ? group.label : undefined}
+                disableRipple
                 sx={{
                   borderRadius: 1.5,
                   py: 0.75,
                   minHeight: 38,
                   justifyContent: collapsed ? "center" : "flex-start",
-                  bgcolor: isGroupActive && !hasSubmenu ? sb.hover : "transparent",
+                  bgcolor: "transparent",
                   color: isGroupActive ? theme.palette.primary.main : sb.contrastText,
                   opacity: isGroupActive ? 1 : 0.75,
-                  "&:hover": { bgcolor: sb.hover, color: sb.contrastText, opacity: 1 },
+                  "&:hover": { bgcolor: "transparent", color: theme.palette.primary.main, opacity: 1 },
                 }}
               >
                 <ListItemIcon sx={{ minWidth: collapsed ? "auto" : 34, color: "inherit" }}>
@@ -173,16 +174,17 @@ export function Sidebar({ activePage, onNavigate, collapsed, onToggle }) {
                         <ListItemButton
                           key={item.id}
                           onClick={() => onNavigate(item.id)}
+                          disableRipple
                           sx={{
                             borderRadius: 1.5,
                             pl: 4,
                             py: 0.65,
                             mb: 0.25,
                             minHeight: 34,
-                            bgcolor: isActive ? sb.hover : "transparent",
+                            bgcolor: "transparent",
                             color: isActive ? theme.palette.primary.main : sb.contrastText,
                             opacity: isActive ? 1 : 0.65,
-                            "&:hover": { bgcolor: sb.hover, color: sb.contrastText, opacity: 1 },
+                            "&:hover": { bgcolor: "transparent", color: theme.palette.primary.main, opacity: 1 },
                           }}
                         >
                           <ListItemIcon sx={{ minWidth: 26, color: "inherit", opacity: 0.8 }}>

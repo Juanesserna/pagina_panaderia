@@ -37,7 +37,12 @@ export function Header({ page }) {
 
   return (
     <AppBar position="static" elevation={0}
-      sx={{ bgcolor: theme.palette.background.default, borderBottom: `1px solid ${theme.palette.divider}`, color: theme.palette.text.primary }}>
+      sx={{
+        bgcolor: theme.palette.background.paper,
+        borderBottom: `1px solid ${theme.palette.divider}`,
+        borderRadius: 0,
+        color: theme.palette.text.primary,
+      }}>
       <Toolbar sx={{ minHeight: 56, gap: 1.5 }}>
         <Typography sx={{ fontSize: 15, fontWeight: 600 }}>{PAGE_TITLES[page] ?? page}</Typography>
         <Box sx={{ flex: 1 }} />
