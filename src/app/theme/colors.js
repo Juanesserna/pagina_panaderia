@@ -1,5 +1,5 @@
 export const lightColors = {
-  bg: '#FAF5EE',
+  bg: '#fdfdfd',
   sidebar: '#FAF3E9',
   sidebarBorder: '#e4d9c8',
   textOnSidebar: '#2E1810',
