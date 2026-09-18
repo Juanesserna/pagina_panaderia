@@ -490,21 +490,21 @@ export default function ProduccionPage() {
     {
       key: 'documento',
       header: 'NIT/Cédula',
-      accessor: (r) => <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>{r.generadoPor.documento}</Typography>,
+      accessor: (r) => <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>{r.generadoPor.documento}</Typography>,
     },
     {
       key: 'fechaSolicitud',
       header: 'Fecha solicitud',
-      accessor: (r) => <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>{r.fechaSolicitud}</Typography>,
+      accessor: (r) => <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>{r.fechaSolicitud}</Typography>,
     },
     {
       key: 'fechaFabricacion',
       header: 'Fecha fabricación',
       accessor: (r) =>
         r.fechaFabricacion ? (
-          <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>{r.fechaFabricacion}</Typography>
+          <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>{r.fechaFabricacion}</Typography>
         ) : (
-          <Typography sx={{ fontSize: 14, fontStyle: 'italic', color: 'text.dim' }}>Por definir</Typography>
+          <Typography sx={{ fontSize: 12.5, fontStyle: 'italic', color: 'text.dim' }}>Por definir</Typography>
         ),
     },
     {
@@ -587,52 +587,61 @@ export default function ProduccionPage() {
   ]
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, p: 3 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, p: 1.5 }}>
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
         <KPICard title="Órdenes completadas" value={completados} icon={<IconCircleCheck size={16} />} variant="success" />
         <KPICard title="Retrasadas" value={retrasados} icon={<IconAlertTriangle size={16} />} variant="danger" />
       </Box>
 
       <Box sx={{ borderRadius: 2.5, overflow: 'hidden', bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
-        <Stack
-          direction="row"
-          flexWrap="wrap"
-          alignItems="center"
-          gap={1.5}
-          sx={{ px: 2.5, py: 2, borderBottom: '1px solid', borderColor: 'divider' }}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: '1fr auto 1fr',
+            alignItems: 'center',
+            columnGap: 2,
+            px: 2.5,
+            py: 2,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+          }}
         >
-          <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'text.primary', mr: 'auto' }}>Órdenes de producción</Typography>
-          <Box sx={{ width: 224 }}>
-            <Input
-              placeholder="Buscar orden, NIT o producto…"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value)
-                setPage(1)
-              }}
-              leftIcon={<IconSearch size={13} />}
-            />
-          </Box>
-          <Button variant="primary" size="sm" leftIcon={<IconPlus size={13} />} onClick={handleNuevaOrden}>
-            Nueva orden
-          </Button>
-          <Button
-            variant={filtrosActivos ? 'primary' : 'secondary'}
-            size="sm"
-            leftIcon={<IconFilter size={13} />}
-            onClick={() => setShowFiltros((v) => !v)}
-          >
-            Filtrar
-          </Button>
-        </Stack>
+          <Box />
+          <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'text.primary', textAlign: 'center', whiteSpace: 'nowrap' }}>
+            Órdenes de producción
+          </Typography>
+          <Stack direction="row" flexWrap="wrap" alignItems="center" justifyContent="flex-end" sx={{ gap: 3, columnGap: 3, rowGap: 1.5 }}>
+            <Box sx={{ width: 224 }}>
+              <Input
+                placeholder="Buscar orden, NIT o producto…"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value)
+                  setPage(1)
+                }}
+                leftIcon={<IconSearch size={13} />}
+              />
+            </Box>
+            <Button variant="primary" size="sm" leftIcon={<IconPlus size={13} />} onClick={handleNuevaOrden}>
+              Nueva orden
+            </Button>
+            <Button
+              variant={filtrosActivos ? 'primary' : 'secondary'}
+              size="sm"
+              leftIcon={<IconFilter size={13} />}
+              onClick={() => setShowFiltros((v) => !v)}
+            >
+              Filtrar
+            </Button>
+          </Stack>
+        </Box>
 
         {showFiltros && (
           <Stack
             direction="row"
             flexWrap="wrap"
             alignItems="flex-end"
-            gap={2}
-            sx={{ px: 2.5, py: 1.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.alt' }}
+            sx={{ px: 2.5, py: 1.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.alt', gap: 3.5, columnGap: 3.5, rowGap: 2 }}
           >
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
               <Typography sx={dimLabelSx}>Estado</Typography>
