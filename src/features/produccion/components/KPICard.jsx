@@ -27,14 +27,15 @@ export function KPICard({ title, value, icon, variant = 'accent' }) {
         bgcolor: 'background.paper',
         border: '1px solid',
         borderColor: 'divider',
-        borderRadius: 2.5,
-        p: 3,
+        borderRadius: 2.0,
+        p: 2.2,
+        paddingTop:0.5,
         display: 'flex',
         flexDirection: 'column',
         gap: 2,
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',height: 50, }}>
         <Typography
           sx={{
             fontSize: 11,
@@ -63,7 +64,7 @@ export function KPICard({ title, value, icon, variant = 'accent' }) {
           </Box>
         )}
       </Box>
-      <Typography sx={{ fontSize: 28, fontWeight: 700, color: 'text.primary', lineHeight: 1 }}>{value}</Typography>
+      <Typography sx={{ fontSize: 22, fontWeight: 700, color: 'text.primary', lineHeight: 1 }}>{value}</Typography>
     </Box>
   )
 }

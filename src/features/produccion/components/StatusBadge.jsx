@@ -29,12 +29,12 @@ export function StatusBadge({ variant = 'accent', dot = false, children }) {
         display: 'inline-flex',
         alignItems: 'center',
         gap: 0.75,
-        px: 1.25,
-        py: 0.5,
+        px: 1.1,
+        py: 0.4,
         borderRadius: 5,
         bgcolor: variantBg[variant],
         color: variantColor[variant],
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: 600,
       }}
     >
