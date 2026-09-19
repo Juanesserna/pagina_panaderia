@@ -36,23 +36,38 @@ export function Header({ page }) {
   };
 
   return (
-    <AppBar position="static" elevation={0}
+    <AppBar
+      position="sticky"
+      elevation={0}
       sx={{
+        top: 0,
+        zIndex: theme.zIndex.appBar,
         bgcolor: theme.palette.background.paper,
         borderBottom: `1px solid ${theme.palette.divider}`,
         borderRadius: 0,
         color: theme.palette.text.primary,
-      }}>
-      <Toolbar sx={{ minHeight: 56, gap: 1.5 }}>
+        flexShrink: 0,
+      }}
+    >
+      <Toolbar
+        sx={{
+          minHeight: 48,
+          '@media (min-width:600px)': { minHeight: 48 },
+          gap: 1.5,
+          py: 0.5,
+        }}
+      >
         <Typography sx={{ fontSize: 15, fontWeight: 600 }}>{PAGE_TITLES[page] ?? page}</Typography>
         <Box sx={{ flex: 1 }} />
 
         <IconButton onClick={toggleMode} title={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+          size="small"
           sx={{ color: theme.palette.text.secondary, "&:hover": { bgcolor: theme.palette.accentDim, color: theme.palette.text.primary } }}>
           {isDark ? <Sun size={16} /> : <Moon size={16} />}
         </IconButton>
 
         <IconButton onClick={(e) => setNotifAnchor(e.currentTarget)}
+          size="small"
           sx={{ color: theme.palette.text.secondary, "&:hover": { bgcolor: theme.palette.accentDim, color: theme.palette.text.primary } }}>
           <Badge variant="dot" color="error" invisible={unread === 0}><Bell size={16} /></Badge>
         </IconButton>
@@ -80,7 +95,7 @@ export function Header({ page }) {
           ))}
         </Menu>
 
-        <IconButton onClick={(e) => setUserAnchor(e.currentTarget)} sx={{ gap: 1, borderRadius: 1.5, px: 1, "&:hover": { bgcolor: theme.palette.accentDim } }}>
+        <IconButton onClick={(e) => setUserAnchor(e.currentTarget)} sx={{ gap: 1, borderRadius: 1.5, px: 1, py: 0.5, "&:hover": { bgcolor: theme.palette.accentDim } }}>
           <Avatar sx={{ width: 28, height: 28, fontSize: 12, bgcolor: theme.palette.accentDim, color: theme.palette.primary.main }}>AM</Avatar>
           <Box sx={{ display: { xs: "none", sm: "flex" }, flexDirection: "column", alignItems: "flex-start", ml: 1 }}>
             <Typography sx={{ fontSize: 12, fontWeight: 500, lineHeight: 1.2 }}>Ana Martínez</Typography>

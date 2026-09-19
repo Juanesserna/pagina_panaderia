@@ -37,16 +37,16 @@ export default function MainLayout() {
   };
 
   return (
-    <div style={{ display: 'flex' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
       <Sidebar
         activePage={activePage}
         onNavigate={handleNavigate}
         collapsed={collapsed}
         onToggle={() => setCollapsed((prev) => !prev)}
       />
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100vh' }}>
         <Header page={activePage} />
-        <main style={{ padding: '16px' }}>
+        <main style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
           <Outlet />
         </main>
       </div>

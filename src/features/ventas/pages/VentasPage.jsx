@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from 'react'
-import { Box, Stack, Typography, IconButton, Grid, Divider, Collapse, Autocomplete, TextField } from '@mui/material'
+import { Box, Stack, Typography, IconButton, Divider, Collapse, Autocomplete, TextField, OutlinedInput, InputAdornment} from '@mui/material'
 import { useTheme, alpha } from '@mui/material/styles'
 import {
   IconSearch,
@@ -40,13 +40,6 @@ function FilterLabel({ children }) {
       {children}
     </Typography>
   )
-}
-
-// Color del estado derivado SIEMPRE del theme (mismo verde/rojo que las KPI cards)
-function useEstadoColor(estado) {
-  const theme = useTheme()
-  const variant = estadoVariant[estado] || 'info'
-  return theme.palette[variant].main
 }
 
 export default function VentasPage() {
@@ -506,23 +499,41 @@ export default function VentasPage() {
 
       <Box sx={{ borderRadius: 2.5, overflow: 'hidden', bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
         {/* Toolbar */}
-        <Stack direction="row" flexWrap="wrap" alignItems="center" sx={{ gap: 1.25, px: 2.5, py: 2 }}>
+        <Stack direction="row" flexWrap="wrap" alignItems="center" sx={{ gap: 1.25, px: 2.5, py: 2, alignItems: 'center', }}>
           <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'text.primary', mr: 'auto' }}>Registro de ventas</Typography>
-          <Box sx={{ width: 200 }}>
-            <Input
+          <Box sx={{ width: 250 }}>
+            <OutlinedInput
               placeholder="Buscar pedido o cliente…"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)
                 setPage(1)
               }}
-              leftIcon={<IconSearch size={13} />}
+              startAdornment={
+                <InputAdornment position="start">
+                  <IconSearch size={18} color="#A0968C" />
+                </InputAdornment>
+              }
+              sx={{
+                bgcolor: '#F4EFEA',           // Color beige
+                height: 35,                   // Altura reducida
+                borderRadius: 1,              // Bordes redondeados                // Espacio a la derecha
+                '& fieldset': {
+                  borderColor: '#E5DCD3'      // Borde sutil por defecto
+                },
+                '&:hover fieldset': {
+                  borderColor: '#C97A45'      // Borde al pasar el mouse
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#C97A45'      // Borde al hacer clic/escribir
+                }
+              }}
             />
           </Box>
-          <Button variant="primary" size="sm" leftIcon={<IconPlus size={13} />} onClick={handleNuevaVenta}>
+          <Button variant="primary" size="sm" leftIcon={<IconPlus size={13} />} onClick={handleNuevaVenta}  sx={{ height: 28, borderRadius: 1,}}>
             Nueva venta
           </Button>
-          <Button variant={filtrosActivos ? 'primary' : 'secondary'} size="sm" leftIcon={<IconFilter size={13} />} onClick={() => setShowFiltros((v) => !v)}>
+          <Button variant={filtrosActivos ? 'primary' : 'secondary'} size="sm" leftIcon={<IconFilter size={13} />} onClick={() => setShowFiltros((v) => !v)} sx={{ height: 28, borderRadius: 1,}}>
             Filtrar
             {filtrosActivos && (
               <Box
@@ -818,22 +829,32 @@ export default function VentasPage() {
               Venta <b>{ventaAbonoModal.id}</b> · {obtenerNombreCliente(ventaAbonoModal)}
             </Typography>
 
-            <Grid container spacing={2} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5, p: 1.75, mx: 0 }}>
-              <Grid item xs={4}>
-                <Typography sx={{ fontSize: 9.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'text.secondary' }}>Total venta</Typography>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: 2,
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 1.5,
+                p: 1.75,
+              }}
+            >
+              <Box>
+                <FilterLabel>Total venta</FilterLabel>
                 <Typography sx={{ fontWeight: 700, fontSize: 14 }}>${ventaAbonoModal.total.toFixed(2)}</Typography>
-              </Grid>
-              <Grid item xs={4}>
-                <Typography sx={{ fontSize: 9.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'text.secondary' }}>Abonado</Typography>
+              </Box>
+              <Box>
+                <FilterLabel>Abonado</FilterLabel>
                 <Typography sx={{ fontWeight: 700, fontSize: 14 }}>${totalAbonadoVenta.toFixed(2)}</Typography>
-              </Grid>
-              <Grid item xs={4}>
-                <Typography sx={{ fontSize: 9.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'text.secondary' }}>Saldo pendiente</Typography>
+              </Box>
+              <Box>
+                <FilterLabel>Saldo pendiente</FilterLabel>
                 <Typography sx={{ fontWeight: 700, fontSize: 14, color: saldoPendienteVenta <= 0 ? 'success.main' : 'text.primary' }}>
                   ${saldoPendienteVenta.toFixed(2)}
                 </Typography>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
 
             <FilterLabel>Historial de abonos {abonosDeVenta.length > 0 ? `(${abonosDeVenta.length})` : ''}</FilterLabel>
 
@@ -857,7 +878,7 @@ export default function VentasPage() {
                         borderRadius: 1.5,
                         px: 1.25,
                         py: 0.875,
-                        bgcolor: confirmando ? 'error.dim' : 'transparent',
+                        bgcolor: confirmando ? alpha(theme.palette.error.main, 0.12) : 'transparent',
                       }}
                     >
                       <ImageWithFallback
@@ -916,8 +937,8 @@ export default function VentasPage() {
                   style={{ width: '100%', borderRadius: 6, border: `1px solid ${theme.palette.divider}`, maxHeight: 190, objectFit: 'contain' }}
                 />
 
-                <Grid container spacing={2}>
-                  <Grid item xs={6}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                  <Box sx={{ minWidth: 0 }}>
                     <FilterLabel>Método de pago</FilterLabel>
                     <Select
                       options={[
@@ -928,12 +949,12 @@ export default function VentasPage() {
                       value={abonoMetodo}
                       onChange={(e) => setAbonoMetodo(e.target.value)}
                     />
-                  </Grid>
-                  <Grid item xs={6}>
+                  </Box>
+                  <Box sx={{ minWidth: 0 }}>
                     <FilterLabel>Monto (máx. ${saldoPendienteVenta.toFixed(2)})</FilterLabel>
                     <Input type="number" placeholder="$0.00" value={abonoMonto} onChange={(e) => handleCambiarMontoAbono(e.target.value)} />
-                  </Grid>
-                </Grid>
+                  </Box>
+                </Box>
               </>
             )}
 
@@ -952,110 +973,137 @@ export default function VentasPage() {
       </Modal>
 
       {/* Modal: Nueva venta */}
-      <Modal open={showVentaModal} onClose={() => setShowVentaModal(false)} title="Nueva venta" size="lg">
-        <Grid container spacing={2.5}>
-          <Grid item xs={12} sm={6}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              <Box sx={{ bgcolor: 'action.hover', borderRadius: 1.5, px: 1.5, py: 1.25, display: 'flex', flexDirection: 'column', gap: 0.4 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                  <span>ID de venta</span><b>{formId}</b>
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                  <span>Fecha</span><span>{formFecha} · {formHora}</span>
-                </Box>
+      <Modal 
+        open={showVentaModal} 
+        onClose={() => setShowVentaModal(false)} 
+        title="Nueva venta" 
+        size="lg" 
+        sx={{ maxWidth: '720px !important', minHeight: '600px' }}
+      >
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2.5, alignItems: 'start', height: '100%' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, minWidth: 0, width: '100%' }}>
+            <Box sx={{ bgcolor: 'action.hover', borderRadius: 1.5, px: 1.5, py: 1.25, display: 'flex', flexDirection: 'column', gap: 0.4 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                <span>ID de venta</span><b>{formId}</b>
               </Box>
-
-              <Box>
-                <FilterLabel>NIT/Cédula</FilterLabel>
-                {/* Autocomplete de MUI: sin equivalente en components/, se conserva junto con su TextField interno */}
-                <Autocomplete
-                  size="small"
-                  options={catalogoClientes}
-                  getOptionLabel={(c) => `${c.nit} — ${c.nombre}`}
-                  value={clienteSeleccionado}
-                  onChange={(_, value) => setClienteSeleccionado(value)}
-                  renderInput={(params) => <TextField {...params} placeholder="Buscar por NIT o nombre…" sx={autocompleteInputSx} />}
-                />
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                <span>Fecha</span><span>{formFecha} · {formHora}</span>
               </Box>
-
-              <Box>
-                <FilterLabel>Estado inicial</FilterLabel>
-                <Select options={estadoOptions} value={nuevoEstado} onChange={(e) => setNuevoEstado(e.target.value)} />
-              </Box>
-
-              <Divider />
-
-              <Box>
-                <FilterLabel>Producto</FilterLabel>
-                <Autocomplete
-                  size="small"
-                  options={catalogoPanaderia}
-                  getOptionLabel={(p) => p.nombre}
-                  value={productoAutocomplete}
-                  onChange={(_, value) => setProductoAutocomplete(value)}
-                  renderOption={(props, p) => (
-                    <li {...props} key={p.nombre}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: 13 }}>
-                        <span>{p.nombre}</span><span>${p.precio.toFixed(2)}</span>
-                      </Box>
-                    </li>
-                  )}
-                  renderInput={(params) => <TextField {...params} placeholder="Buscar producto…" sx={autocompleteInputSx} />}
-                />
-              </Box>
-
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Stack direction="row" alignItems="center" sx={{ bgcolor: 'action.hover', borderRadius: 1.5 }}>
-                  <IconButton size="small" onClick={() => setCantidadSeleccionada((c) => Math.max(1, c - 1))}><IconMinus size={12} /></IconButton>
-                  <Typography sx={{ width: 26, textAlign: 'center', fontSize: 13 }}>{cantidadSeleccionada}</Typography>
-                  <IconButton size="small" onClick={() => setCantidadSeleccionada((c) => c + 1)}><IconPlus size={12} /></IconButton>
-                </Stack>
-                <Button variant="secondary" size="sm" leftIcon={<IconPlus size={12} />} disabled={!productoAutocomplete} onClick={handleAgregarProducto}>
-                  Agregar
-                </Button>
-              </Stack>
             </Box>
-          </Grid>
 
-          <Grid item xs={12} sm={6}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-              <FilterLabel>Resumen</FilterLabel>
-              <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5, minHeight: 140, maxHeight: 280, overflowY: 'auto' }}>
-                {formItems.length === 0 ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 3, color: 'text.dim', fontSize: 13 }}>
-                    Sin productos agregados
-                  </Box>
-                ) : (
-                  formItems.map((item, idx) => (
-                    <Box key={item.nombre} sx={{ px: 1.25, py: 0.875, borderTop: idx > 0 ? '1px solid' : 'none', borderColor: 'divider' }}>
-                      <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Typography sx={{ fontSize: 12.5 }}>{item.nombre}</Typography>
-                        <IconButton size="small" onClick={() => handleQuitarProducto(item.nombre)}><IconX size={13} /></IconButton>
-                      </Stack>
-                      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 0.4 }}>
-                        <Stack direction="row" alignItems="center" sx={{ bgcolor: 'action.hover', borderRadius: 1 }}>
-                          <IconButton size="small" onClick={() => handleActualizarCantidad(item.nombre, item.cantidad - 1)}><IconMinus size={11} /></IconButton>
-                          <Typography sx={{ width: 22, textAlign: 'center', fontSize: 12 }}>{item.cantidad}</Typography>
-                          <IconButton size="small" onClick={() => handleActualizarCantidad(item.nombre, item.cantidad + 1)}><IconPlus size={11} /></IconButton>
-                        </Stack>
-                        <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>${(item.cantidad * item.precio).toFixed(2)}</Typography>
-                      </Stack>
-                    </Box>
-                  ))
+            <Box>
+              <FilterLabel>NIT/Cédula</FilterLabel>
+              <Autocomplete
+                size="small"
+                options={catalogoClientes}
+                getOptionLabel={(c) => `${c.nit} — ${c.nombre}`}
+                value={clienteSeleccionado}
+                onChange={(_, value) => setClienteSeleccionado(value)}
+                renderInput={(params) => (
+                  <TextField 
+                    {...params} 
+                    placeholder="Buscar por NIT o nombre…" 
+                    sx={autocompleteInputSx}
+                    InputProps={{
+                      ...(params.InputProps || {}),
+                      startAdornment: (
+                        <InputAdornment position="start" sx={{ pl: 1 }}>
+                          <IconSearch size={18} color="#A0968C" />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
                 )}
+              />
+            </Box>
+
+            <Box>
+              <FilterLabel>Estado inicial</FilterLabel>
+              <Select options={estadoOptions} value={nuevoEstado} onChange={(e) => setNuevoEstado(e.target.value)} />
+            </Box>
+
+            <Divider />
+
+            <Box>
+              <FilterLabel>Producto</FilterLabel>
+              <Autocomplete
+                size="small"
+                options={catalogoPanaderia}
+                getOptionLabel={(p) => p.nombre}
+                value={productoAutocomplete}
+                onChange={(_, value) => setProductoAutocomplete(value)}
+                renderOption={(props, p) => (
+                  <li {...props} key={p.nombre}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: 13 }}>
+                      <span>{p.nombre}</span><span>${p.precio.toFixed(2)}</span>
+                    </Box>
+                  </li>
+                )}
+                renderInput={(params) => (
+                  <TextField 
+                    {...params} 
+                    placeholder="Buscar producto…" 
+                    sx={autocompleteInputSx}
+                    InputProps={{
+                      ...(params.InputProps || {}),
+                      startAdornment: (
+                        <InputAdornment position="start" sx={{ pl: 1 }}>
+                          <IconSearch size={18} color="#A0968C" />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                )}
+              />
+            </Box>
+
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', mt: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: 'action.hover', borderRadius: 1.5 }}>
+                <IconButton size="small" onClick={() => setCantidadSeleccionada((c) => Math.max(1, c - 1))}><IconMinus size={12} /></IconButton>
+                <Typography sx={{ width: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>{cantidadSeleccionada}</Typography>
+                <IconButton size="small" onClick={() => setCantidadSeleccionada((c) => c + 1)}><IconPlus size={12} /></IconButton>
               </Box>
-
-              <Stack direction="row" justifyContent="space-between">
-                <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>Total a pagar</Typography>
-                <Typography sx={{ fontWeight: 700, fontSize: 17 }}>${totalFormulario.toFixed(2)}</Typography>
-              </Stack>
-
-              <Button variant="primary" size="sm" fullWidth disabled={formItems.length === 0 || !clienteValido} onClick={handleConfirmarVenta}>
-                Registrar venta
+              <Button variant="secondary" size="sm" leftIcon={<IconPlus size={12} />} disabled={!productoAutocomplete} onClick={handleAgregarProducto}>
+                Agregar
               </Button>
             </Box>
-          </Grid>
-        </Grid>
+          </Box>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, minWidth: 0, width: '100%', height: '100%' }}>
+            <FilterLabel>Resumen</FilterLabel>
+            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5, minHeight: 180, maxHeight: 320, overflowY: 'auto', flexGrow: 1 }}>
+              {formItems.length === 0 ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 5, color: 'text.dim', fontSize: 13 }}>
+                  Sin productos agregados
+                </Box>
+              ) : (
+                formItems.map((item, idx) => (
+                  <Box key={item.nombre} sx={{ px: 1.25, py: 0.875, borderTop: idx > 0 ? '1px solid' : 'none', borderColor: 'divider' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: 'action.hover', borderRadius: 1, mr: 1 }}>
+                        <IconButton size="small" onClick={() => handleActualizarCantidad(item.nombre, item.cantidad - 1)}><IconMinus size={11} /></IconButton>
+                        <Typography sx={{ width: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>{item.cantidad}</Typography>
+                        <IconButton size="small" onClick={() => handleActualizarCantidad(item.nombre, item.cantidad + 1)}><IconPlus size={11} /></IconButton>
+                      </Box>
+                      <Typography sx={{ fontSize: 12.5, flex: 1 }}>{item.nombre}</Typography>
+                      <Typography sx={{ fontSize: 12.5, color: 'text.secondary', mx: 1 }}>${(item.cantidad * item.precio).toFixed(2)}</Typography>
+                      <IconButton size="small" sx={{ color: 'error.main' }} onClick={() => handleQuitarProducto(item.nombre)}><IconX size={13} /></IconButton>
+                    </Box>
+                  </Box>
+                ))
+              )}
+            </Box>
+
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', pt: 2, mt: 'auto' }}>
+              <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>Total a pagar</Typography>
+              <Typography sx={{ fontWeight: 700, fontSize: 17 }}>${totalFormulario.toFixed(2)}</Typography>
+            </Box>
+
+            <Button variant="primary" size="sm" fullWidth disabled={formItems.length === 0 || !clienteValido} onClick={handleConfirmarVenta}>
+              Registrar venta
+            </Button>
+          </Box>
+        </Box>
       </Modal>
 
       <Box component="footer" sx={{ pt: 2, pb: 2, borderTop: '1px solid', borderColor: 'divider', textAlign: 'center', fontSize: 11.5, color: 'text.dim' }}>

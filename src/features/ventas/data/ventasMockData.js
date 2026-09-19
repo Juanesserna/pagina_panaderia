@@ -30,15 +30,15 @@ export const initialVentas = [
 
 // Mapea el estado a un color de MUI (usado en <Chip color="...">)
 export const estadoVariant = {
-  completado: "success",
-  "en proceso": "info",
-  pendiente: "warning",
-  cancelado: "error",
-};
+  completado: 'success',
+  'en proceso': 'process', // 👈 Nueva variante para el tono terracota/rosa
+  pendiente: 'warning',
+  cancelado: 'danger',
+}
 
 export const estadoDotColor = {
   completado: "#34d399",
-  "en proceso": "#60a5fa",
+  "en proceso": "#f87171",
   pendiente: "#fbbf24",
   cancelado: "#f87171",
 };

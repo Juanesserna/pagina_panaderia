@@ -89,6 +89,7 @@ export function Sidebar({ activePage, onNavigate, collapsed, onToggle }) {
           borderRight: `1px solid ${sb.border}`,
           transition: "width 0.3s",
           overflowX: "hidden",
+          borderRadius: 0,
         },
       }}
     >
