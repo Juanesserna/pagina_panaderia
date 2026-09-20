@@ -26,7 +26,7 @@ export function Modal({ open, onClose, title, size = 'md', children, sx }) {
         </IconButton>
       </DialogTitle>
       <Divider />
-      <DialogContent sx={{ pb: 3, pt: 2 }}>{children}</DialogContent>
+      <DialogContent sx={{ pb: 3 }}>{children}</DialogContent>
     </Dialog>
   )
 }

@@ -42,7 +42,7 @@ export function Header({ page }) {
       sx={{
         top: 0,
         zIndex: theme.zIndex.appBar,
-        bgcolor: theme.palette.background.paper,
+        bgcolor: isDark ? '#16110D' : theme.palette.background.paper,
         borderBottom: `1px solid ${theme.palette.divider}`,
         borderRadius: 0,
         color: theme.palette.text.primary,

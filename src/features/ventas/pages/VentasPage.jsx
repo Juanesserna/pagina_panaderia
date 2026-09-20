@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from 'react'
-import { Box, Stack, Typography, IconButton, Divider, Collapse, Autocomplete, TextField, OutlinedInput, InputAdornment} from '@mui/material'
+import { Box, Stack, Typography, IconButton, Divider, Collapse, Autocomplete, TextField, OutlinedInput, InputAdornment, MenuItem } from '@mui/material'
 import { useTheme, alpha } from '@mui/material/styles'
 import {
   IconSearch,
@@ -15,7 +15,7 @@ import {
   IconCircleX,
 } from '@tabler/icons-react'
 import {
-  initialVentas, estadoVariant, estadoOptions,
+  initialVentas, estadoVariant, estadoOptions, estadoDotColor, // 👈 agregar
   esTransicionValida, opcionesEstadoParaFila, usuarioAutenticado,
   catalogoClientes, catalogoPanaderia, obtenerProductosVenta,
   obtenerNombreCliente, parseFechaVenta, fechaHoyFormateada, PAGE_SIZE,
@@ -44,12 +44,13 @@ function FilterLabel({ children }) {
 
 export default function VentasPage() {
   const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
 
   // El Autocomplete de MUI necesita un TextField como input interno;
   // los demás campos usan el componente `Input` compartido.
   const autocompleteInputSx = {
     '& .MuiOutlinedInput-root': {
-      bgcolor: theme.palette.ahSurface2,
+      bgcolor: isDark ? '#30231C' : theme.palette.ahSurface2,
       '& fieldset': { borderColor: 'transparent' },
       '&:hover fieldset': { borderColor: theme.palette.divider },
       '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
@@ -492,12 +493,17 @@ export default function VentasPage() {
       <input ref={abonoInputRef} type="file" accept="image/*" hidden onChange={handleImagenAbonoSeleccionada} />
 
       {/* KPIs */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+      <Box sx={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 2,
+        '& > *': isDark ? { backgroundColor: '#2A1D16', backgroundImage: 'none' } : {}
+      }}>
         <KPICard title="Completados" value={completados} icon={<IconCircleCheck size={16} />} variant="success" />
         <KPICard title="Cancelados" value={cancelados} icon={<IconCircleX size={16} />} variant="danger" />
       </Box>
 
-      <Box sx={{ borderRadius: 2.5, overflow: 'hidden', bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
+      <Box sx={{ borderRadius: 2.5, overflow: 'hidden', bgcolor: isDark ? '#2A1D16' : 'background.paper', border: '1px solid', borderColor: 'divider', backgroundImage: 'none' }}>
         {/* Toolbar */}
         <Stack direction="row" flexWrap="wrap" alignItems="center" sx={{ gap: 1.25, px: 2.5, py: 2, alignItems: 'center', }}>
           <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'text.primary', mr: 'auto' }}>Registro de ventas</Typography>
@@ -515,25 +521,57 @@ export default function VentasPage() {
                 </InputAdornment>
               }
               sx={{
-                bgcolor: '#F4EFEA',           // Color beige
-                height: 35,                   // Altura reducida
-                borderRadius: 1,              // Bordes redondeados                // Espacio a la derecha
+                bgcolor: isDark ? '#32251F' : '#F4EFEA',
+                height: 35,
+                borderRadius: 1,
                 '& fieldset': {
-                  borderColor: '#E5DCD3'      // Borde sutil por defecto
+                  borderColor: isDark ? 'transparent' : '#E5DCD3'
                 },
                 '&:hover fieldset': {
-                  borderColor: '#C97A45'      // Borde al pasar el mouse
+                  borderColor: '#C97A45'
                 },
                 '&.Mui-focused fieldset': {
-                  borderColor: '#C97A45'      // Borde al hacer clic/escribir
+                  borderColor: '#C97A45'
                 }
               }}
             />
           </Box>
-          <Button variant="primary" size="sm" leftIcon={<IconPlus size={13} />} onClick={handleNuevaVenta}  sx={{ height: 28, borderRadius: 1,}}>
+          <Button
+            variant="primary"
+            size="sm"
+            leftIcon={<IconPlus size={13} />}
+            onClick={handleNuevaVenta}
+            sx={{
+              height: 28,
+              borderRadius: 1,
+              ...(isDark && {
+                backgroundColor: '#A85D33',
+                color: '#000000',
+                '&:hover': { backgroundColor: '#8A4A28' }
+              })
+            }}
+          >
             Nueva venta
           </Button>
-          <Button variant={filtrosActivos ? 'primary' : 'secondary'} size="sm" leftIcon={<IconFilter size={13} />} onClick={() => setShowFiltros((v) => !v)} sx={{ height: 28, borderRadius: 1,}}>
+          <Button
+            variant={filtrosActivos ? 'primary' : 'secondary'}
+            size="sm"
+            leftIcon={<IconFilter size={13} />}
+            onClick={() => setShowFiltros((v) => !v)}
+            sx={{
+              height: 28,
+              borderRadius: 1,
+              border: '1px solid',
+              backgroundColor: isDark ? '#32251F' : '#F0EBE3',
+              color: isDark ? '#F2E9DD' : '#4A2E17',
+              borderColor: isDark ? '#3D2C21' : '#E4D9C8',
+              '&:hover': {
+                backgroundColor: isDark ? '#32251F' : '#F0EBE3',
+                borderColor: isDark ? '#3D2C21' : '#E4D9C8',
+                opacity: 0.85,
+              },
+            }}
+          >
             Filtrar
             {filtrosActivos && (
               <Box
@@ -562,7 +600,19 @@ export default function VentasPage() {
 
         {/* Filtros */}
         <Collapse in={showFiltros}>
-          <Stack direction="row" flexWrap="wrap" alignItems="flex-end" sx={{ gap: 2.5, px: 2.5, py: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.alt' }}>
+          <Stack
+            direction="row"
+            flexWrap="wrap"
+            alignItems="flex-end"
+            sx={{
+              gap: 2.5,
+              px: 2.5,
+              py: 2,
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+              bgcolor: isDark ? '#2C1F18' : '#FAF8F6', // 👈 antes: 'background.alt'
+            }}
+          >
             <Box sx={{ width: 130 }}>
               <FilterLabel>Estado</FilterLabel>
               <Select
@@ -693,7 +743,7 @@ export default function VentasPage() {
             </Typography>
             {opcionesEstadoParaFila(ventaEstadoModal.estado).map((o) => {
               const activo = estadoSeleccionadoModal === o.value
-              const color = theme.palette[estadoVariant[o.value]].main
+              const color = estadoDotColor[o.value]
               return (
                 <Box
                   key={o.value}
@@ -973,21 +1023,40 @@ export default function VentasPage() {
       </Modal>
 
       {/* Modal: Nueva venta */}
-      <Modal 
-        open={showVentaModal} 
-        onClose={() => setShowVentaModal(false)} 
-        title="Nueva venta" 
-        size="lg" 
-        sx={{ maxWidth: '720px !important', minHeight: '600px' }}
+      <Modal
+        open={showVentaModal}
+        onClose={() => setShowVentaModal(false)}
+        title="Nueva venta"
+        size="lg"
+        sx={{
+          maxWidth: 720,
+          minHeight: 600,
+          ...(isDark && {
+            bgcolor: '#2A1D16',
+            backgroundImage: 'none !important',
+            '--Paper-overlay': 'none',
+          }),
+        }}
       >
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2.5, alignItems: 'start', height: '100%' }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', marginTop: '20px' }, gap: 2.5, alignItems: 'start', height: '100%' }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, minWidth: 0, width: '100%' }}>
-            <Box sx={{ bgcolor: 'action.hover', borderRadius: 1.5, px: 1.5, py: 1.25, display: 'flex', flexDirection: 'column', gap: 0.4 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                <span>ID de venta</span><b>{formId}</b>
+            {/* ID VENTA Y FECHA */}
+            <Box sx={{
+              borderRadius: 1.5,
+              px: 1.5,
+              py: 1.25,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 0.4,
+              border: '1px solid',
+              borderColor: isDark ? '#4A3B32' : '#E4D9C8',
+              bgcolor: isDark ? '#30231C' : '#F9F8F8'
+            }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, }}>
+                <span style={{ color: "#B3A79E" }}>ID de venta</span><b>{formId}</b>
               </Box>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                <span>Fecha</span><span>{formFecha} · {formHora}</span>
+                <span style={{ color: "#B3A79E" }}>Fecha</span><span>{formFecha} · {formHora}</span>
               </Box>
             </Box>
 
@@ -1000,9 +1069,9 @@ export default function VentasPage() {
                 value={clienteSeleccionado}
                 onChange={(_, value) => setClienteSeleccionado(value)}
                 renderInput={(params) => (
-                  <TextField 
-                    {...params} 
-                    placeholder="Buscar por NIT o nombre…" 
+                  <TextField
+                    {...params}
+                    placeholder="Buscar por NIT o nombre…"
                     sx={autocompleteInputSx}
                     InputProps={{
                       ...(params.InputProps || {}),
@@ -1019,7 +1088,21 @@ export default function VentasPage() {
 
             <Box>
               <FilterLabel>Estado inicial</FilterLabel>
-              <Select options={estadoOptions} value={nuevoEstado} onChange={(e) => setNuevoEstado(e.target.value)} />
+              {/* Cambiado a TextField select para que tome exactamente el mismo color y estilo */}
+              <TextField
+                select
+                fullWidth
+                size="small"
+                value={nuevoEstado}
+                onChange={(e) => setNuevoEstado(e.target.value)}
+                sx={autocompleteInputSx}
+              >
+                {estadoOptions.map((opcion) => (
+                  <MenuItem key={opcion.value} value={opcion.value}>
+                    {opcion.label}
+                  </MenuItem>
+                ))}
+              </TextField>
             </Box>
 
             <Divider />
@@ -1040,9 +1123,9 @@ export default function VentasPage() {
                   </li>
                 )}
                 renderInput={(params) => (
-                  <TextField 
-                    {...params} 
-                    placeholder="Buscar producto…" 
+                  <TextField
+                    {...params}
+                    placeholder="Buscar producto…"
                     sx={autocompleteInputSx}
                     InputProps={{
                       ...(params.InputProps || {}),
@@ -1058,12 +1141,24 @@ export default function VentasPage() {
             </Box>
 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', mt: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: 'action.hover', borderRadius: 1.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', borderRadius: 1, border: '1px solid', borderColor: isDark ? '#4A3B32' : '#E4D9C8', bgcolor: isDark ? '#30231C' : 'transparent' }}>
                 <IconButton size="small" onClick={() => setCantidadSeleccionada((c) => Math.max(1, c - 1))}><IconMinus size={12} /></IconButton>
                 <Typography sx={{ width: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>{cantidadSeleccionada}</Typography>
                 <IconButton size="small" onClick={() => setCantidadSeleccionada((c) => c + 1)}><IconPlus size={12} /></IconButton>
               </Box>
-              <Button variant="secondary" size="sm" leftIcon={<IconPlus size={12} />} disabled={!productoAutocomplete} onClick={handleAgregarProducto}>
+              <Button
+                variant="secondary"
+                size="sm"
+                leftIcon={<IconPlus size={12} />}
+                disabled={!productoAutocomplete}
+                onClick={handleAgregarProducto}
+                sx={{
+                  border: '1px solid',
+                  borderColor: isDark ? '#4A3B32' : '#E4D9C8',
+                  backgroundColor: isDark ? '#30231C' : '#F9F8F8',
+                  color: isDark ? '#FFFFFF' : undefined
+                }}
+              >
                 Agregar
               </Button>
             </Box>
@@ -1073,14 +1168,14 @@ export default function VentasPage() {
             <FilterLabel>Resumen</FilterLabel>
             <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5, minHeight: 180, maxHeight: 320, overflowY: 'auto', flexGrow: 1 }}>
               {formItems.length === 0 ? (
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 5, color: 'text.dim', fontSize: 13 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 5, color: isDark ? '#E4D9C8' : 'text.dim', fontSize: 13 }}>
                   Sin productos agregados
                 </Box>
               ) : (
                 formItems.map((item, idx) => (
                   <Box key={item.nombre} sx={{ px: 1.25, py: 0.875, borderTop: idx > 0 ? '1px solid' : 'none', borderColor: 'divider' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: 'action.hover', borderRadius: 1, mr: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: 'action.hover', borderRadius: 0.7, mr: 1, border: '1px solid', borderColor: isDark ? '#4A3B32' : '#E4D9C8' }}>
                         <IconButton size="small" onClick={() => handleActualizarCantidad(item.nombre, item.cantidad - 1)}><IconMinus size={11} /></IconButton>
                         <Typography sx={{ width: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>{item.cantidad}</Typography>
                         <IconButton size="small" onClick={() => handleActualizarCantidad(item.nombre, item.cantidad + 1)}><IconPlus size={11} /></IconButton>

@@ -24,12 +24,12 @@ export const lightColors = {
 }
 
 export const darkColors = {
-  bg: '#1A0D07',
+  bg: '#17110D',
   sidebar: '#241811',
   sidebarBorder: '#3d2c21',
   textOnSidebar: '#F3E9DC',
   sidebarAccent: 'rgba(168,93,51,0.15)',
-  surface: '#2E1810',
+  surface: '#2A1D16',
   surface2: '#32251f',
   accent: '#A85D33',
   accentSoft: 'rgba(168,93,51,0.5)',

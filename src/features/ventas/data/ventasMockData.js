@@ -43,6 +43,13 @@ export const estadoDotColor = {
   cancelado: "#f87171",
 };
 
+export const estadoDarkColors = {
+  completado:  { bg: "#34372A", color: "#A3D115" },
+  "en proceso": { bg: "#3D271B", color: "#F53926" },
+  pendiente:   { bg: "#48321C", color: "#F29126" },
+  cancelado:   { bg: "#361F17", color: "#702B20" },
+};
+
 export const estadoOptions = [
   { value: "pendiente", label: "Pendiente" },
   { value: "en proceso", label: "En proceso" },
