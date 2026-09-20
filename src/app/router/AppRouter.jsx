@@ -15,6 +15,7 @@ const ComprasPage = lazy(() => import('@features/compras/pages/ComprasPage'))
 const InsumosPage = lazy(() => import('@features/insumos/pages/InsumosPage'))
 const ProduccionPage = lazy(() => import('@features/produccion/pages/ProduccionPage'))
 const ProductosPage = lazy(() => import('@features/productos/pages/ProductosPage'))
+const AgregarRecetaPage = lazy(() => import('@features/productos/pages/AgregarRecetaPage'))
 const ProveedoresPage = lazy(() => import('@features/proveedores/pages/ProveedoresPage'))
 const RolesPage = lazy(() => import('@features/roles/pages/RolesPage'))
 const UsuariosPage = lazy(() => import('@features/usuarios/pages/UsuariosPage'))
@@ -37,7 +38,8 @@ export default function AppRouter() {
               <Route path={ROUTES.COMPRAS} element={<ComprasPage />} />
               <Route path={ROUTES.INSUMOS} element={<InsumosPage />} />
               <Route path={ROUTES.PRODUCCION} element={<ProduccionPage />} />
-              <Route path={ROUTES.PRODUCTOS} element={<ProductosPage />} />
+               <Route path={ROUTES.PRODUCTOS} element={<ProductosPage />} />
+               <Route path={ROUTES.AGREGAR_RECETA} element={<AgregarRecetaPage />} />
               <Route path={ROUTES.PROVEEDORES} element={<ProveedoresPage />} />
               <Route path={ROUTES.ROLES} element={<RolesPage />} />
               <Route path={ROUTES.USUARIOS} element={<UsuariosPage />} />
