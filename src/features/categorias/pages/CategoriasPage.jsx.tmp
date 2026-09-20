@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Box, Typography, Stack } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
-import { IconStack, IconTag, IconCheck, IconX } from '@tabler/icons-react'
+import { IconLeaf, IconBox } from '@tabler/icons-react'
 import { fonts } from '@app/theme/colors'
 import { ROUTES } from '@app/router/routes'
 import CatalogoCategorias from '../components/CatalogoCategorias'
@@ -10,7 +10,6 @@ import PaginacionCategorias from '../components/PaginacionCategorias'
 import NuevaCategoriaModal from '../components/NuevaCategoriaModal'
 import EditarCategoriaModal from '../components/EditarCategoriaModal'
 import EliminarCategoriaDialog from '../components/EliminarCategoriaDialog'
-import StatsCard from '@shared/components/StatsCard'
 import { resumenStats } from '../services/categorias.service'
 import { useCategorias } from '../hooks/useCategorias'
 
@@ -30,11 +29,6 @@ export default function CategoriasPage() {
     eliminarCategoria,
     editarCategoria,
   } = useCategorias()
-
-  const totalCategorias = allCategorias.length
-  const categoriasProducto = allCategorias.filter((c) => c.tipo === 'Producto' || c.tipo === 'Ambos').length
-  const activas = allCategorias.filter((c) => c.estado === 'Activa').length
-  const inactivas = allCategorias.filter((c) => c.estado === 'Inactiva').length
 
   const [nuevaCategoriaModal, setNuevaCategoriaModal] = useState(false)
   const [editarCategoriaModal, setEditarCategoriaModal] = useState(false)
@@ -71,15 +65,9 @@ export default function CategoriasPage() {
   }
 
   const handleEliminar = (id) => {
-    const categoria = allCategorias.find((c) => c.id === id)
-    setCategoriaAEliminar(categoria)
-    setEliminarDialogOpen(true)
-  }
-
-  const handleConfirmarEliminar = () => {
-    eliminarCategoria(categoriaAEliminar.id)
-    setEliminarDialogOpen(false)
-    setCategoriaAEliminar(null)
+    if (window.confirm('¿Eliminar esta categoría?')) {
+      eliminarCategoria(id)
+    }
   }
 
   return (
@@ -106,33 +94,6 @@ export default function CategoriasPage() {
       >
         Categorías
       </Typography>
-
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} sx={{ flexWrap: 'wrap' }}>
-        <StatsCard
-          label="TOTAL CATEGORÍAS"
-          value={totalCategorias}
-          icon={<IconStack size={20} />}
-          iconBgColor="warning"
-        />
-        <StatsCard
-          label="CATEGORÍAS DE PRODUCTO"
-          value={categoriasProducto}
-          icon={<IconTag size={20} />}
-          iconBgColor="warning"
-        />
-        <StatsCard
-          label="ACTIVAS"
-          value={activas}
-          icon={<IconCheck size={20} />}
-          iconBgColor="success"
-        />
-        <StatsCard
-          label="INACTIVAS"
-          value={inactivas}
-          icon={<IconX size={20} />}
-          iconBgColor="error"
-        />
-      </Stack>
 
       <CatalogoCategorias
         onBuscar={handleSearch}
@@ -168,16 +129,6 @@ export default function CategoriasPage() {
         }}
         onSubmit={handleEditarCategoriaSubmit}
         categoria={categoriaSeleccionada}
-      />
-
-      <EliminarCategoriaDialog
-        open={eliminarDialogOpen}
-        onClose={() => {
-          setEliminarDialogOpen(false)
-          setCategoriaAEliminar(null)
-        }}
-        onConfirm={handleConfirmarEliminar}
-        nombreCategoria={categoriaAEliminar?.nombre}
       />
     </Box>
   )

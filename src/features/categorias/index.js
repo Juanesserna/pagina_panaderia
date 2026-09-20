@@ -1,2 +1,9 @@
-// src/features/produccion/index.js
-export { default as ProduccionPage } from './pages/ProduccionPage'
+export { default as CategoriasPage } from './pages/CategoriasPage'
+export { useCategorias } from './hooks/useCategorias'
+export { categorias, categoriasService, resumenStats, formatDate } from './services/categorias.service'
+export { default as EstadoBadge } from './components/EstadoBadge'
+export { default as TipoBadge } from './components/TipoBadge'
+export { default as CatalogoCategorias } from './components/CatalogoCategorias'
+export { default as CategoriasTable } from './components/CategoriasTable'
+export { default as PaginacionCategorias } from './components/PaginacionCategorias'
+export { default as NuevaCategoriaModal } from './components/NuevaCategoriaModal'

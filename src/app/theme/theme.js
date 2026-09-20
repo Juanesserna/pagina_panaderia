@@ -34,7 +34,68 @@ function buildTheme(mode) {
       divider: c.border,
     },
     shape: {
-      borderRadius: 4,
+      borderRadius: 8,
+    },
+    components: {
+      MuiOutlinedInput: {
+        defaultProps: {
+          notched: false,
+        },
+        styleOverrides: {
+          root: {
+            borderRadius: 8,
+            overflow: 'hidden',
+            backgroundColor: '#F0EBE3',
+          },
+          input: {
+            borderRadius: 8,
+          },
+          notchedOutline: {
+            borderRadius: 8,
+            borderColor: '#E0D5C7',
+          },
+        },
+      },
+      MuiTextField: {
+        defaultProps: {
+          variant: 'outlined',
+        },
+      },
+      MuiSelect: {
+        styleOverrides: {
+          root: { 
+            borderRadius: 8,
+            backgroundColor: '#F0EBE3',
+          },
+          select: {
+            borderRadius: 8,
+            overflow: 'hidden',
+          },
+          outlined: {
+            borderRadius: 8,
+          },
+        },
+      },
+      MuiButton: {
+        styleOverrides: {
+          root: { borderRadius: 8 },
+        },
+      },
+      MuiChip: {
+        styleOverrides: {
+          root: { borderRadius: 8 },
+        },
+      },
+      MuiCard: {
+        styleOverrides: {
+          root: { borderRadius: 16 },
+        },
+      },
+      MuiPaper: {
+        styleOverrides: {
+          root: { borderRadius: 16 },
+        },
+      },
     },
     typography: {
       fontFamily: fonts.sans,

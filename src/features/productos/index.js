@@ -1,2 +1,5 @@
-// src/features/produccion/index.js
-export { default as ProduccionPage } from './pages/ProduccionPage'
+export { default as ProductosPage } from './pages/ProductosPage'
+export { default as NuevoProductoPage } from './pages/NuevoProductoPage'
+export { default as EditarProductoPage } from './pages/EditarProductoPage'
+export { default as DetalleProductoPage } from './pages/DetalleProductoPage'
+export { default as AgregarRecetaPage } from './pages/AgregarRecetaPage'
