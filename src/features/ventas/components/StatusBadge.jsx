@@ -1,27 +1,50 @@
-import { Box, Typography } from '@mui/material'
+import { Box } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 
 const variantColor = {
-  success: 'success.main',
-  danger: 'error.main',
-  warning: 'warning.main',
-  accent: 'primary.main',
-  info: 'info.main',
+  success: '#658237',
+  process: '#F53926',
+  warning: '#F4A93C',
+  danger: '#c53022',
+  accent: '#1976D2',
+  info: '#0288D1',
 }
 
 const variantBg = {
-  success: 'rgba(110,139,61,0.12)',
-  danger: 'rgba(192,57,43,0.12)',
-  warning: 'rgba(242,169,60,0.12)',
-  accent: 'rgba(192,133,82,0.12)',
-  info: 'rgba(46,125,140,0.12)',
+  success: '#E9EFE0',
+  process: '#F4E4DA',
+  warning: '#FBE6C4',
+  danger: '#FBF0EF',
+  accent: 'rgba(25, 118, 210, 0.12)',
+  info: 'rgba(2, 136, 209, 0.12)',
 }
 
-/**
- * Pastilla de estado (ej: Completado, Pendiente, Retrasado).
- * variant: 'success' | 'accent' | 'warning' | 'danger' | 'info'
- * dot: si true, muestra el puntito de color a la izquierda.
- */
+// 👇 Nuevos mapas para modo oscuro (mismas keys que variantColor/variantBg)
+const variantColorDark = {
+  success: '#A3D115', // completado
+  process: '#e40d0d', // en proceso
+  warning: '#F29126', // pendiente
+  danger: '#F53926',  // cancelado
+  accent: '#1976D2',
+  info: '#0288D1',
+}
+
+const variantBgDark = {
+  success: '#34372A', // completado
+  process: '#3D271B', // en proceso
+  warning: '#48321C', // pendiente
+  danger: '#3D271B',  // cancelado
+  accent: 'rgba(25, 118, 210, 0.12)',
+  info: 'rgba(2, 136, 209, 0.12)',
+}
+
 export function StatusBadge({ variant = 'accent', dot = false, children }) {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+
+  const colorMap = isDark ? variantColorDark : variantColor
+  const bgMap = isDark ? variantBgDark : variantBg
+
   return (
     <Box
       component="span"
@@ -29,19 +52,25 @@ export function StatusBadge({ variant = 'accent', dot = false, children }) {
         display: 'inline-flex',
         alignItems: 'center',
         gap: 0.75,
-        px: 1.1,
+        px: 1.25,
         py: 0.4,
         borderRadius: 5,
-        bgcolor: variantBg[variant],
-        color: variantColor[variant],
-        fontSize: 11,
+        bgcolor: bgMap[variant],
+        color: colorMap[variant],
+        fontSize: 12,
         fontWeight: 600,
       }}
     >
       {dot && (
         <Box
           component="span"
-          sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: variantColor[variant], flexShrink: 0 }}
+          sx={{
+            width: 6,
+            height: 6,
+            borderRadius: '50%',
+            bgcolor: colorMap[variant],
+            flexShrink: 0,
+          }}
         />
       )}
       {children}

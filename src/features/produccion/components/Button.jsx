@@ -1,10 +1,17 @@
 import { Button as MuiButton } from '@mui/material'
 
-/**
- * Botón del panel administrativo. variant: 'primary' | 'secondary' | 'ghost' | 'danger'
- * size: 'sm' | 'md'
- */
-export function Button({ variant = 'primary', size = 'md', leftIcon, disabled, onClick, title, children, type = 'button' }) {
+export function Button({
+  variant = 'primary',
+  size = 'md',
+  leftIcon,
+  disabled,
+  onClick,
+  title,
+  children,
+  type = 'button',
+  fullWidth,   // 👈 agregado
+  sx,          // 👈 agregado
+}) {
   const sxByVariant = {
     primary: {
       bgcolor: 'primary.main',
@@ -40,6 +47,7 @@ export function Button({ variant = 'primary', size = 'md', leftIcon, disabled, o
       disabled={disabled}
       onClick={onClick}
       startIcon={leftIcon}
+      fullWidth={fullWidth}
       sx={{
         ...sxByVariant[variant],
         textTransform: 'none',
@@ -51,6 +59,7 @@ export function Button({ variant = 'primary', size = 'md', leftIcon, disabled, o
         minWidth: 'auto',
         boxShadow: 'none',
         '&:disabled': { opacity: 0.4, color: 'inherit' },
+        ...sx,   // 👈 se mergea al final, mismo patrón que Ventas
       }}
     >
       {children}

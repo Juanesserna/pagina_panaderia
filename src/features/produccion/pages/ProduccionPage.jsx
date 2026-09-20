@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
-import { Box, Stack, Typography, IconButton } from '@mui/material'
+import { Box, Stack, Typography, IconButton, Divider, Collapse, OutlinedInput, InputAdornment } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 import {
   IconSearch,
   IconPlus,
@@ -257,9 +258,23 @@ function parseFechaSolicitud(fecha) {
 
 const PAGE_SIZE = 6
 
+// dimLabelSx se mantiene para las etiquetas dentro de los modales de detalle
+// (no forman parte del panel de filtros, así que no se homologan con FilterLabel).
 const dimLabelSx = { fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.dim' }
 
+// Mismo helper de etiqueta que usa VentasPage para el panel de filtros.
+function FilterLabel({ children }) {
+  return (
+    <Typography sx={{ fontSize: 10, fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>
+      {children}
+    </Typography>
+  )
+}
+
 export default function ProduccionPage() {
+  const theme = useTheme()
+  const isDark = theme.palette.mode === 'dark'
+
   const [ordenes, setOrdenes] = useState(initialOrdenes)
   const [search, setSearch] = useState('')
   const [estadoFilter, setEstadoFilter] = useState('')
@@ -333,6 +348,7 @@ export default function ProduccionPage() {
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   const filtrosActivos = Boolean(estadoFilter || origenFilter || fechaDesde || fechaHasta || cantidadMin || cantidadMax)
+  const cantidadFiltrosActivos = [estadoFilter, origenFilter, fechaDesde, fechaHasta, cantidadMin, cantidadMax].filter(Boolean).length
 
   const limpiarFiltros = () => {
     setEstadoFilter('')
@@ -587,152 +603,221 @@ export default function ProduccionPage() {
   ]
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, p: 1.5 }}>
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {/* KPIs */}
+      <Box sx={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 2,
+        '& > *': isDark ? { backgroundColor: '#2A1D16', backgroundImage: 'none' } : {}
+      }}>
         <KPICard title="Órdenes completadas" value={completados} icon={<IconCircleCheck size={16} />} variant="success" />
         <KPICard title="Retrasadas" value={retrasados} icon={<IconAlertTriangle size={16} />} variant="danger" />
       </Box>
 
-      <Box sx={{ borderRadius: 2.5, overflow: 'hidden', bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: '1fr auto 1fr',
-            alignItems: 'center',
-            columnGap: 2,
-            px: 2.5,
-            py: 2,
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-          }}
-        >
-          <Box />
-          <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'text.primary', textAlign: 'center', whiteSpace: 'nowrap' }}>
+      <Box sx={{ borderRadius: 2.5, overflow: 'hidden', bgcolor: isDark ? '#2A1D16' : 'background.paper', border: '1px solid', borderColor: 'divider', backgroundImage: 'none' }}>
+        {/* Toolbar */}
+        <Stack direction="row" flexWrap="wrap" alignItems="center" sx={{ gap: 1.25, px: 2.5, py: 2 }}>
+          <Typography
+            component="div"
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              fontSize: 14,
+              fontWeight: 700,
+              color: 'text.primary',
+              mr: 'auto',
+            }}
+          >
             Órdenes de producción
           </Typography>
-          <Stack direction="row" flexWrap="wrap" alignItems="center" justifyContent="flex-end" sx={{ gap: 3, columnGap: 3, rowGap: 1.5 }}>
-            <Box sx={{ width: 224 }}>
-              <Input
-                placeholder="Buscar orden, NIT o producto…"
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value)
-                  setPage(1)
-                }}
-                leftIcon={<IconSearch size={13} />}
-              />
-            </Box>
-            <Button variant="primary" size="sm" leftIcon={<IconPlus size={13} />} onClick={handleNuevaOrden}>
-              Nueva orden
-            </Button>
-            <Button
-              variant={filtrosActivos ? 'primary' : 'secondary'}
-              size="sm"
-              leftIcon={<IconFilter size={13} />}
-              onClick={() => setShowFiltros((v) => !v)}
-            >
-              Filtrar
-            </Button>
-          </Stack>
-        </Box>
 
-        {showFiltros && (
+          <Box sx={{ width: 250, display: 'flex', alignItems: 'center' }}>
+            <OutlinedInput
+              placeholder="Buscar orden, NIT o producto…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
+              startAdornment={
+                <InputAdornment position="start">
+                  <IconSearch size={18} color="#A0968C" />
+                </InputAdornment>
+              }
+              sx={{
+                bgcolor: isDark ? '#32251F' : '#F4EFEA',
+                height: 35,
+                borderRadius: 1,
+                '& fieldset': {
+                  borderColor: isDark ? 'transparent' : '#E5DCD3',
+                },
+                '&:hover fieldset': {
+                  borderColor: '#C97A45',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#C97A45',
+                },
+              }}
+            />
+          </Box>
+
+          <Button
+            variant="primary"
+            size="sm"
+            leftIcon={<IconPlus size={13} />}
+            onClick={handleNuevaOrden}
+            sx={{
+              height: 28,
+              borderRadius: 1,
+              ...(isDark && {
+                backgroundColor: '#A85D33',
+                color: '#000000',
+                '&:hover': { backgroundColor: '#8A4A28' },
+              }),
+            }}
+          >
+            Nueva orden
+          </Button>
+
+          <Button
+            variant={filtrosActivos ? 'primary' : 'secondary'}
+            size="sm"
+            leftIcon={<IconFilter size={13} />}
+            onClick={() => setShowFiltros((v) => !v)}
+            sx={{
+              height: 28,
+              borderRadius: 1,
+              border: '1px solid',
+              backgroundColor: isDark ? '#32251F' : '#F0EBE3',
+              color: isDark ? '#F2E9DD' : '#4A2E17',
+              borderColor: isDark ? '#3D2C21' : '#E4D9C8',
+              '&:hover': {
+                backgroundColor: isDark ? '#32251F' : '#F0EBE3',
+                borderColor: isDark ? '#3D2C21' : '#E4D9C8',
+                opacity: 0.85,
+              },
+            }}
+          >
+            Filtrar
+            {filtrosActivos && (
+              <Box
+                component="span"
+                sx={{
+                  ml: 0.75,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: 16,
+                  width: 16,
+                  borderRadius: '50%',
+                  fontSize: 9,
+                  fontWeight: 700,
+                  bgcolor: 'rgba(255,255,255,0.3)',
+                  color: 'inherit',
+                }}
+              >
+                {cantidadFiltrosActivos}
+              </Box>
+            )}
+          </Button>
+        </Stack>
+
+        <Divider />
+
+        {/* Filtros */}
+        <Collapse in={showFiltros}>
           <Stack
             direction="row"
             flexWrap="wrap"
             alignItems="flex-end"
-            sx={{ px: 2.5, py: 1.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'background.alt', gap: 3.5, columnGap: 3.5, rowGap: 2 }}
+            sx={{
+              gap: 2.5,
+              px: 2.5,
+              py: 2,
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+              bgcolor: isDark ? '#2C1F18' : '#FAF8F6',
+            }}
           >
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-              <Typography sx={dimLabelSx}>Estado</Typography>
-              <Box sx={{ width: 144 }}>
-                <Select
-                  options={[{ value: '', label: 'Todos' }, ...estadoOptions]}
-                  value={estadoFilter}
-                  onChange={(e) => {
-                    setEstadoFilter(e.target.value)
-                    setPage(1)
-                  }}
-                />
-              </Box>
+            <Box sx={{ width: 144 }}>
+              <FilterLabel>Estado</FilterLabel>
+              <Select
+                options={[{ value: '', label: 'Todos' }, ...estadoOptions]}
+                value={estadoFilter}
+                onChange={(e) => {
+                  setEstadoFilter(e.target.value)
+                  setPage(1)
+                }}
+              />
             </Box>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-              <Typography sx={dimLabelSx}>Origen</Typography>
-              <Box sx={{ width: 144 }}>
-                <Select
-                  options={[
-                    { value: '', label: 'Todos' },
-                    { value: 'Manual', label: 'Manual' },
-                    { value: 'Pagina', label: 'Página' },
-                  ]}
-                  value={origenFilter}
-                  onChange={(e) => {
-                    setOrigenFilter(e.target.value)
-                    setPage(1)
-                  }}
-                />
-              </Box>
+            <Box sx={{ width: 144 }}>
+              <FilterLabel>Origen</FilterLabel>
+              <Select
+                options={[
+                  { value: '', label: 'Todos' },
+                  { value: 'Manual', label: 'Manual' },
+                  { value: 'Pagina', label: 'Página' },
+                ]}
+                value={origenFilter}
+                onChange={(e) => {
+                  setOrigenFilter(e.target.value)
+                  setPage(1)
+                }}
+              />
             </Box>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-              <Typography sx={dimLabelSx}>Desde</Typography>
-              <Box sx={{ width: 144 }}>
-                <Input
-                  type="date"
-                  value={fechaDesde}
-                  onChange={(e) => {
-                    setFechaDesde(e.target.value)
-                    setPage(1)
-                  }}
-                />
-              </Box>
+            <Box sx={{ width: 144 }}>
+              <FilterLabel>Desde</FilterLabel>
+              <Input
+                type="date"
+                value={fechaDesde}
+                onChange={(e) => {
+                  setFechaDesde(e.target.value)
+                  setPage(1)
+                }}
+              />
             </Box>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-              <Typography sx={dimLabelSx}>Hasta</Typography>
-              <Box sx={{ width: 144 }}>
-                <Input
-                  type="date"
-                  value={fechaHasta}
-                  onChange={(e) => {
-                    setFechaHasta(e.target.value)
-                    setPage(1)
-                  }}
-                />
-              </Box>
+            <Box sx={{ width: 144 }}>
+              <FilterLabel>Hasta</FilterLabel>
+              <Input
+                type="date"
+                value={fechaHasta}
+                onChange={(e) => {
+                  setFechaHasta(e.target.value)
+                  setPage(1)
+                }}
+              />
             </Box>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-              <Typography sx={dimLabelSx}>Cantidad mín.</Typography>
-              <Box sx={{ width: 112 }}>
-                <Input
-                  type="number"
-                  min={0}
-                  placeholder="0"
-                  value={cantidadMin}
-                  onChange={(e) => {
-                    setCantidadMin(e.target.value)
-                    setPage(1)
-                  }}
-                />
-              </Box>
+            <Box sx={{ width: 112 }}>
+              <FilterLabel>Cantidad mín.</FilterLabel>
+              <Input
+                type="number"
+                min={0}
+                placeholder="0"
+                value={cantidadMin}
+                onChange={(e) => {
+                  setCantidadMin(e.target.value)
+                  setPage(1)
+                }}
+              />
             </Box>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-              <Typography sx={dimLabelSx}>Cantidad máx.</Typography>
-              <Box sx={{ width: 112 }}>
-                <Input
-                  type="number"
-                  min={0}
-                  placeholder="Sin límite"
-                  value={cantidadMax}
-                  onChange={(e) => {
-                    setCantidadMax(e.target.value)
-                    setPage(1)
-                  }}
-                />
-              </Box>
+            <Box sx={{ width: 112 }}>
+              <FilterLabel>Cantidad máx.</FilterLabel>
+              <Input
+                type="number"
+                min={0}
+                placeholder="Sin límite"
+                value={cantidadMax}
+                onChange={(e) => {
+                  setCantidadMax(e.target.value)
+                  setPage(1)
+                }}
+              />
             </Box>
 
             {filtrosActivos && (
@@ -741,8 +826,9 @@ export default function ProduccionPage() {
               </Button>
             )}
           </Stack>
-        )}
+        </Collapse>
 
+        {/* Tabla */}
         <DataTable columns={columns} data={paginated} keyExtractor={(r) => r.id} emptyMessage="Sin órdenes encontradas" />
         <Box sx={{ px: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
           <Pagination page={page} total={filtered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
@@ -767,7 +853,19 @@ export default function ProduccionPage() {
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
                   {detalleItems.map((item) => (
-                    <Box key={item.label} sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, borderRadius: 1.5, p: 1.5, bgcolor: 'background.alt' }}>
+                    <Box
+                      key={item.label}
+                      sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 0.5,
+                        borderRadius: 1.5,
+                        p: 1.5,
+                        border: '1px solid',
+                        borderColor: isDark ? '#4A3B32' : '#E4D9C8',
+                        bgcolor: isDark ? '#30231C' : '#F9F8F8',
+                      }}
+                    >
                       <Typography sx={dimLabelSx}>{item.label}</Typography>
                       <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'text.primary' }}>{item.value}</Typography>
                     </Box>
@@ -786,9 +884,9 @@ export default function ProduccionPage() {
                           justifyContent: 'space-between',
                           px: 1.5,
                           py: 1,
-                          bgcolor: 'background.alt',
+                          bgcolor: isDark ? '#30231C' : '#F9F8F8',
                           borderTop: idx > 0 ? '1px solid' : 'none',
-                          borderColor: 'divider',
+                          borderColor: isDark ? '#4A3B32' : '#E4D9C8',
                         }}
                       >
                         <Typography sx={{ fontSize: 14, color: 'text.primary' }}>{item.nombre}</Typography>
@@ -814,15 +912,21 @@ export default function ProduccionPage() {
                         borderRadius: 1.5,
                         px: 1.5,
                         py: 1.25,
-                        bgcolor: 'background.alt',
+                        bgcolor: isDark ? '#30231C' : '#F9F8F8',
                         border: '1px solid',
-                        borderColor: 'divider',
+                        borderColor: isDark ? '#4A3B32' : '#E4D9C8',
                         cursor: 'pointer',
                         '&:hover': { opacity: 0.9 },
                       }}
                     >
-                      <Typography sx={{ ...dimLabelSx, fontWeight: 600 }}>Insumos requeridos ({insumos.length})</Typography>
-                      {insumosAbiertos ? <IconChevronUp size={15} /> : <IconChevronDown size={15} />}
+                      <Typography sx={{ ...dimLabelSx, fontWeight: 600, color: isDark ? '#E4D9C8' : dimLabelSx.color }}>
+                        Insumos requeridos ({insumos.length})
+                      </Typography>
+                      {insumosAbiertos ? (
+                        <IconChevronUp size={15} color={isDark ? '#E4D9C8' : undefined} />
+                      ) : (
+                        <IconChevronDown size={15} color={isDark ? '#E4D9C8' : undefined} />
+                      )}
                     </Box>
                     {insumosAbiertos && (
                       <Box sx={{ display: 'flex', flexDirection: 'column', borderRadius: 1.5, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
@@ -835,9 +939,9 @@ export default function ProduccionPage() {
                               justifyContent: 'space-between',
                               px: 1.5,
                               py: 1,
-                              bgcolor: 'background.alt',
+                              bgcolor: isDark ? '#30231C' : '#F9F8F8',
                               borderTop: idx > 0 ? '1px solid' : 'none',
-                              borderColor: 'divider',
+                              borderColor: isDark ? '#4A3B32' : '#E4D9C8',
                             }}
                           >
                             <Typography sx={{ fontSize: 14, color: 'text.primary' }}>{insumo.nombre}</Typography>
@@ -868,11 +972,31 @@ export default function ProduccionPage() {
         onClose={() => setShowOrderModal(false)}
         title={orderModalMode === 'nueva' ? 'Nueva orden' : `Editar orden ${editingId}`}
         size="lg"
+        sx={{
+          ...(isDark && {
+            bgcolor: '#2A1D16',
+            backgroundImage: 'none !important',
+            '--Paper-overlay': 'none',
+          }),
+        }}
       >
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2.5 }}>
+        <Divider />
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', marginTop: '20px' }, gap: 2.5 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             {orderModalMode === 'nueva' && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, borderRadius: 1.5, px: 1.5, py: 1.25, border: '1px solid', borderColor: 'divider', bgcolor: 'background.alt' }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1,
+                  borderRadius: 1.5,
+                  px: 1.5,
+                  py: 1.25,
+                  border: '1px solid',
+                  borderColor: isDark ? '#4A3B32' : '#E4D9C8',
+                  bgcolor: isDark ? '#30231C' : '#F9F8F8',
+                }}
+              >
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Typography sx={{ fontSize: 12, color: 'text.dim' }}>ID de orden</Typography>
                   <Typography sx={{ fontSize: 12, fontFamily: 'monospace', fontWeight: 600, color: 'text.primary' }}>{formId}</Typography>
@@ -902,7 +1026,19 @@ export default function ProduccionPage() {
 
             {orderModalMode === 'editar' && editingOrden && (
               <>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, borderRadius: 1.5, px: 1.5, py: 1.25, border: '1px solid', borderColor: 'divider', bgcolor: 'background.alt' }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1,
+                    borderRadius: 1.5,
+                    px: 1.5,
+                    py: 1.25,
+                    border: '1px solid',
+                    borderColor: isDark ? '#4A3B32' : '#E4D9C8',
+                    bgcolor: isDark ? '#30231C' : '#F9F8F8',
+                  }}
+                >
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Typography sx={{ fontSize: 12, color: 'text.dim' }}>ID de orden</Typography>
                     <Typography sx={{ fontSize: 12, fontFamily: 'monospace', fontWeight: 600, color: 'text.primary' }}>{editingOrden.id}</Typography>
@@ -930,30 +1066,46 @@ export default function ProduccionPage() {
                 </Box>
 
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                  <Typography sx={dimLabelSx}>Estado</Typography>
+                  <FilterLabel>Estado</FilterLabel>
                   <Select options={estadoOptions} value={estadoSeleccionado} onChange={(e) => setEstadoSeleccionado(e.target.value)} />
                 </Box>
 
                 {editingOrden.producto === 'Pagina' && editingOrden.ventaId && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 1.5, px: 1.5, py: 1.25, border: '1px solid', borderColor: 'divider', bgcolor: 'background.alt' }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      borderRadius: 1.5,
+                      px: 1.5,
+                      py: 1.25,
+                      border: '1px solid',
+                      borderColor: isDark ? '#4A3B32' : '#E4D9C8',
+                      bgcolor: isDark ? '#30231C' : '#F9F8F8',
+                    }}
+                  >
                     <Typography sx={{ fontSize: 12, color: 'text.dim' }}>Venta relacionada</Typography>
                     <Typography sx={{ fontSize: 12, fontWeight: 600, color: 'text.primary' }}>{editingOrden.ventaId}</Typography>
                   </Box>
                 )}
 
-                <Box sx={{ height: '1px', bgcolor: 'divider' }} />
+                <Divider />
               </>
             )}
 
-            <Input
-              placeholder="Buscar producto…"
-              value={productoBusqueda}
-              onChange={(e) => {
-                setProductoBusqueda(e.target.value)
-                setProductoSeleccionado('')
-              }}
-              leftIcon={<IconSearch size={13} />}
-            />
+            <Box>
+              <FilterLabel>Producto</FilterLabel>
+              <Input
+                placeholder="Buscar producto…"
+                value={productoBusqueda}
+                onChange={(e) => {
+                  setProductoBusqueda(e.target.value)
+                  setProductoSeleccionado('')
+                }}
+                leftIcon={<IconSearch size={13} />}
+                sx={{ '& .MuiOutlinedInput-root': { bgcolor: isDark ? '#30231C' : '#F0EBE3' } }}
+              />
+            </Box>
             <Select
               options={[
                 { value: '', label: productosFiltrados.length ? 'Selecciona un producto' : 'Sin resultados' },
@@ -961,20 +1113,33 @@ export default function ProduccionPage() {
               ]}
               value={productoSeleccionado}
               onChange={(e) => setProductoSeleccionado(e.target.value)}
+              sx={{ bgcolor: isDark ? '#30231C' : '#F0EBE3' }} // 👈 nuevo
             />
             <Box>
-              <Button variant="secondary" size="sm" leftIcon={<IconPlus size={13} />} disabled={!productoSeleccionado} onClick={handleAgregarProducto}>
+              <Button
+                variant="secondary"
+                size="sm"
+                leftIcon={<IconPlus size={13} />}
+                disabled={!productoSeleccionado}
+                onClick={handleAgregarProducto}
+                sx={{
+                  border: '1px solid',
+                  borderColor: isDark ? '#4A3B32' : '#E4D9C8',
+                  backgroundColor: isDark ? '#30231C' : '#F0EBE3',
+                  color: isDark ? '#FFFFFF' : undefined,
+                }}
+              >
                 Agregar
               </Button>
             </Box>
           </Box>
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            <Typography sx={dimLabelSx}>Resumen</Typography>
+            <FilterLabel>Resumen</FilterLabel>
             <Box sx={{ display: 'flex', flexDirection: 'column', borderRadius: 1.5, overflow: 'hidden', minHeight: 120, border: '1px solid', borderColor: 'divider' }}>
               {formItems.length === 0 ? (
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4, px: 1.5, textAlign: 'center' }}>
-                  <Typography sx={{ fontSize: 14, color: 'text.dim' }}>Sin productos agregados</Typography>
+                  <Typography sx={{ fontSize: 14, color: isDark ? '#E4D9C8' : 'text.dim' }}>Sin productos agregados</Typography>
                 </Box>
               ) : (
                 formItems.map((item, idx) => (
@@ -986,9 +1151,9 @@ export default function ProduccionPage() {
                       gap: 0.75,
                       px: 1.5,
                       py: 1,
-                      bgcolor: 'background.alt',
+                      bgcolor: isDark ? '#30231C' : '#F9F8F8',
                       borderTop: idx > 0 ? '1px solid' : 'none',
-                      borderColor: 'divider',
+                      borderColor: isDark ? '#4A3B32' : '#E4D9C8',
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
@@ -1001,7 +1166,16 @@ export default function ProduccionPage() {
                     </Box>
 
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', borderRadius: 1, overflow: 'hidden', border: '1px solid', borderColor: 'divider' }}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          borderRadius: 1,
+                          overflow: 'hidden',
+                          border: '1px solid',
+                          borderColor: isDark ? '#4A3B32' : '#E4D9C8',
+                        }}
+                      >
                         <IconButton
                           size="small"
                           onClick={() => handleActualizarCantidad(item.nombre, item.cantidad - 1)}
@@ -1025,7 +1199,7 @@ export default function ProduccionPage() {
                 ))
               )}
             </Box>
-            <Button variant="primary" size="sm" disabled={formItems.length === 0} onClick={handleConfirmarOrden}>
+            <Button variant="primary" size="sm" fullWidth disabled={formItems.length === 0} onClick={handleConfirmarOrden}>
               Ordenar
             </Button>
           </Box>
@@ -1036,7 +1210,7 @@ export default function ProduccionPage() {
       <Modal open={!!estadoEditId} onClose={() => setEstadoEditId(null)} title={`Cambiar estado ${estadoEditId ?? ''}`} size="sm">
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            <Typography sx={dimLabelSx}>Estado</Typography>
+            <FilterLabel>Estado</FilterLabel>
             <Select options={estadoOptions} value={estadoEditValue} onChange={(e) => setEstadoEditValue(e.target.value)} />
           </Box>
           {estadoEditValue === 'retrasado' && (
@@ -1046,7 +1220,7 @@ export default function ProduccionPage() {
             </Typography>
           )}
           <Stack direction="row" justifyContent="flex-end" spacing={1}>
-            <Button variant="ghost" size="sm" onClick={() => setEstadoEditId(null)}>
+            <Button variant="secondary" size="sm" onClick={() => setEstadoEditId(null)}>
               Cancelar
             </Button>
             <Button variant="primary" size="sm" onClick={handleConfirmarEstado}>
@@ -1067,7 +1241,7 @@ export default function ProduccionPage() {
             ? Esta acción no se puede deshacer.
           </Typography>
           <Stack direction="row" justifyContent="flex-end" spacing={1}>
-            <Button variant="ghost" size="sm" onClick={() => setDeleteId(null)}>
+            <Button variant="secondary" size="sm" onClick={() => setDeleteId(null)}>
               Cancelar
             </Button>
             <Button
@@ -1084,10 +1258,8 @@ export default function ProduccionPage() {
         </Box>
       </Modal>
 
-      <Box component="footer" sx={{ mt: 0.5, pt: 2, pb: 2, borderTop: '1px solid', borderColor: 'divider', textAlign: 'center' }}>
-        <Typography sx={{ fontSize: 12, color: 'text.dim' }}>
-          © 2026 Al Horno. Todos los derechos reservados a la institución educativa SENA
-        </Typography>
+      <Box component="footer" sx={{ pt: 2, pb: 2, borderTop: '1px solid', borderColor: 'divider', textAlign: 'center', fontSize: 11.5, color: 'text.dim' }}>
+        © 2026 Al Horno. Todos los derechos reservados a la institución educativa SENA
       </Box>
     </Box>
   )

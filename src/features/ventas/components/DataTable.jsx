@@ -1,12 +1,13 @@
-import { Table, TableHead, TableBody, TableRow, TableCell, Box } from '@mui/material'
+import { Table, TableHead, TableBody, TableRow, TableCell, TableSortLabel, Box } from '@mui/material'
 
 /**
  * Tabla genérica dirigida por columnas.
- * columns: [{ key, header, accessor: (row) => ReactNode, align?: 'left' | 'right' }]
+ * columns: [{ key, header, accessor: (row) => ReactNode, align?: 'left' | 'right', sortable?: boolean }]
  * data: array de filas
  * keyExtractor: (row) => string/número único por fila
+ * sortKey, sortDir, onSort: opcionales — solo se usan si alguna columna trae sortable: true
  */
-export function DataTable({ columns, data, keyExtractor, emptyMessage = 'Sin resultados' }) {
+export function DataTable({ columns, data, keyExtractor, emptyMessage = 'Sin resultados', sortKey, sortDir, onSort }) {
   return (
     <Box sx={{ overflowX: 'auto' }}>
       <Table sx={{ minWidth: 640 }}>
@@ -28,7 +29,17 @@ export function DataTable({ columns, data, keyExtractor, emptyMessage = 'Sin res
                   py: 1.5,
                 }}
               >
-                {col.header}
+                {col.sortable ? (
+                  <TableSortLabel
+                    active={sortKey === col.key}
+                    direction={sortKey === col.key ? sortDir : 'asc'}
+                    onClick={() => onSort?.(col.key)}
+                  >
+                    {col.header}
+                  </TableSortLabel>
+                ) : (
+                  col.header
+                )}
               </TableCell>
             ))}
           </TableRow>

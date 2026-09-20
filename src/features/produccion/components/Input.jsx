@@ -1,10 +1,6 @@
 import { TextField, InputAdornment } from '@mui/material'
 
-/**
- * Input de texto/número/fecha del panel administrativo.
- * leftIcon: ícono opcional que se muestra a la izquierda (ej: lupa de búsqueda).
- */
-export function Input({ placeholder, value, onChange, leftIcon, type = 'text', min, fullWidth = true }) {
+export function Input({ placeholder, value, onChange, leftIcon, type = 'text', min, fullWidth = true, sx }) {
   return (
     <TextField
       size="small"
@@ -20,12 +16,15 @@ export function Input({ placeholder, value, onChange, leftIcon, type = 'text', m
             {leftIcon}
           </InputAdornment>
         ) : undefined,
-        sx: {
+      }}
+      sx={{
+        '& .MuiOutlinedInput-root': {
           bgcolor: 'background.paper',
           borderRadius: 1.5,
           fontSize: 14,
           '& fieldset': { borderColor: 'divider' },
         },
+        ...sx, // 👈 ahora se mergea a nivel de TextField root, pisando el selector anidado también
       }}
     />
   )
