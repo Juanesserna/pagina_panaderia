@@ -9,7 +9,7 @@ const variantColor = {
 }
 
 const variantBg = {
-  success: 'rgba(110,139,61,0.12)',
+  success: 'rgba(213, 128, 42, 0.12)',
   danger: 'rgba(192,57,43,0.12)',
   warning: 'rgba(242,169,60,0.12)',
   accent: 'rgba(192,133,82,0.12)',
