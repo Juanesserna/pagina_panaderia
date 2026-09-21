@@ -7,6 +7,8 @@ export const ROUTES = {
   INSUMOS: '/insumos',
   PRODUCCION: '/produccion',
   PRODUCTOS: '/productos',
+  NUEVO_PRODUCTO: '/productos/nuevo',
+  AGREGAR_RECETA: '/productos/nuevo/receta',
   PROVEEDORES: '/proveedores',
   ROLES: '/roles',
   USUARIOS: '/usuarios',

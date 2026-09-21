@@ -1,126 +1,121 @@
-import { useState, useMemo } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useState } from "react";
 import {
-  Box,
-  Stack,
-  Typography,
-  IconButton,
-  Badge,
-  Avatar,
-  Menu,
-  MenuItem,
-  Divider,
-  ListItemIcon,
-  useTheme,
-} from '@mui/material'
-import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined'
-import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined'
-import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone'
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
-import LogoutIcon from '@mui/icons-material/Logout'
-import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined'
-import { useColorMode } from '../../app/providers/ThemeProvider'
-import { ROUTES } from '../../app/router/routes'
+  AppBar, Toolbar, Typography, IconButton, Badge, Menu, MenuItem, Box, Avatar, Divider, Button,
+} from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+import { Bell, User, ChevronDown, LogOut, Check, Sun, Moon } from "lucide-react";
+import { useColorMode } from "@app/providers/ThemeProvider";
 
-// Título de página según la ruta activa (mismo texto que el ítem del Sidebar).
-const TITLES = {
-  [ROUTES.DASHBOARD]: 'Dashboard',
-  [ROUTES.VENTAS]: 'Ventas',
-  [ROUTES.PRODUCCION]: 'Producción',
-  [ROUTES.INSUMOS]: 'Insumos',
-  [ROUTES.COMPRAS]: 'Compras',
-  [ROUTES.PROVEEDORES]: 'Proveedores',
-  [ROUTES.CATEGORIAS]: 'Categorías',
-  [ROUTES.PRODUCTOS]: 'Productos',
-  [ROUTES.ROLES]: 'Roles',
-  [ROUTES.USUARIOS]: 'Usuarios',
-}
+const SAMPLE_NOTIFICATIONS = [
+  { id: "1", title: "Stock bajo", message: "Harina de trigo por debajo del mínimo requerido.", time: "hace 5 min", read: false, type: "warning" },
+];
 
-// TODO: reemplazar por el usuario real cuando exista auth conectado.
-const usuarioMock = { nombre: 'Ana Martínez', rol: 'Administrador' }
+const PAGE_TITLES = {
+  dashboard: "Dashboard", ventas: "Ventas", produccion: "Producción", compras: "Compras",
+  proveedores: "Proveedores", insumos: "Insumos", productos: "Productos",
+  usuarios: "Usuarios", categorias: "Categorías", roles: "Roles",
+};
 
-export default function Header() {
-  const theme = useTheme()
-  const location = useLocation()
-  const { mode, toggleColorMode } = useColorMode()
+export function Header({ page }) {
+  const theme = useTheme();
+  const { mode, toggleMode } = useColorMode();
+  const isDark = mode === "dark";
 
-  const titulo = useMemo(() => TITLES[location.pathname] ?? '', [location.pathname])
+  const [notifAnchor, setNotifAnchor] = useState(null);
+  const [userAnchor, setUserAnchor] = useState(null);
+  const [notifications, setNotifications] = useState(SAMPLE_NOTIFICATIONS);
 
-  const [anchorEl, setAnchorEl] = useState(null)
-  const openMenu = Boolean(anchorEl)
+  const unread = notifications.filter((n) => !n.read).length;
+  const markAllRead = () => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+
+  const typeColor = {
+    info: theme.palette.info.main,
+    warning: theme.palette.warning.main,
+    success: theme.palette.success.main,
+    danger: theme.palette.error.main,
+  };
 
   return (
-    <Box
-      component="header"
+    <AppBar
+      position="sticky"
+      elevation={0}
       sx={{
-        height: 64,
-        px: 3,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        borderBottom: `1px solid ${theme.alhorno.border}`,
-        bgcolor: theme.alhorno.surface,
-        position: 'sticky',
         top: 0,
-        zIndex: 10,
+        zIndex: theme.zIndex.appBar,
+        bgcolor: isDark ? '#16110D' : theme.palette.background.paper,
+        borderBottom: `1px solid ${theme.palette.divider}`,
+        borderRadius: 0,
+        color: theme.palette.text.primary,
+        flexShrink: 0,
       }}
     >
-      <Typography variant="h6" fontWeight={600}>
-        {titulo}
-      </Typography>
+      <Toolbar
+        sx={{
+          minHeight: 48,
+          '@media (min-width:600px)': { minHeight: 48 },
+          gap: 1.5,
+          py: 0.5,
+        }}
+      >
+        <Typography sx={{ fontSize: 15, fontWeight: 600 }}>{PAGE_TITLES[page] ?? page}</Typography>
+        <Box sx={{ flex: 1 }} />
 
-      <Stack direction="row" spacing={1} alignItems="center">
-        <IconButton onClick={toggleColorMode} title={mode === 'light' ? 'Modo oscuro' : 'Modo claro'}>
-          {mode === 'light' ? <DarkModeOutlinedIcon fontSize="small" /> : <LightModeOutlinedIcon fontSize="small" />}
+        <IconButton onClick={toggleMode} title={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+          size="small"
+          sx={{ color: theme.palette.text.secondary, "&:hover": { bgcolor: theme.palette.accentDim, color: theme.palette.text.primary } }}>
+          {isDark ? <Sun size={16} /> : <Moon size={16} />}
         </IconButton>
 
-        <IconButton title="Notificaciones">
-          <Badge color="error" variant="dot">
-            <NotificationsNoneIcon fontSize="small" />
-          </Badge>
+        <IconButton onClick={(e) => setNotifAnchor(e.currentTarget)}
+          size="small"
+          sx={{ color: theme.palette.text.secondary, "&:hover": { bgcolor: theme.palette.accentDim, color: theme.palette.text.primary } }}>
+          <Badge variant="dot" color="error" invisible={unread === 0}><Bell size={16} /></Badge>
         </IconButton>
-
-        <Stack
-          direction="row"
-          spacing={1}
-          alignItems="center"
-          onClick={(e) => setAnchorEl(e.currentTarget)}
-          sx={{ cursor: 'pointer', pl: 1, borderLeft: `1px solid ${theme.alhorno.border}` }}
-        >
-          <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: 13 }}>
-            {usuarioMock.nombre
-              .split(' ')
-              .map((n) => n[0])
-              .slice(0, 2)
-              .join('')}
-          </Avatar>
-          <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-            <Typography variant="body2" fontWeight={600} lineHeight={1.2}>
-              {usuarioMock.nombre}
-            </Typography>
-            <Typography variant="caption" sx={{ color: theme.alhorno.textMuted }}>
-              {usuarioMock.rol}
-            </Typography>
+        <Menu anchorEl={notifAnchor} open={Boolean(notifAnchor)} onClose={() => setNotifAnchor(null)}
+          PaperProps={{ sx: { width: 320, bgcolor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}` } }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", px: 2, py: 1.5, borderBottom: `1px solid ${theme.palette.divider}` }}>
+            <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Notificaciones {unread > 0 && `(${unread})`}</Typography>
+            {unread > 0 && (
+              <Button size="small" startIcon={<Check size={11} />} onClick={markAllRead} sx={{ fontSize: 12, textTransform: "none" }}>
+                Marcar todo
+              </Button>
+            )}
           </Box>
-          <KeyboardArrowDownIcon fontSize="small" sx={{ color: theme.alhorno.textMuted }} />
-        </Stack>
+          {notifications.map((n) => (
+            <MenuItem key={n.id}
+              onClick={() => setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)))}
+              sx={{ alignItems: "flex-start", gap: 1.5, bgcolor: !n.read ? theme.palette.accentDim : "transparent", whiteSpace: "normal" }}>
+              <Box sx={{ mt: 0.75, width: 8, height: 8, borderRadius: "50%", bgcolor: typeColor[n.type], flexShrink: 0 }} />
+              <Box sx={{ minWidth: 0 }}>
+                <Typography sx={{ fontSize: 12, fontWeight: 600 }}>{n.title}</Typography>
+                <Typography sx={{ fontSize: 12, color: theme.palette.text.secondary }}>{n.message}</Typography>
+                <Typography sx={{ fontSize: 11, color: theme.palette.text.disabled }}>{n.time}</Typography>
+              </Box>
+            </MenuItem>
+          ))}
+        </Menu>
 
-        <Menu anchorEl={anchorEl} open={openMenu} onClose={() => setAnchorEl(null)}>
-          <MenuItem onClick={() => setAnchorEl(null)}>
-            <ListItemIcon>
-              <PersonOutlinedIcon fontSize="small" />
-            </ListItemIcon>
-            Mi perfil
-          </MenuItem>
+        <IconButton onClick={(e) => setUserAnchor(e.currentTarget)} sx={{ gap: 1, borderRadius: 1.5, px: 1, py: 0.5, "&:hover": { bgcolor: theme.palette.accentDim } }}>
+          <Avatar sx={{ width: 28, height: 28, fontSize: 12, bgcolor: theme.palette.accentDim, color: theme.palette.primary.main }}>AM</Avatar>
+          <Box sx={{ display: { xs: "none", sm: "flex" }, flexDirection: "column", alignItems: "flex-start", ml: 1 }}>
+            <Typography sx={{ fontSize: 12, fontWeight: 500, lineHeight: 1.2 }}>Ana Martínez</Typography>
+            <Typography sx={{ fontSize: 12, color: theme.palette.text.secondary, lineHeight: 1.2 }}>Administrador</Typography>
+          </Box>
+          <ChevronDown size={12} style={{ marginLeft: 4 }} />
+        </IconButton>
+        <Menu anchorEl={userAnchor} open={Boolean(userAnchor)} onClose={() => setUserAnchor(null)}
+          PaperProps={{ sx: { width: 208, bgcolor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}` } }}>
+          <Box sx={{ px: 2, py: 1.5, borderBottom: `1px solid ${theme.palette.divider}` }}>
+            <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Ana Martínez</Typography>
+            <Typography sx={{ fontSize: 12, color: theme.palette.text.secondary }}>ana@alhorno.mx</Typography>
+          </Box>
+          <MenuItem sx={{ gap: 1.5 }}><User size={13} /> Mi perfil</MenuItem>
           <Divider />
-          <MenuItem onClick={() => setAnchorEl(null)}>
-            <ListItemIcon>
-              <LogoutIcon fontSize="small" />
-            </ListItemIcon>
-            Cerrar sesión
+          <MenuItem sx={{ gap: 1.5, color: theme.palette.error.main, "&:hover": { bgcolor: theme.palette.error.dim } }}>
+            <LogOut size={13} /> Cerrar sesión
           </MenuItem>
         </Menu>
-      </Stack>
-    </Box>
-  )
+      </Toolbar>
+    </AppBar>
+  );
 }
