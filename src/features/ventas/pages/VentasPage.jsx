@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { Box, Stack, Typography, IconButton, Divider, Collapse, Autocomplete, TextField, OutlinedInput, InputAdornment, MenuItem } from '@mui/material'
 import { useTheme, alpha } from '@mui/material/styles'
 import {
@@ -41,6 +41,76 @@ function FilterLabel({ children }) {
     </Typography>
   )
 }
+
+// ---------- Sistema de notificaciones (toasts) ----------
+
+// Paleta calcada de la referencia: fondo pastel sólido, punto de color saturado,
+// título en negrita con un tono oscuro del mismo color, y descripción en un tono intermedio.
+const notificacionEstilos = {
+  exito: { bg: '#DCE6D0', dot: '#5B7F44', titulo: '#2F3B22', texto: '#586B45' },
+  advertencia: { bg: '#F5DFB3', dot: '#C97A45', titulo: '#4A2E17', texto: '#7A5230' },
+  error: { bg: '#F2D4D4', dot: '#C0392B', titulo: '#6B1E1E', texto: '#8A3D3D' },
+}
+
+function Notificacion({ tipo, titulo, mensaje }) {
+  const s = notificacionEstilos[tipo] || notificacionEstilos.exito
+  return (
+    <Box
+      sx={{
+        bgcolor: s.bg,
+        borderRadius: 2,
+        px: 2.25,
+        py: 1.5,
+        minWidth: 270,
+        maxWidth: 340,
+        boxShadow: '0 8px 24px rgba(0,0,0,0.14)',
+        animation: 'ah-notif-in 0.25s ease-out',
+        '@keyframes ah-notif-in': {
+          from: { opacity: 0, transform: 'translateX(24px)' },
+          to: { opacity: 1, transform: 'translateX(0)' },
+        },
+      }}
+    >
+      <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: s.dot, mb: 0.75 }} />
+      <Typography sx={{ fontWeight: 700, fontSize: 13.5, color: s.titulo, lineHeight: 1.3 }}>{titulo}</Typography>
+      <Typography sx={{ fontSize: 12.5, color: s.texto, mt: 0.25 }}>{mensaje}</Typography>
+    </Box>
+  )
+}
+
+function NotificacionesContainer({ notificaciones }) {
+  if (notificaciones.length === 0) return null
+  return (
+    <Box
+      sx={{
+        position: 'fixed',
+        top: 20,
+        right: 20,
+        zIndex: 2000,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 1.25,
+        pointerEvents: 'none',
+      }}
+    >
+      {notificaciones.map((n) => (
+        <Box key={n.id} sx={{ pointerEvents: 'auto' }}>
+          <Notificacion tipo={n.tipo} titulo={n.titulo} mensaje={n.mensaje} />
+        </Box>
+      ))}
+    </Box>
+  )
+}
+
+// Detecta cualquier carácter que no sea letra (con acentos), número o espacio.
+const contieneCaracterEspecial = (texto) => /[^a-zA-Z0-9À-ÿ\s]/.test(texto || '')
+
+// Normaliza texto (minúsculas y sin tildes) para comparar nombres de producto.
+const normalizarTexto = (s) =>
+  (s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
 
 export default function VentasPage() {
   const theme = useTheme()
@@ -101,6 +171,43 @@ export default function VentasPage() {
   const [abonoMetodo, setAbonoMetodo] = useState('efectivo')
   const abonoInputRef = useRef(null)
   const [abonoAConfirmarEliminar, setAbonoAConfirmarEliminar] = useState(null)
+
+  // ---------- Notificaciones ----------
+  const [notificaciones, setNotificaciones] = useState([])
+  const timersNotificacionRef = useRef({})
+
+  const mostrarNotificacion = (tipo, titulo, mensaje) => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    setNotificaciones((prev) => [...prev, { id, tipo, titulo, mensaje }])
+    timersNotificacionRef.current[id] = setTimeout(() => {
+      setNotificaciones((prev) => prev.filter((n) => n.id !== id))
+      delete timersNotificacionRef.current[id]
+    }, 4000)
+  }
+
+  useEffect(() => {
+    // Limpia cualquier timer pendiente al desmontar el componente.
+    return () => {
+      Object.values(timersNotificacionRef.current).forEach(clearTimeout)
+    }
+  }, [])
+
+  // Evita que la advertencia se dispare en cada tecleo: solo avisa cuando el
+  // campo pasa de "sin caracteres especiales" a "con caracteres especiales".
+  const clienteTuvoCaracterEspecialRef = useRef(false)
+  const productoTuvoCaracterEspecialRef = useRef(false)
+
+  const validarCaracterEspecial = (valor, ref) => {
+    const tieneEspecial = contieneCaracterEspecial(valor)
+    if (tieneEspecial && !ref.current) {
+      mostrarNotificacion(
+        'advertencia',
+        'Carácter no permitido',
+        'Evita usar símbolos especiales en el formulario de ventas'
+      )
+    }
+    ref.current = tieneEspecial
+  }
 
   const handleClickCargarTransferencia = (id) => {
     setUploadingVentaId(id)
@@ -331,6 +438,8 @@ export default function VentasPage() {
     setNuevoEstado('pendiente')
     setProductoAutocomplete(null)
     setCantidadSeleccionada(1)
+    clienteTuvoCaracterEspecialRef.current = false
+    productoTuvoCaracterEspecialRef.current = false
   }
 
   const nextId = () => {
@@ -348,8 +457,23 @@ export default function VentasPage() {
     setShowVentaModal(true)
   }
 
+  // El producto "Pan francés" se usa como caso de referencia sin stock cuando el
+  // catálogo no trae un campo `stock` explícito. Si `catalogoPanaderia` ya maneja
+  // stock por producto, basta con revisar `productoAutocomplete.stock === 0`.
+  const productoSinStock = (producto) => {
+    if (!producto) return false
+    if (typeof producto.stock === 'number') return producto.stock <= 0
+    return normalizarTexto(producto.nombre) === 'pan frances'
+  }
+
   const handleAgregarProducto = () => {
     if (!productoAutocomplete || cantidadSeleccionada <= 0) return
+
+    if (productoSinStock(productoAutocomplete)) {
+      mostrarNotificacion('error', 'Sin stock disponible', `${productoAutocomplete.nombre} no cuenta con stock disponible`)
+      return
+    }
+
     setFormItems((prev) => {
       const existente = prev.find((i) => i.nombre === productoAutocomplete.nombre)
       if (existente) {
@@ -390,6 +514,7 @@ export default function VentasPage() {
     }
     setVentas((prev) => [nuevaVenta, ...prev])
     setShowVentaModal(false)
+    mostrarNotificacion('exito', 'Venta registrada', `La venta ${nuevaVenta.id} se creó correctamente`)
   }
 
   const completados = ventas.filter((v) => v.estado === 'completado').length
@@ -489,6 +614,8 @@ export default function VentasPage() {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <NotificacionesContainer notificaciones={notificaciones} />
+
       <input ref={transferenciaInputRef} type="file" accept="image/*" hidden onChange={handleImagenTransferenciaSeleccionada} />
       <input ref={abonoInputRef} type="file" accept="image/*" hidden onChange={handleImagenAbonoSeleccionada} />
 
@@ -1068,6 +1195,7 @@ export default function VentasPage() {
                 getOptionLabel={(c) => `${c.nit} — ${c.nombre}`}
                 value={clienteSeleccionado}
                 onChange={(_, value) => setClienteSeleccionado(value)}
+                onInputChange={(_, value) => validarCaracterEspecial(value, clienteTuvoCaracterEspecialRef)}
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -1115,6 +1243,7 @@ export default function VentasPage() {
                 getOptionLabel={(p) => p.nombre}
                 value={productoAutocomplete}
                 onChange={(_, value) => setProductoAutocomplete(value)}
+                onInputChange={(_, value) => validarCaracterEspecial(value, productoTuvoCaracterEspecialRef)}
                 renderOption={(props, p) => (
                   <li {...props} key={p.nombre}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: 13 }}>
