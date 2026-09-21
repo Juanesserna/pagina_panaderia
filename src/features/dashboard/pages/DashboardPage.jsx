@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTheme } from '@mui/material/styles'
 import { Box, Stack, Typography, IconButton, ClickAwayListener, Popper, Paper, Checkbox } from '@mui/material'
 import {
   IconTrendingUp,
@@ -411,9 +412,6 @@ function FilterPanel({ anchorEl, onClose, initialRange, onApply, onReset }) {
 }
 
 // ── Toast flotante de exportación ─────────────────────────────────────────
-// Estilo tomado del mockup de Figma compartido: fondo teal claro, punto de
-// estado, título en negrita y subtítulo en gris. Se autodestruye a los 4s
-// (el temporizador vive en DashboardPage, este componente solo pinta).
 
 function ExportToast({ open }) {
   if (!open) return null
@@ -459,6 +457,7 @@ function ExportToast({ open }) {
 // ── Página principal ──────────────────────────────────────────────────────
 
 export default function DashboardPage() {
+  const theme = useTheme()
   const [showExport, setShowExport] = useState(false)
   const [filterAnchor, setFilterAnchor] = useState(null)
   const [dateRange, setDateRange] = useState(() => getLast7DaysRange())
@@ -489,7 +488,7 @@ export default function DashboardPage() {
           <Typography sx={{ fontSize: 12, color: 'text.dim', mt: 0.25 }}>Resumen de operaciones</Typography>
         </Box>
 
-        <Stack direction="row" spacing={1.5} alignItems="center">
+        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ ml: 'auto' }}>
           <Button
             variant={filterAnchor ? 'primary' : 'secondary'}
             size="sm"
@@ -548,7 +547,7 @@ export default function DashboardPage() {
             <XAxis dataKey="name" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} />
             <Tooltip />
-            <Bar dataKey="compras" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="compras" radius={[4, 4, 0, 0]} fill={theme.palette.primary.main} />
           </BarChart>
         </ChartCard>
 
