@@ -200,6 +200,114 @@ const nuevoFormItem = () => ({
   cantidadDisponible: 1,
 })
 
+// ── Subcomponente de edición ────────────────────────────────────────────────
+
+function EditForm({ compra, onSave, onClose }) {
+  const [proveedor, setProveedor] = useState(compra.proveedor)
+  const [categoria, setCategoria] = useState(compra.categoria)
+  const [estado, setEstado] = useState(compra.estado)
+  const [notas, setNotas] = useState(compra.notas)
+  const [solicitante, setSolicitante] = useState(compra.solicitante)
+  const [detalle, setDetalle] = useState(compra.detalle.map((d) => ({ ...d })))
+
+  const handleDetalleChange = (i, field, val) => {
+    const updated = [...detalle]
+    updated[i] = { ...updated[i], [field]: field === 'cantidad' ? parseInt(val) || 1 : val }
+    setDetalle(updated)
+  }
+
+  const handleSubmit = () => {
+    onSave({
+      ...compra,
+      proveedor,
+      categoria,
+      estado,
+      notas,
+      solicitante,
+      detalle,
+      cantidadItems: detalle.length,
+    })
+  }
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Typography sx={dimLabelSx}>Proveedor</Typography>
+          <Select
+            options={PROVIDERS.map((p) => ({ value: `${p.id} - ${p.name}`, label: `${p.id} - ${p.name}` }))}
+            value={proveedor}
+            onChange={(e) => setProveedor(e.target.value)}
+          />
+        </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Typography sx={dimLabelSx}>Categoría</Typography>
+          <Select options={CATEGORIES.map((c) => ({ value: c, label: c }))} value={categoria} onChange={(e) => setCategoria(e.target.value)} />
+        </Box>
+      </Box>
+
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Typography sx={dimLabelSx}>Estado</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, bgcolor: estadoDotColor[estado] }} />
+            <Select options={estadoOptions} value={estado} onChange={(e) => setEstado(e.target.value)} />
+          </Box>
+        </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Typography sx={dimLabelSx}>Solicitante</Typography>
+          <Input value={solicitante} onChange={(e) => setSolicitante(e.target.value)} />
+        </Box>
+      </Box>
+
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <Typography sx={dimLabelSx}>Ítems</Typography>
+        {detalle.map((item, idx) => (
+          <Box key={idx} sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 1 }}>
+            <Input placeholder="Insumo" value={item.nombre} onChange={(e) => handleDetalleChange(idx, 'nombre', e.target.value)} />
+            <Input type="number" placeholder="Cant." value={item.cantidad} onChange={(e) => handleDetalleChange(idx, 'cantidad', e.target.value)} />
+            <Input placeholder="Unidad" value={item.unidad} onChange={(e) => handleDetalleChange(idx, 'unidad', e.target.value)} />
+            <Input placeholder="Valor" value={item.precio} onChange={(e) => handleDetalleChange(idx, 'precio', e.target.value)} />
+          </Box>
+        ))}
+      </Box>
+
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        <Typography sx={dimLabelSx}>Observaciones</Typography>
+        <Box
+          component="textarea"
+          rows={2}
+          value={notas}
+          onChange={(e) => setNotas(e.target.value)}
+          placeholder="Notas internas…"
+          sx={{
+            width: '100%',
+            p: 1.25,
+            fontSize: 13,
+            fontFamily: 'inherit',
+            borderRadius: 1.5,
+            border: '1px solid',
+            borderColor: 'divider',
+            bgcolor: 'transparent',
+            outline: 'none',
+            resize: 'none',
+            color: 'text.primary',
+          }}
+        />
+      </Box>
+
+      <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ pt: 1 }}>
+        <Button variant="secondary" size="sm" onClick={onClose}>
+          Cancelar
+        </Button>
+        <Button variant="primary" size="sm" onClick={handleSubmit}>
+          Guardar cambios
+        </Button>
+      </Stack>
+    </Box>
+  )
+}
+
 // ── Componente principal ────────────────────────────────────────────────
 
 export default function ComprasPage() {
@@ -566,114 +674,6 @@ export default function ComprasPage() {
     },
   ]
 
-  // ── Subcomponente de edición ─────────────────────────────────────────
-
-  const EditForm = ({ compra }) => {
-    const [proveedor, setProveedor] = useState(compra.proveedor)
-    const [categoria, setCategoria] = useState(compra.categoria)
-    const [estado, setEstado] = useState(compra.estado)
-    const [notas, setNotas] = useState(compra.notas)
-    const [solicitante, setSolicitante] = useState(compra.solicitante)
-    const [detalle, setDetalle] = useState(compra.detalle.map((d) => ({ ...d })))
-
-    const handleDetalleChange = (i, field, val) => {
-      const updated = [...detalle]
-      updated[i] = { ...updated[i], [field]: field === 'cantidad' ? parseInt(val) || 1 : val }
-      setDetalle(updated)
-    }
-
-    const handleSubmit = () => {
-      handleGuardarEdicion({
-        ...compra,
-        proveedor,
-        categoria,
-        estado,
-        notas,
-        solicitante,
-        detalle,
-        cantidadItems: detalle.length,
-      })
-    }
-
-    return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            <Typography sx={dimLabelSx}>Proveedor</Typography>
-            <Select
-              options={PROVIDERS.map((p) => ({ value: `${p.id} - ${p.name}`, label: `${p.id} - ${p.name}` }))}
-              value={proveedor}
-              onChange={(e) => setProveedor(e.target.value)}
-            />
-          </Box>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            <Typography sx={dimLabelSx}>Categoría</Typography>
-            <Select options={CATEGORIES.map((c) => ({ value: c, label: c }))} value={categoria} onChange={(e) => setCategoria(e.target.value)} />
-          </Box>
-        </Box>
-
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            <Typography sx={dimLabelSx}>Estado</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, bgcolor: estadoDotColor[estado] }} />
-              <Select options={estadoOptions} value={estado} onChange={(e) => setEstado(e.target.value)} />
-            </Box>
-          </Box>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            <Typography sx={dimLabelSx}>Solicitante</Typography>
-            <Input value={solicitante} onChange={(e) => setSolicitante(e.target.value)} />
-          </Box>
-        </Box>
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <Typography sx={dimLabelSx}>Ítems</Typography>
-          {detalle.map((item, idx) => (
-            <Box key={idx} sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 1 }}>
-              <Input placeholder="Insumo" value={item.nombre} onChange={(e) => handleDetalleChange(idx, 'nombre', e.target.value)} />
-              <Input type="number" placeholder="Cant." value={item.cantidad} onChange={(e) => handleDetalleChange(idx, 'cantidad', e.target.value)} />
-              <Input placeholder="Unidad" value={item.unidad} onChange={(e) => handleDetalleChange(idx, 'unidad', e.target.value)} />
-              <Input placeholder="Valor" value={item.precio} onChange={(e) => handleDetalleChange(idx, 'precio', e.target.value)} />
-            </Box>
-          ))}
-        </Box>
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-          <Typography sx={dimLabelSx}>Observaciones</Typography>
-          <Box
-            component="textarea"
-            rows={2}
-            value={notas}
-            onChange={(e) => setNotas(e.target.value)}
-            placeholder="Notas internas…"
-            sx={{
-              width: '100%',
-              p: 1.25,
-              fontSize: 13,
-              fontFamily: 'inherit',
-              borderRadius: 1.5,
-              border: '1px solid',
-              borderColor: 'divider',
-              bgcolor: 'transparent',
-              outline: 'none',
-              resize: 'none',
-              color: 'text.primary',
-            }}
-          />
-        </Box>
-
-        <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ pt: 1 }}>
-          <Button variant="secondary" size="sm" onClick={() => setShowEditModal(false)}>
-            Cancelar
-          </Button>
-          <Button variant="primary" size="sm" onClick={handleSubmit}>
-            Guardar cambios
-          </Button>
-        </Stack>
-      </Box>
-    )
-  }
-
   // ── Render principal ──────────────────────────────────────────────────
 
   return (
@@ -696,7 +696,7 @@ export default function ComprasPage() {
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: '1fr auto 1fr',
+            gridTemplateColumns: '1fr 1fr',
             alignItems: 'center',
             columnGap: 2,
             px: 2.5,
@@ -705,8 +705,7 @@ export default function ComprasPage() {
             borderColor: 'divider',
           }}
         >
-          <Box />
-          <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'text.primary', textAlign: 'center', whiteSpace: 'nowrap' }}>
+          <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'text.primary', textAlign: 'left', whiteSpace: 'nowrap' }}>
             Órdenes de compra
           </Typography>
           <Stack direction="row" flexWrap="wrap" alignItems="center" justifyContent="flex-end" sx={{ gap: 3, columnGap: 3, rowGap: 1.5 }}>
@@ -1160,7 +1159,7 @@ export default function ComprasPage() {
         title={`Editar orden ${editTarget?.id ?? ''}`}
         size="md"
       >
-        {editTarget && <EditForm compra={editTarget} />}
+        {editTarget && <EditForm compra={editTarget} onSave={handleGuardarEdicion} onClose={() => { setShowEditModal(false); setEditTarget(null) }} />}
       </Modal>
 
       {/* Modal: Eliminar */}
