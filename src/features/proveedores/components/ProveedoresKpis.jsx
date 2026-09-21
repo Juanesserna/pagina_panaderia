@@ -1,0 +1,25 @@
+import { Grid } from "@mui/material";
+import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
+import { KPICard } from "@shared/components";
+
+/**
+ * Tres KPIs en fila (Total / Activos / Inactivos), igual que en Figma.
+ * Usa la API nueva de Grid (size={{...}}) — la misma que usa InsumosKpis.
+ */
+export function ProveedoresKpis({ kpis }) {
+    return (
+        <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 4 }}>
+                <KPICard title="Total Proveedores" value={kpis.total} icon={<LocalShippingIcon />} variant="accent" />
+            </Grid>
+            <Grid size={{ xs: 6, sm: 4 }}>
+                <KPICard title="Activos" value={kpis.activos} icon={<CheckCircleIcon />} variant="success" />
+            </Grid>
+            <Grid size={{ xs: 6, sm: 4 }}>
+                <KPICard title="Inactivos" value={kpis.inactivos} icon={<CancelIcon />} variant="danger" />
+            </Grid>
+        </Grid>
+    );
+}
