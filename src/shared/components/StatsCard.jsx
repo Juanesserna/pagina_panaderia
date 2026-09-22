@@ -1,8 +1,9 @@
 import { Card, CardContent, Box, Typography, useTheme } from '@mui/material'
 import { alpha } from '@mui/material/styles'
+import { IconArrowUpRight } from '@tabler/icons-react'
 import { fonts } from '@app/theme/colors'
 
-export default function StatsCard({ icon, label, value, iconBgColor }) {
+export default function StatsCard({ icon, label, value, iconBgColor, subtitle }) {
   const theme = useTheme()
   const colorMain = theme.palette[iconBgColor]?.main || theme.palette.primary.main
   const bgColor = alpha(colorMain, 0.12)
@@ -81,6 +82,30 @@ export default function StatsCard({ icon, label, value, iconBgColor }) {
         >
           {value}
         </Typography>
+
+        {subtitle && (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              mt: 1,
+            }}
+          >
+            <IconArrowUpRight size={14} color={theme.palette.success.main} />
+            <Typography
+              variant="caption"
+              sx={{
+                fontFamily: fonts.sans,
+                fontSize: 12,
+                fontWeight: 500,
+                color: theme.palette.success.main,
+              }}
+            >
+              {subtitle}
+            </Typography>
+          </Box>
+        )}
       </CardContent>
     </Card>
   )

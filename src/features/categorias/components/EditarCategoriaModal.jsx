@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -25,22 +25,14 @@ export default function EditarCategoriaModal({
   categoria,
 }) {
   const theme = useTheme()
-  const [nombre, setNombre] = useState('')
-  const [tipo, setTipo] = useState('Producto')
-  const [estado, setEstado] = useState('Activa')
-
-  useEffect(() => {
-    if (open && categoria) {
-      setNombre(categoria.nombre)
-      setTipo(categoria.tipo)
-      setEstado(categoria.estado)
-    }
-  }, [open, categoria])
+  const [nombre, setNombre] = useState(categoria?.nombre ?? '')
+  const [tipo, setTipo] = useState(categoria?.tipo ?? 'Producto')
+  const [estado, setEstado] = useState(categoria?.estado ?? 'Activa')
 
   const handleSubmit = (e) => {
     e.preventDefault()
     if (nombre.trim()) {
-      onSubmit(categoria.id, { nombre: nombre.trim(), tipo, estado })
+      onSubmit(categoria?.id, { nombre: nombre.trim(), tipo, estado })
       setNombre('')
       setTipo('Producto')
       setEstado('Activa')

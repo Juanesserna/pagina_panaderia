@@ -1,11 +1,10 @@
 import {
-  Card,
-  CardContent,
   Box,
   Typography,
   TextField,
   Button,
   InputAdornment,
+  Divider,
   useTheme,
 } from '@mui/material'
 import { IconCirclePlus, IconFilter, IconSearch } from '@tabler/icons-react'
@@ -15,16 +14,10 @@ export default function CatalogoProductos({ onBuscar, onNuevoClick, onFiltrarCli
   const theme = useTheme()
 
   return (
-    <Card
-      variant="outlined"
-      sx={{
-        borderRadius: 3,
-        borderColor: theme.palette.divider,
-        backgroundColor: 'background.paper',
-      }}
-    >
-      <CardContent
+    <Box sx={{ width: '100%' }}>
+      <Box
         sx={{
+          p: 3,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -99,7 +92,8 @@ export default function CatalogoProductos({ onBuscar, onNuevoClick, onFiltrarCli
             Filtrar
           </Button>
         </Box>
-      </CardContent>
-    </Card>
+      </Box>
+      <Divider />
+    </Box>
   )
 }

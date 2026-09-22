@@ -28,67 +28,6 @@ function buildTheme(mode) {
     shape: {
       borderRadius: 8,
     },
-    components: {
-      MuiOutlinedInput: {
-        defaultProps: {
-          notched: false,
-        },
-        styleOverrides: {
-          root: {
-            borderRadius: 8,
-            overflow: 'hidden',
-            backgroundColor: '#F0EBE3',
-          },
-          input: {
-            borderRadius: 8,
-          },
-          notchedOutline: {
-            borderRadius: 8,
-            borderColor: '#E0D5C7',
-          },
-        },
-      },
-      MuiTextField: {
-        defaultProps: {
-          variant: 'outlined',
-        },
-      },
-      MuiSelect: {
-        styleOverrides: {
-          root: { 
-            borderRadius: 8,
-            backgroundColor: '#F0EBE3',
-          },
-          select: {
-            borderRadius: 8,
-            overflow: 'hidden',
-          },
-          outlined: {
-            borderRadius: 8,
-          },
-        },
-      },
-      MuiButton: {
-        styleOverrides: {
-          root: { borderRadius: 8 },
-        },
-      },
-      MuiChip: {
-        styleOverrides: {
-          root: { borderRadius: 8 },
-        },
-      },
-      MuiCard: {
-        styleOverrides: {
-          root: { borderRadius: 16 },
-        },
-      },
-      MuiPaper: {
-        styleOverrides: {
-          root: { borderRadius: 16 },
-        },
-      },
-    },
     typography: {
       fontFamily: fonts.sans,
       fontSize: 13,
@@ -130,10 +69,29 @@ function buildTheme(mode) {
         },
       },
       MuiOutlinedInput: {
+        defaultProps: {
+          notched: false,
+        },
         styleOverrides: {
-          root: { borderRadius: 8, fontSize: '0.8125rem' },
-          notchedOutline: { borderColor: c.border },
-          input: { padding: '7.5px 10px' },
+          root: {
+            borderRadius: 8,
+            overflow: 'hidden',
+            backgroundColor: '#F0EBE3',
+            fontSize: '0.8125rem',
+          },
+          input: {
+            borderRadius: 8,
+            padding: '7.5px 10px',
+          },
+          notchedOutline: {
+            borderRadius: 8,
+            borderColor: c.border,
+          },
+        },
+      },
+      MuiTextField: {
+        defaultProps: {
+          variant: 'outlined',
         },
       },
       MuiInputBase: {
@@ -142,8 +100,26 @@ function buildTheme(mode) {
         },
       },
       MuiSelect: {
+        defaultProps: {
+          notched: false,
+        },
         styleOverrides: {
-          select: { fontSize: '0.8125rem' },
+          root: {
+            borderRadius: 8,
+            backgroundColor: '#F0EBE3',
+            overflow: 'hidden',
+          },
+          select: {
+            fontSize: '0.8125rem',
+            backgroundColor: '#F0EBE3',
+            borderRadius: 8,
+            overflow: 'hidden',
+          },
+          outlined: {
+            backgroundColor: '#F0EBE3',
+            borderRadius: 8,
+            overflow: 'hidden',
+          },
         },
       },
       MuiMenuItem: {

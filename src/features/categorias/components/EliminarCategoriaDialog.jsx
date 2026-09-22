@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogActions,
   Divider,
+  Box,
   IconButton,
   Typography,
   Button,
@@ -40,8 +41,7 @@ export default function EliminarCategoriaDialog({
           alignItems: 'center',
           justifyContent: 'space-between',
           px: 3,
-          py: 2.5,
-          borderBottom: `1px solid ${theme.palette.divider}`,
+          py: 2,
           backgroundColor: 'background.paper',
         }}
       >
@@ -69,24 +69,27 @@ export default function EliminarCategoriaDialog({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ px: 3, py: 3 }}>
-        <Typography
-          sx={{
-            fontFamily: fonts.sans,
-            fontSize: 14,
-            color: theme.palette.text.primary,
-            lineHeight: 1.5,
-          }}
-        >
-          ¿Seguro que deseas eliminar "{nombreCategoria}"? Esta acción no se puede deshacer.
-        </Typography>
-        <Divider sx={{ my: 2 }} />
+      <DialogContent sx={{ p: 0 }}>
+        <Box sx={{ px: 3, pt: 1.5, pb: 0 }}>
+          <Typography
+            sx={{
+              fontFamily: fonts.sans,
+              fontSize: 14,
+              color: theme.palette.text.primary,
+              lineHeight: 1.5,
+            }}
+          >
+            ¿Seguro que deseas eliminar "{nombreCategoria}"? Esta acción no se puede deshacer.
+          </Typography>
+        </Box>
+        <Divider sx={{ width: '100%', mt: 1.5, mb: 0 }} />
       </DialogContent>
 
       <DialogActions
         sx={{
           px: 3,
-          py: 2,
+          pt: 1.5,
+          pb: 2,
           backgroundColor: 'background.paper',
           justifyContent: 'flex-end',
           gap: 1.5,
@@ -116,11 +119,21 @@ export default function EliminarCategoriaDialog({
           color="error"
           onClick={onConfirm}
           sx={{
+            color: '#FFFFFF',
             textTransform: 'none',
             fontSize: 13,
             fontWeight: 500,
             px: 2.5,
             py: 1,
+            '&:hover': {
+              color: '#FFFFFF',
+            },
+            '&.Mui-focusVisible': {
+              color: '#FFFFFF',
+            },
+            '&.Mui-disabled': {
+              color: '#FFFFFF',
+            },
           }}
         >
           Eliminar
