@@ -1,9 +1,7 @@
 import { useState } from 'react'
 import { Box, Stack, Typography, Badge } from '@mui/material'
 import { IconSearch, IconPlus, IconFilter } from '@tabler/icons-react'
-import { Input } from '@features/insumos/components/Input'
-import { Button } from '@features/insumos/components/Button'
-import { Pagination } from '@features/insumos/components/Pagination'
+import { Input, Button, Pagination } from '@shared/components'
 
 import { useInsumos } from '../hooks/useInsumos'
 import { InsumosKpis } from '../components/InsumosKpis'
@@ -48,17 +46,6 @@ export function InsumosPage() {
 
   const [showFiltros, setShowFiltros] = useState(false)
   const hayFiltros = filtrosActivosCount > 0
-
-  if (vista === 'crear' || vista === 'editar') {
-    return (
-      <FormularioInsumo
-        modo={vista}
-        insumo={seleccionado}
-        onGuardar={handleGuardar}
-        onCancelar={() => setVista('lista')}
-      />
-    )
-  }
 
   if (vista === 'detalle' && seleccionado) {
     return (
@@ -179,6 +166,14 @@ export function InsumosPage() {
           <Pagination page={page} total={filtered.length} pageSize={pageSize} onPageChange={setPage} />
         </Stack>
       </Box>
+
+      <FormularioInsumo
+        open={vista === 'crear' || vista === 'editar'}
+        modo={vista === 'editar' ? 'editar' : 'crear'}
+        insumo={seleccionado}
+        onGuardar={handleGuardar}
+        onCancelar={() => setVista('lista')}
+      />
 
       <EliminarInsumoDialog
         open={modalEliminar}
