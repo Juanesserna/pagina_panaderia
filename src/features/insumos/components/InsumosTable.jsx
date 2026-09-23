@@ -44,6 +44,19 @@ const COLUMNS = [
   { key: "acciones", label: "", align: "right" },
 ];
 
+// Jerarquía de texto igual a la de Producción: el dato principal
+// (código, nombre, stock actual) va oscuro/negrita; los datos secundarios
+// (categoría, unidad, stock mínimo, costo promedio) van en gris y en el
+// mismo tamaño de letra entre sí, para que ninguna columna se vea "distinta"
+// por accidente.
+const secundariaCellSx = { ...tableBodyCellSx, fontSize: 12.5, color: "text.secondary" };
+
+// Tabla más compacta (menos alto por fila) que la del resto de módulos,
+// pedido puntual para Insumos -- se sobreescribe solo aquí, sin tocar
+// tableHeadCellSx/tableBodyCellSx de shared.
+const compactoHeadSx = { ...tableHeadCellSx, py: 0.9, px: 2 };
+const compactoPy = { py: 1, px: 2 };
+
 export function InsumosTable({ rows, sortKey, sortDir, onSort, onVer, onEditar, onCambiarEstado, onEliminar }) {
   if (rows.length === 0) {
     return (
@@ -61,7 +74,7 @@ export function InsumosTable({ rows, sortKey, sortDir, onSort, onVer, onEditar, 
         <TableHead>
           <TableRow>
             {COLUMNS.map((col) => (
-              <TableCell key={col.key} align={col.align ?? "left"} sx={tableHeadCellSx}>
+              <TableCell key={col.key} align={col.align ?? "left"} sx={compactoHeadSx}>
                 {col.sortable ? (
                   <TableSortLabel
                     active={sortKey === col.key}
@@ -83,25 +96,25 @@ export function InsumosTable({ rows, sortKey, sortDir, onSort, onVer, onEditar, 
             const ev = getEstadoVisual(r);
             return (
               <TableRow key={r.id} hover>
-                <TableCell sx={codigoCellSx}>{formatoCodigo(r.id)}</TableCell>
-                <TableCell sx={nombreCellSx}>{r.nombre}</TableCell>
-                <TableCell sx={tableBodyCellSx}>{nombreCategoria(r.idCategoria)}</TableCell>
-                <TableCell align="center" sx={tableBodyCellSx}>
+                <TableCell sx={{ ...codigoCellSx, ...compactoPy }}>{formatoCodigo(r.id)}</TableCell>
+                <TableCell sx={{ ...nombreCellSx, ...compactoPy }}>{r.nombre}</TableCell>
+                <TableCell sx={{ ...secundariaCellSx, ...compactoPy }}>{nombreCategoria(r.idCategoria)}</TableCell>
+                <TableCell align="center" sx={{ ...secundariaCellSx, ...compactoPy }}>
                   {unidadAbrev(r.idUnidadMedida)}
                 </TableCell>
-                <TableCell align="right" sx={{ ...tableBodyCellSx, fontWeight: 600 }}>
+                <TableCell align="right" sx={{ ...tableBodyCellSx, ...compactoPy, fontWeight: 600 }}>
                   {r.stockActual}
                 </TableCell>
-                <TableCell align="right" sx={tableBodyCellSx}>
+                <TableCell align="right" sx={{ ...secundariaCellSx, ...compactoPy }}>
                   {r.stockMinimo}
                 </TableCell>
-                <TableCell align="right" sx={tableBodyCellSx}>
+                <TableCell align="right" sx={{ ...secundariaCellSx, ...compactoPy }}>
                   {formatoMoneda(r.costoPromedio)}
                 </TableCell>
-                <TableCell sx={tableBodyCellSx}>
+                <TableCell sx={{ ...tableBodyCellSx, ...compactoPy }}>
                   <StatusBadge variant={estadoVisualVariant[ev]}>{ev}</StatusBadge>
                 </TableCell>
-                <TableCell align="right" sx={{ ...tableBodyCellSx, whiteSpace: "nowrap" }}>
+                <TableCell align="right" sx={{ ...tableBodyCellSx, ...compactoPy, whiteSpace: "nowrap" }}>
                   <Stack direction="row" spacing={0.25} justifyContent="flex-end">
                     <IconButton size="small" title="Ver detalle" sx={accionIconSx} onClick={() => onVer(r)}>
                       <VisibilityOutlinedIcon fontSize="small" />

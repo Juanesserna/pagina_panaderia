@@ -1,5 +1,5 @@
 import { Box, Button, MenuItem, TextField } from "@mui/material";
-import { FormField, filtrosPanelSx, filtroFieldSx } from "@shared/components";
+import { FormField, filtrosPanelSx } from "@shared/components";
 import { getCategorias, getUnidadesMedida } from "../services/insumosService";
 
 const NIVELES_STOCK = [
@@ -8,6 +8,20 @@ const NIVELES_STOCK = [
     { value: "normal", label: "Stock Normal" },
     { value: "sin", label: "Sin Stock" },
 ];
+
+// Overrides SOLO para este panel (Insumos), igual que en Proveedores:
+// el panel queda casi blanco (como el resto de la tarjeta) y son los
+// CAMPOS los que llevan el tono tostado (surface2). Se sobreescribe acá
+// nomás para no tocar filtrosPanelStyles.js, que usa también Producción.
+const panelSxLocal = { ...filtrosPanelSx, bgcolor: "background.paper" };
+
+const filtroFieldSxLocal = {
+    bgcolor: (theme) => theme.alhorno.surface2,
+    "& .MuiOutlinedInput-root": { bgcolor: (theme) => theme.alhorno.surface2 },
+    "& .MuiOutlinedInput-notchedOutline": { borderColor: "divider" },
+    "& .MuiOutlinedInput-input": { paddingTop: "9px", paddingBottom: "9px" },
+    "& .MuiSelect-select": { paddingTop: "9px", paddingBottom: "9px" },
+};
 
 /**
  * Filtros en línea, debajo del toolbar de la tabla (no lateral, no drawer).
@@ -20,7 +34,7 @@ export function FiltrosInsumosPanel({ filtrosActivos, onChange, onLimpiar }) {
     const set = (campo) => (e) => onChange({ ...filtrosActivos, [campo]: e.target.value });
 
     return (
-        <Box sx={filtrosPanelSx}>
+        <Box sx={panelSxLocal}>
             <Box sx={{ flex: "1 1 170px", minWidth: 150 }}>
                 <FormField label="Categoría">
                     <TextField
@@ -29,7 +43,7 @@ export function FiltrosInsumosPanel({ filtrosActivos, onChange, onLimpiar }) {
                         fullWidth
                         value={filtrosActivos.idCategoria}
                         onChange={set("idCategoria")}
-                        sx={filtroFieldSx}
+                        sx={filtroFieldSxLocal}
                     >
                         <MenuItem value="">Todas</MenuItem>
                         {categorias.map((c) => (
@@ -49,7 +63,7 @@ export function FiltrosInsumosPanel({ filtrosActivos, onChange, onLimpiar }) {
                         fullWidth
                         value={filtrosActivos.estado}
                         onChange={set("estado")}
-                        sx={filtroFieldSx}
+                        sx={filtroFieldSxLocal}
                     >
                         <MenuItem value="">Todos</MenuItem>
                         <MenuItem value="true">Activo</MenuItem>
@@ -66,7 +80,7 @@ export function FiltrosInsumosPanel({ filtrosActivos, onChange, onLimpiar }) {
                         fullWidth
                         value={filtrosActivos.nivelStock}
                         onChange={set("nivelStock")}
-                        sx={filtroFieldSx}
+                        sx={filtroFieldSxLocal}
                     >
                         {NIVELES_STOCK.map((n) => (
                             <MenuItem key={n.value || "todos"} value={n.value}>
@@ -85,7 +99,7 @@ export function FiltrosInsumosPanel({ filtrosActivos, onChange, onLimpiar }) {
                         fullWidth
                         value={filtrosActivos.idUnidadMedida}
                         onChange={set("idUnidadMedida")}
-                        sx={filtroFieldSx}
+                        sx={filtroFieldSxLocal}
                     >
                         <MenuItem value="">Todas</MenuItem>
                         {unidades.map((u) => (
@@ -106,7 +120,7 @@ export function FiltrosInsumosPanel({ filtrosActivos, onChange, onLimpiar }) {
                         placeholder="0"
                         value={filtrosActivos.stockMinimoDesde}
                         onChange={set("stockMinimoDesde")}
-                        sx={filtroFieldSx}
+                        sx={filtroFieldSxLocal}
                     />
                 </FormField>
             </Box>
@@ -120,7 +134,7 @@ export function FiltrosInsumosPanel({ filtrosActivos, onChange, onLimpiar }) {
                         placeholder="Sin límite"
                         value={filtrosActivos.stockMinimoHasta}
                         onChange={set("stockMinimoHasta")}
-                        sx={filtroFieldSx}
+                        sx={filtroFieldSxLocal}
                     />
                 </FormField>
             </Box>

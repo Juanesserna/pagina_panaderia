@@ -49,6 +49,15 @@ function CuerpoFormulario({ modo, insumo, onGuardar, onCancelar }) {
               disabled
               value={modo === 'editar' && insumo ? formatoCodigo(insumo.id) : 'Se asigna al guardar'}
               onChange={() => { }}
+              sx={{
+                bgcolor: 'transparent',
+                '&.Mui-disabled': { bgcolor: 'transparent' },
+                '& .MuiOutlinedInput-notchedOutline': { borderStyle: 'dashed' },
+                '& .MuiOutlinedInput-input.Mui-disabled': {
+                  WebkitTextFillColor: 'currentColor',
+                  color: 'text.dim',
+                },
+              }}
             />
           </FormField>
           <FormField label="Estado">
