@@ -50,9 +50,18 @@ function CuerpoFormulario({ modo, proveedor, onGuardar, onCancelar }) {
               disabled
               value={modo === 'editar' && proveedor ? formatoCodigo(proveedor.id) : 'Se asigna al guardar'}
               onChange={() => { }}
+              sx={{
+                bgcolor: 'transparent',
+                '&.Mui-disabled': { bgcolor: 'transparent' },
+                '& .MuiOutlinedInput-notchedOutline': { borderStyle: 'dashed' },
+                '& .MuiOutlinedInput-input.Mui-disabled': {
+                  WebkitTextFillColor: 'currentColor',
+                  color: 'text.dim',
+                },
+              }}
             />
           </FormField>
-          <FormField label="Estado inicial">
+          <FormField label="Estado">
             <Select
               options={[
                 { value: 'true', label: 'Activo' },

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Box, Stack, Typography, IconButton, OutlinedInput, InputAdornment } from '@mui/material'
+import { Box, Stack, Typography, IconButton, OutlinedInput, InputAdornment, Snackbar } from '@mui/material'
 import {
   IconSearch,
   IconPlus,
@@ -189,6 +189,9 @@ const sortAccessors = {
 
 const PAGE_SIZE = 8
 
+// Duración (ms) de las notificaciones de confirmación
+const NOTIF_DURATION = 3000
+
 const dimLabelSx = { fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.dim' }
 
 // Fondo/borde beige cálido usado en los campos del modal "Nueva orden de compra",
@@ -348,6 +351,16 @@ export default function ComprasPage() {
   const [showEstadoModal, setShowEstadoModal] = useState(false)
   const [compraEstadoModal, setCompraEstadoModal] = useState(null)
 
+  // Notificación temporal (3 s) para confirmar acciones del usuario
+  const [notif, setNotif] = useState({ open: false, title: '', message: '' })
+
+  const notificar = (title, message) => setNotif({ open: true, title, message })
+
+  const cerrarNotif = (_, reason) => {
+    if (reason === 'clickaway') return
+    setNotif((prev) => ({ ...prev, open: false }))
+  }
+
   // Formulario "Nueva compra"
   const [formItems, setFormItems] = useState([nuevoFormItem()])
   const [formProvider, setFormProvider] = useState(PROVIDERS[0].id)
@@ -405,6 +418,7 @@ export default function ComprasPage() {
     if (!compraEstadoModal) return
     handleCambiarEstado(compraEstadoModal.id, nuevoEstado)
     cerrarModalEstado()
+    notificar('Estado actualizado', 'Cambios de estado realizados con exito')
   }
 
   // ── Filtrado + ordenamiento ──────────────────────────────────────────
@@ -543,12 +557,14 @@ export default function ComprasPage() {
     }
     setCompras((prev) => [nuevaCompra, ...prev])
     setShowCreateModal(false)
+    notificar('Orden registrada', 'Nueva orden registrada con exito')
   }
 
   const handleGuardarEdicion = (updated) => {
     setCompras((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
     setShowEditModal(false)
     setEditTarget(null)
+    notificar('Orden actualizada', 'Cambios realizados con exito')
   }
 
   const handleConfirmarEliminar = () => {
@@ -557,6 +573,7 @@ export default function ComprasPage() {
     setShowDeleteModal(false)
     setDeleteTarget(null)
     if (paginated.length === 1 && page > 1) setPage((p) => p - 1)
+    notificar('Orden eliminada', 'Compra eliminada de forma exitosa')
   }
 
   // ── KPIs ──────────────────────────────────────────────────────────────
@@ -1295,6 +1312,35 @@ export default function ComprasPage() {
           </Stack>
         </Box>
       </Modal>
+
+      {/* Notificación de confirmación (misma línea visual que el toast de Ventas; se cierra sola a los 3 s) */}
+      <Snackbar
+        open={notif.open}
+        autoHideDuration={NOTIF_DURATION}
+        onClose={cerrarNotif}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        sx={{ top: { xs: 72, sm: 72 } }}
+      >
+        <Box
+          role="status"
+          sx={{
+            minWidth: 280,
+            maxWidth: 340,
+            px: 2.5,
+            py: 1.75,
+            borderRadius: '16px',
+            bgcolor: '#DCE5D0',
+            boxShadow: '0 4px 16px rgba(60, 50, 30, 0.12)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 0.5,
+          }}
+        >
+          <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: '#5E8C3A' }} />
+          <Typography sx={{ fontSize: 14, fontWeight: 700, color: '#2E2A24', lineHeight: 1.3 }}>{notif.title}</Typography>
+          <Typography sx={{ fontSize: 13, color: '#5A5F4E', lineHeight: 1.35 }}>{notif.message}</Typography>
+        </Box>
+      </Snackbar>
     </Box>
   )
 }

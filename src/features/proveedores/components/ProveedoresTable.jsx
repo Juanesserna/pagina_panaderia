@@ -27,6 +27,14 @@ import {
 } from "@shared/components";
 import { formatoCodigo, getEstadoVisual, estadoVisualVariant } from "../utils/proveedoresHelpers";
 
+// Tabla más compacta (menos alto por fila), igual que la de Insumos, para
+// que ambos módulos se vean como parte del mismo sistema.
+// El fontWeight de acá abajo SOLO se aplica en esta tabla (Proveedores):
+// letra más delgada que la del resto de los módulos, pedido puntual.
+const compactoHeadSx = { ...tableHeadCellSx, py: 0.9, px: 2, fontWeight: 500 };
+const compactoPy = { py: 1, px: 2, fontWeight: 400 };
+const compactoPyNombre = { py: 1, px: 2, fontWeight: 500 };
+
 const COLUMNS = [
   { key: "id", label: "Código", sortable: true },
   { key: "nombre", label: "Nombre Empresa", sortable: true },
@@ -64,7 +72,7 @@ export function ProveedoresTable({
         <TableHead>
           <TableRow>
             {COLUMNS.map((col) => (
-              <TableCell key={col.key} align={col.align ?? "left"} sx={tableHeadCellSx}>
+              <TableCell key={col.key} align={col.align ?? "left"} sx={compactoHeadSx}>
                 {col.sortable ? (
                   <TableSortLabel
                     active={sortKey === col.key}
@@ -86,18 +94,18 @@ export function ProveedoresTable({
             const ev = getEstadoVisual(r);
             return (
               <TableRow key={r.id} hover>
-                <TableCell sx={codigoCellSx}>{formatoCodigo(r.id)}</TableCell>
-                <TableCell sx={nombreCellSx}>{r.nombre}</TableCell>
-                <TableCell sx={monoCellSx}>{r.nit}</TableCell>
-                <TableCell sx={{ ...tableBodyCellSx, whiteSpace: "nowrap" }}>
+                <TableCell sx={{ ...codigoCellSx, ...compactoPy }}>{formatoCodigo(r.id)}</TableCell>
+                <TableCell sx={{ ...nombreCellSx, ...compactoPyNombre }}>{r.nombre}</TableCell>
+                <TableCell sx={{ ...monoCellSx, ...compactoPy }}>{r.nit}</TableCell>
+                <TableCell sx={{ ...tableBodyCellSx, ...compactoPy, whiteSpace: "nowrap" }}>
                   {r.nombreContacto}
                 </TableCell>
-                <TableCell sx={{ ...tableBodyCellSx, whiteSpace: "nowrap" }}>{r.telefono}</TableCell>
-                <TableCell sx={linkCellSx}>{r.email}</TableCell>
-                <TableCell sx={tableBodyCellSx}>
+                <TableCell sx={{ ...tableBodyCellSx, ...compactoPy, whiteSpace: "nowrap" }}>{r.telefono}</TableCell>
+                <TableCell sx={{ ...linkCellSx, ...compactoPy }}>{r.email}</TableCell>
+                <TableCell sx={{ ...tableBodyCellSx, ...compactoPy }}>
                   <StatusBadge variant={estadoVisualVariant[ev]}>{ev}</StatusBadge>
                 </TableCell>
-                <TableCell align="right" sx={{ ...tableBodyCellSx, whiteSpace: "nowrap" }}>
+                <TableCell align="right" sx={{ ...tableBodyCellSx, ...compactoPy, whiteSpace: "nowrap" }}>
                   <Stack direction="row" spacing={0.25} justifyContent="flex-end">
                     <IconButton size="small" title="Ver detalle" sx={accionIconSx} onClick={() => onVer(r)}>
                       <VisibilityOutlinedIcon fontSize="small" />
@@ -131,4 +139,3 @@ export function ProveedoresTable({
     </Box>
   );
 }
-//hola
