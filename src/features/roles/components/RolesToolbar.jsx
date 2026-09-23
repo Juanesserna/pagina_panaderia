@@ -13,9 +13,10 @@ export default function RolesToolbar({ search, onSearchChange, onNuevoRol }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'flex-end',
-        gap: 1.5,
+        gap: 2,
         p: 2.5,
-        flexWrap: 'wrap',
+        borderBottom: '1px solid',
+        borderColor: 'divider'
       }}
     >
       <TextField

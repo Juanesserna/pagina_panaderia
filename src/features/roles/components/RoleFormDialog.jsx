@@ -41,7 +41,6 @@ function FieldLabel({ children }) {
 
 export default function RoleFormDialog({ open, mode, initialData, onClose, onSubmit, submitting }) {
   const isCreate = mode === 'create'
-
   const [nombre, setNombre] = useState('')
   const [estado, setEstado] = useState('Activo')
   const [modulos, setModulos] = useState([])
@@ -61,7 +60,11 @@ export default function RoleFormDialog({ open, mode, initialData, onClose, onSub
   const handleSubmit = () => {
     setTouched(true)
     if (!isValid) return
-    onSubmit({ nombre: nombre.trim(), estado, modulos })
+    if (isCreate) {
+      onSubmit({ nombre: nombre.trim(), estado, modulos })
+    } else {
+      onSubmit({ nombre: nombre.trim(), modulos })
+    }
   }
 
   const codigoMostrado = isCreate ? siguienteCodigo() : initialData?.codigo ?? ''
@@ -83,7 +86,17 @@ export default function RoleFormDialog({ open, mode, initialData, onClose, onSub
       </DialogTitle>
 
       <DialogContent sx={{ pt: 3 }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: '0.8fr 1.6fr 1fr', gap: 2, mb: 3 }}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: isCreate
+              ? '0.8fr 1.6fr 1fr'   
+              : '1fr 1fr',          
+            gap: 2,
+            mb: 3,
+          }}
+        >
+          {/* ID */}
           <Box>
             <FieldLabel>ID</FieldLabel>
             <TextField
@@ -103,6 +116,7 @@ export default function RoleFormDialog({ open, mode, initialData, onClose, onSub
             />
           </Box>
 
+          {/* NOMBRE DEL ROL */}
           <Box>
             <FieldLabel>Nombre del rol</FieldLabel>
             <TextField
@@ -124,16 +138,19 @@ export default function RoleFormDialog({ open, mode, initialData, onClose, onSub
             />
           </Box>
 
-          <Box>
-            <FieldLabel>Estado</FieldLabel>
-            <TextField select value={estado} onChange={(e) => setEstado(e.target.value)} fullWidth sx={inputSx}>
-              {ESTADOS.map((e) => (
-                <MenuItem key={e} value={e}>
-                  {e}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Box>
+          {/* ESTADO — SOLO al crear */}
+          {isCreate && (
+            <Box>
+              <FieldLabel>Estado</FieldLabel>
+              <TextField select value={estado} onChange={(e) => setEstado(e.target.value)} fullWidth sx={inputSx}>
+                {ESTADOS.map((e) => (
+                  <MenuItem key={e} value={e}>
+                    {e}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Box>
+          )}
         </Box>
 
         <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 1.2 }}>

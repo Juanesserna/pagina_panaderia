@@ -17,6 +17,12 @@ const seccionTituloSx = { fontSize: 14, fontWeight: 700, color: 'text.primary' }
 const gridSx = { display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }
 const anchoCompletoSx = { gridColumn: { sm: '1 / -1' } }
 
+// El theme global fija el fondo de MuiOutlinedInput/MuiSelect en un hex
+// claro fijo (#F0EBE3), que no cambia en modo oscuro. Se sobreescribe acá
+// con el token que sí varía por modo (alhorno.surface2), sin tocar el
+// theme para no afectar otros módulos.
+const campoSx = { bgcolor: (theme) => theme.alhorno.surface2 }
+
 function CuerpoFormulario({ modo, insumo, onGuardar, onCancelar }) {
   const [form, setForm] = useState(
     insumo
@@ -68,6 +74,7 @@ function CuerpoFormulario({ modo, insumo, onGuardar, onCancelar }) {
               ]}
               value={form.estado ? 'true' : 'false'}
               onChange={(e) => set('estado', e.target.value === 'true')}
+              sx={campoSx}
             />
           </FormField>
 
@@ -76,6 +83,7 @@ function CuerpoFormulario({ modo, insumo, onGuardar, onCancelar }) {
               placeholder="Ej: Harina de trigo fortificada"
               value={form.nombre}
               onChange={(e) => set('nombre', e.target.value)}
+              sx={campoSx}
             />
           </FormField>
 
@@ -87,6 +95,7 @@ function CuerpoFormulario({ modo, insumo, onGuardar, onCancelar }) {
               ]}
               value={form.idCategoria}
               onChange={(e) => set('idCategoria', e.target.value ? Number(e.target.value) : '')}
+              sx={campoSx}
             />
           </FormField>
 
@@ -95,6 +104,7 @@ function CuerpoFormulario({ modo, insumo, onGuardar, onCancelar }) {
               placeholder="Descripción del insumo…"
               value={form.descripcion}
               onChange={(e) => set('descripcion', e.target.value)}
+              sx={campoSx}
             />
           </FormField>
         </Box>
@@ -111,10 +121,11 @@ function CuerpoFormulario({ modo, insumo, onGuardar, onCancelar }) {
               ]}
               value={form.idUnidadMedida}
               onChange={(e) => set('idUnidadMedida', e.target.value ? Number(e.target.value) : '')}
+              sx={campoSx}
             />
           </FormField>
           <FormField label="Stock mínimo" required>
-            <Input type="number" min={0} value={form.stockMinimo} onChange={(e) => set('stockMinimo', e.target.value)} />
+            <Input type="number" min={0} value={form.stockMinimo} onChange={(e) => set('stockMinimo', e.target.value)} sx={campoSx} />
           </FormField>
         </Box>
 
