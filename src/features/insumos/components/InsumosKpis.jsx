@@ -3,11 +3,11 @@ import InventoryIcon from "@mui/icons-material/Inventory2";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import CancelIcon from "@mui/icons-material/Cancel";
-import { KPICard } from "@shared/components";
+import { KPICard } from "./KPICard";
 
 export function InsumosKpis({ kpis }) {
     return (
-        <Grid container spacing={2}>
+        <Grid container spacing={2} alignItems="stretch">
             <Grid size={{ xs: 6, md: 3 }}>
                 <KPICard title="Total Insumos" value={kpis.total} icon={<InventoryIcon />} variant="accent" />
             </Grid>

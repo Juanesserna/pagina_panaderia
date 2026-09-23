@@ -1,5 +1,21 @@
 import { Box, Button, MenuItem, TextField } from "@mui/material";
-import { FormField, filtrosPanelSx, filtroFieldSx } from "@shared/components";
+import { FormField, filtrosPanelSx } from "@shared/components";
+
+// Overrides SOLO para este panel (Proveedores): en el Figma de referencia
+// los roles de color quedan al revés de lo que traía el estilo compartido
+// -- la franja de filtros va casi blanca (como el resto de la tarjeta) y
+// son los CAMPOS los que llevan el tono tostado (surface2), no al revés.
+// Se sobreescribe acá nomás para no tocar filtrosPanelStyles.js, que usa
+// también Insumos.
+const panelSxLocal = { ...filtrosPanelSx, bgcolor: "background.paper" };
+
+const filtroFieldSxLocal = {
+    bgcolor: (theme) => theme.alhorno.surface2,
+    "& .MuiOutlinedInput-root": { bgcolor: (theme) => theme.alhorno.surface2 },
+    "& .MuiOutlinedInput-notchedOutline": { borderColor: "divider" },
+    "& .MuiOutlinedInput-input": { paddingTop: "9px", paddingBottom: "9px" },
+    "& .MuiSelect-select": { paddingTop: "9px", paddingBottom: "9px" },
+};
 
 /**
  * Filtros en línea, debajo del toolbar de la tabla (no lateral, no drawer).
@@ -10,16 +26,20 @@ export function FiltrosProveedoresPanel({ filtrosActivos, onChange, onLimpiar })
     const set = (campo) => (e) => onChange({ ...filtrosActivos, [campo]: e.target.value });
 
     return (
-        <Box sx={filtrosPanelSx}>
+        <Box sx={panelSxLocal}>
             <Box sx={{ flex: "1 1 130px", minWidth: 110 }}>
                 <FormField label="Estado">
                     <TextField
                         select
                         size="small"
                         fullWidth
+                        displayEmpty
                         value={filtrosActivos.estado}
                         onChange={set("estado")}
-                        sx={filtroFieldSx}
+                        sx={filtroFieldSxLocal}
+                        SelectProps={{
+                            renderValue: (v) => (v === "true" ? "Activo" : v === "false" ? "Inactivo" : "Todos"),
+                        }}
                     >
                         <MenuItem value="">Todos</MenuItem>
                         <MenuItem value="true">Activo</MenuItem>
@@ -36,7 +56,7 @@ export function FiltrosProveedoresPanel({ filtrosActivos, onChange, onLimpiar })
                         placeholder="Buscar empresa..."
                         value={filtrosActivos.nombre}
                         onChange={set("nombre")}
-                        sx={filtroFieldSx}
+                        sx={filtroFieldSxLocal}
                     />
                 </FormField>
             </Box>
@@ -49,7 +69,7 @@ export function FiltrosProveedoresPanel({ filtrosActivos, onChange, onLimpiar })
                         placeholder="Buscar NIT..."
                         value={filtrosActivos.nit}
                         onChange={set("nit")}
-                        sx={filtroFieldSx}
+                        sx={filtroFieldSxLocal}
                     />
                 </FormField>
             </Box>
@@ -62,7 +82,7 @@ export function FiltrosProveedoresPanel({ filtrosActivos, onChange, onLimpiar })
                         placeholder="Nombre contacto..."
                         value={filtrosActivos.nombreContacto}
                         onChange={set("nombreContacto")}
-                        sx={filtroFieldSx}
+                        sx={filtroFieldSxLocal}
                     />
                 </FormField>
             </Box>
@@ -76,7 +96,7 @@ export function FiltrosProveedoresPanel({ filtrosActivos, onChange, onLimpiar })
                         placeholder="correo@empresa.com"
                         value={filtrosActivos.email}
                         onChange={set("email")}
-                        sx={filtroFieldSx}
+                        sx={filtroFieldSxLocal}
                     />
                 </FormField>
             </Box>

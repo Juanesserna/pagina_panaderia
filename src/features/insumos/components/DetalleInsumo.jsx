@@ -1,11 +1,6 @@
-import { Box, Grid, Card, CardContent, Typography, Stack, Button, IconButton } from "@mui/material";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import EditIcon from "@mui/icons-material/Edit";
-import AssignmentIcon from "@mui/icons-material/Assignment";
-import Inventory2Icon from "@mui/icons-material/Inventory2";
-import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
-import { StatusBadge } from "@shared/components";
-import { LotesCard } from "./LotesCard";
+import { Box, Typography, Stack } from '@mui/material'
+import { Modal, ModalFooter, Button, StatusBadge } from '@shared/components'
+import { LotesCard } from './LotesCard'
 import {
     formatoCodigo,
     formatoMoneda,
@@ -13,125 +8,81 @@ import {
     unidadAbrev,
     getEstadoVisual,
     estadoVisualVariant,
-} from "../utils/insumosHelpers";
+} from '../utils/insumosHelpers'
 
-function CampoInfo({ label, value }) {
+// Misma tipografía que usa FormularioInsumo, para que "Ver detalle" y
+// "Editar/Nuevo insumo" se vean como parte del mismo módulo.
+const seccionTituloSx = { fontSize: 14, fontWeight: 700, color: 'text.primary' }
+const gridSx = { display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }
+const anchoCompletoSx = { gridColumn: { sm: '1 / -1' } }
+
+function CampoInfo({ label, value, sx }) {
     return (
-        <Box>
-            <Typography variant="caption" color="text.secondary" sx={{ textTransform: "uppercase" }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, ...sx }}>
+            <Typography
+                sx={{
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.6,
+                    fontWeight: 600,
+                    color: 'text.secondary',
+                    fontSize: 11.5,
+                }}
+            >
                 {label}
             </Typography>
-            <Typography variant="body2">{value || "—"}</Typography>
+            <Typography sx={{ fontSize: 13.5, color: 'text.primary' }}>{value || '—'}</Typography>
         </Box>
-    );
+    )
 }
 
-export function DetalleInsumo({ insumo, onEditar, onVolver }) {
-    const estadoVisual = getEstadoVisual(insumo);
+/**
+ * Detalle de insumo como modal flotante sobre la lista, igual que
+ * FormularioInsumo (mismo componente <Modal>, misma tipografía y
+ * espaciado), en vez de una vista de página completa aparte.
+ */
+export function DetalleInsumo({ open, insumo, onEditar, onCerrar }) {
+    if (!insumo) return null
+    const estadoVisual = getEstadoVisual(insumo)
 
     return (
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <Stack direction="row" spacing={2} alignItems="center">
-                    <IconButton onClick={onVolver}>
-                        <ArrowBackIcon />
-                    </IconButton>
-                    <Box>
-                        <Typography variant="h6" fontWeight={600}>
-                            {insumo.nombre}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontFamily: "monospace" }}>
-                            {formatoCodigo(insumo.id)}
-                        </Typography>
-                    </Box>
+        <Modal open={open} onClose={onCerrar} title={insumo.nombre} subtitle={formatoCodigo(insumo.id)} size="lg">
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <Stack direction="row" alignItems="center" justifyContent="space-between">
+                    <Typography sx={seccionTituloSx}>Estado</Typography>
+                    <StatusBadge variant={estadoVisualVariant[estadoVisual]}>{estadoVisual}</StatusBadge>
                 </Stack>
-                <Button variant="contained" startIcon={<EditIcon />} onClick={onEditar}>
-                    Editar
-                </Button>
-            </Stack>
 
-            <Grid container spacing={3}>
-                <Grid item xs={12} md={8}>
-                    <Stack spacing={2}>
-                        <Card variant="outlined" sx={{ borderRadius: 3 }}>
-                            <CardContent>
-                                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-                                    <AssignmentIcon fontSize="small" color="primary" />
-                                    <Typography variant="subtitle2" fontWeight={600}>
-                                        Información General
-                                    </Typography>
-                                </Stack>
-                                <Grid container spacing={2}>
-                                    <Grid item xs={6}>
-                                        <CampoInfo label="Código" value={formatoCodigo(insumo.id)} />
-                                    </Grid>
-                                    <Grid item xs={6}>
-                                        <CampoInfo label="Nombre" value={insumo.nombre} />
-                                    </Grid>
-                                    <Grid item xs={6}>
-                                        <CampoInfo label="Categoría" value={nombreCategoria(insumo.idCategoria)} />
-                                    </Grid>
-                                    <Grid item xs={6}>
-                                        <CampoInfo label="Descripción" value={insumo.descripcion} />
-                                    </Grid>
-                                </Grid>
-                            </CardContent>
-                        </Card>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <Typography sx={seccionTituloSx}>Información general</Typography>
+                    <Box sx={gridSx}>
+                        <CampoInfo label="Código" value={formatoCodigo(insumo.id)} />
+                        <CampoInfo label="Categoría" value={nombreCategoria(insumo.idCategoria)} />
+                        <CampoInfo label="Nombre" value={insumo.nombre} sx={anchoCompletoSx} />
+                        <CampoInfo label="Descripción" value={insumo.descripcion} sx={anchoCompletoSx} />
+                    </Box>
+                </Box>
 
-                        <Card variant="outlined" sx={{ borderRadius: 3 }}>
-                            <CardContent>
-                                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-                                    <Inventory2Icon fontSize="small" color="primary" />
-                                    <Typography variant="subtitle2" fontWeight={600}>
-                                        Inventario
-                                    </Typography>
-                                </Stack>
-                                <Grid container spacing={2}>
-                                    <Grid item xs={4}>
-                                        <CampoInfo label="Unidad de Medida" value={unidadAbrev(insumo.idUnidadMedida)} />
-                                    </Grid>
-                                    <Grid item xs={4}>
-                                        <CampoInfo label="Stock Actual" value={insumo.stockActual} />
-                                    </Grid>
-                                    <Grid item xs={4}>
-                                        <CampoInfo label="Stock Mínimo" value={insumo.stockMinimo} />
-                                    </Grid>
-                                </Grid>
-                            </CardContent>
-                        </Card>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <Typography sx={seccionTituloSx}>Inventario</Typography>
+                    <Box sx={gridSx}>
+                        <CampoInfo label="Unidad de medida" value={unidadAbrev(insumo.idUnidadMedida)} />
+                        <CampoInfo label="Stock actual" value={`${insumo.stockActual} ${unidadAbrev(insumo.idUnidadMedida)}`} />
+                        <CampoInfo label="Stock mínimo" value={`${insumo.stockMinimo} ${unidadAbrev(insumo.idUnidadMedida)}`} />
+                        <CampoInfo label="Costo promedio" value={`${formatoMoneda(insumo.costoPromedio)} / ${unidadAbrev(insumo.idUnidadMedida)}`} />
+                    </Box>
+                </Box>
 
-                        <Card variant="outlined" sx={{ borderRadius: 3 }}>
-                            <CardContent>
-                                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                                    <AttachMoneyIcon fontSize="small" color="primary" />
-                                    <Typography variant="subtitle2" fontWeight={600}>
-                                        Costos
-                                    </Typography>
-                                </Stack>
-                                <CampoInfo
-                                    label="Costo Promedio"
-                                    value={`${formatoMoneda(insumo.costoPromedio)} / ${unidadAbrev(insumo.idUnidadMedida)}`}
-                                />
-                            </CardContent>
-                        </Card>
+                <LotesCard lotes={insumo.lotes} unidad={unidadAbrev(insumo.idUnidadMedida)} />
 
-                        <LotesCard lotes={insumo.lotes} unidad={unidadAbrev(insumo.idUnidadMedida)} />
-                    </Stack>
-                </Grid>
-
-                <Grid item xs={12} md={4}>
-                    <Card variant="outlined" sx={{ borderRadius: 3 }}>
-                        <CardContent sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                            <Typography variant="subtitle2" fontWeight={600}>
-                                Estado
-                            </Typography>
-                            <Box>
-                                <StatusBadge variant={estadoVisualVariant[estadoVisual]}>{estadoVisual}</StatusBadge>
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
-            </Grid>
-        </Box>
-    );
+                <ModalFooter>
+                    <Button variant="ghost" size="sm" onClick={onCerrar}>
+                        Cerrar
+                    </Button>
+                    <Button variant="primary" size="sm" onClick={onEditar}>
+                        Editar insumo
+                    </Button>
+                </ModalFooter>
+            </Box>
+        </Modal>
+    )
 }

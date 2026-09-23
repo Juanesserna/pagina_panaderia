@@ -17,8 +17,14 @@ const variantBg = {
 }
 
 /**
- * Tarjeta de KPI para la parte superior de cada módulo del panel
- * (ej: "Órdenes completadas", "Retrasadas", "Ventas del día", etc).
+ * Tarjeta de KPI para la parte superior del módulo de Insumos: etiqueta
+ * pequeña en mayúsculas + ícono arriba, número grande debajo. Sin línea de
+ * porcentaje/tendencia (se quitó a pedido).
+ *
+ * @param {string} title
+ * @param {number|string} value
+ * @param {JSX.Element} [icon]
+ * @param {"accent"|"success"|"warning"|"danger"|"info"} [variant]
  */
 export function KPICard({ title, value, icon, variant = 'accent' }) {
   return (
@@ -27,15 +33,15 @@ export function KPICard({ title, value, icon, variant = 'accent' }) {
         bgcolor: 'background.paper',
         border: '1px solid',
         borderColor: 'divider',
-        borderRadius: 2.0,
+        borderRadius: 2.5,
         p: 2.2,
-        paddingTop:0.5,
+        height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        gap: 2,
+        gap: 1,
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',height: 50, }}>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <Typography
           sx={{
             fontSize: 11,
@@ -58,13 +64,16 @@ export function KPICard({ title, value, icon, variant = 'accent' }) {
               justifyContent: 'center',
               bgcolor: variantBg[variant],
               color: variantColor[variant],
+              flexShrink: 0,
+              '& svg': { fontSize: 18 },
             }}
           >
             {icon}
           </Box>
         )}
       </Box>
-      <Typography sx={{ fontSize: 22, fontWeight: 700, color: 'text.primary', lineHeight: 1 }}>{value}</Typography>
+
+      <Typography sx={{ fontSize: 26, fontWeight: 700, color: 'text.primary', lineHeight: 1.1 }}>{value}</Typography>
     </Box>
   )
 }
