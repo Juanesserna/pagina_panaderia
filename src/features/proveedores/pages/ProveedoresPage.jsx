@@ -81,6 +81,7 @@ export function ProveedoresPage() {
                   setPage(1)
                 }}
                 leftIcon={<IconSearch size={13} />}
+                sx={{ bgcolor: (theme) => theme.alhorno.surface2 }}
               />
             </Box>
             <Button

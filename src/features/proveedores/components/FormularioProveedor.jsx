@@ -18,6 +18,12 @@ const seccionTituloSx = { fontSize: 14, fontWeight: 700, color: 'text.primary' }
 const gridSx = { display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }
 const anchoCompletoSx = { gridColumn: { sm: '1 / -1' } }
 
+// El theme global fija el fondo de MuiOutlinedInput/MuiSelect en un hex
+// claro fijo (#F0EBE3), que no cambia en modo oscuro. Se sobreescribe acá
+// con el token que sí varía por modo (alhorno.surface2), sin tocar el
+// theme para no afectar otros módulos.
+const campoSx = { bgcolor: (theme) => theme.alhorno.surface2 }
+
 function CuerpoFormulario({ modo, proveedor, onGuardar, onCancelar }) {
   const [form, setForm] = useState(
     proveedor
@@ -69,14 +75,15 @@ function CuerpoFormulario({ modo, proveedor, onGuardar, onCancelar }) {
               ]}
               value={form.estado ? 'true' : 'false'}
               onChange={(e) => set('estado', e.target.value === 'true')}
+              sx={campoSx}
             />
           </FormField>
 
           <FormField label="Nombre empresa" required>
-            <Input placeholder="Ej: Molinos El Trigal S.A." value={form.nombre} onChange={(e) => set('nombre', e.target.value)} />
+            <Input placeholder="Ej: Molinos El Trigal S.A." value={form.nombre} onChange={(e) => set('nombre', e.target.value)} sx={campoSx} />
           </FormField>
           <FormField label="NIT" required>
-            <Input placeholder="900.123.456-7" value={form.nit} onChange={(e) => set('nit', e.target.value)} />
+            <Input placeholder="900.123.456-7" value={form.nit} onChange={(e) => set('nit', e.target.value)} sx={campoSx} />
           </FormField>
 
           <FormField label="Descripción" sx={anchoCompletoSx}>
@@ -84,6 +91,7 @@ function CuerpoFormulario({ modo, proveedor, onGuardar, onCancelar }) {
               placeholder="Descripción del proveedor…"
               value={form.descripcion}
               onChange={(e) => set('descripcion', e.target.value)}
+              sx={campoSx}
             />
           </FormField>
         </Box>
@@ -93,16 +101,16 @@ function CuerpoFormulario({ modo, proveedor, onGuardar, onCancelar }) {
         <Typography sx={seccionTituloSx}>Contacto</Typography>
         <Box sx={gridSx}>
           <FormField label="Nombre contacto" required>
-            <Input value={form.nombreContacto} onChange={(e) => set('nombreContacto', e.target.value)} />
+            <Input value={form.nombreContacto} onChange={(e) => set('nombreContacto', e.target.value)} sx={campoSx} />
           </FormField>
           <FormField label="Teléfono" required>
-            <Input placeholder="+57 300 000 0000" value={form.telefono} onChange={(e) => set('telefono', e.target.value)} />
+            <Input placeholder="+57 300 000 0000" value={form.telefono} onChange={(e) => set('telefono', e.target.value)} sx={campoSx} />
           </FormField>
           <FormField label="Correo electrónico" required>
-            <Input type="email" placeholder="correo@empresa.com" value={form.email} onChange={(e) => set('email', e.target.value)} />
+            <Input type="email" placeholder="correo@empresa.com" value={form.email} onChange={(e) => set('email', e.target.value)} sx={campoSx} />
           </FormField>
           <FormField label="Dirección" required>
-            <Input value={form.direccion} onChange={(e) => set('direccion', e.target.value)} />
+            <Input value={form.direccion} onChange={(e) => set('direccion', e.target.value)} sx={campoSx} />
           </FormField>
         </Box>
       </Box>
