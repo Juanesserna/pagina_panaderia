@@ -12,8 +12,6 @@ import { Filter } from 'lucide-react'
 import { BRAND } from '@shared/utils/colors'
 import { ROLES, ESTADOS } from '../services/usuariosService'
 
-
-
 export default function UsuariosToolbar({
   search,
   onSearchChange,
@@ -42,7 +40,6 @@ export default function UsuariosToolbar({
         <Typography sx={{ fontWeight: 700, fontSize: 18, color: 'text.primary' }}>
           Gestión de usuarios
         </Typography>
-
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <TextField
             size="small"
@@ -55,15 +52,14 @@ export default function UsuariosToolbar({
             }}
             slotProps={{
               input: {
-              startAdornment: (
-              <InputAdornment position="start" sx={{ color: 'text.secondary' }}>
-              <Search size={18} />
-              </InputAdornment>
-               ),
+                startAdornment: (
+                  <InputAdornment position="start" sx={{ color: 'text.secondary' }}>
+                    <Search size={18} />
+                  </InputAdornment>
+                ),
               },
             }}
           />
-
           <Button
             variant="contained"
             startIcon={<AddIcon />}
@@ -72,18 +68,24 @@ export default function UsuariosToolbar({
           >
             Nuevo usuario
           </Button>
-
           <Button
             variant="outlined"
             startIcon={<Filter size={16} />}
             onClick={onToggleFilters}
-            sx={{ borderColor: 'divider', color: 'text.primary' }}
+            sx={{
+              borderColor: 'divider',       //  Borde neutro
+              color: 'text.secondary',      //  Gris neutro — igual que la referencia
+              '&:hover': {
+                borderColor: 'text.disabled',
+                color: 'text.primary',     // Se aclara sutil al pasar el cursor
+                bgcolor: 'action.hover',
+              },
+            }}
           >
             Filtrar
           </Button>
         </Box>
       </Box>
-
       {filtersOpen && (
         <Box
           sx={{
@@ -115,7 +117,6 @@ export default function UsuariosToolbar({
               ))}
             </TextField>
           </Box>
-
           <Box>
             <Typography sx={{ fontSize: 12, fontWeight: 600, color: 'text.secondary', mb: 0.5 }}>
               ESTADO
@@ -135,7 +136,6 @@ export default function UsuariosToolbar({
               ))}
             </TextField>
           </Box>
-
           {hayFiltrosActivos && (
             <Link
               component="button"
