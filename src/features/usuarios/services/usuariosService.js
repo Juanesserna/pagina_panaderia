@@ -117,13 +117,7 @@ let nextId = usuarios.length + 1
 
 const delay = (ms = 500) => new Promise((resolve) => setTimeout(resolve, ms))
 
-// Simula una falla ocasional de "red" para poder probar el flujo de
-// error + reintento pedido en el caso de uso CU.09.10.
-function maybeFail(failRate = 0.15) {
-  if (Math.random() < failRate) {
-    throw new Error('No se pudo completar la acción. Intenta de nuevo.')
-  }
-}
+
 
 export function getModulosVisibles(usuario) {
   const base = ROLE_MODULES[usuario.rol] ?? []
@@ -161,7 +155,6 @@ export function esUnicoGerente(usuario) {
 
 export async function toggleEstadoUsuario(id) {
   await delay(600)
-  maybeFail()
   usuarios = usuarios.map((u) =>
     u.id === id ? { ...u, estado: u.estado === 'Activo' ? 'Inactivo' : 'Activo' } : u
   )

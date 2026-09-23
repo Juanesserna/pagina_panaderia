@@ -51,17 +51,18 @@ export default function RolesPage() {
 
   return (
     <Box>
-      <Typography sx={{ fontWeight: 700, fontSize: 22, color: 'text.primary', mb: 0.5 }}>
+      <Typography sx={{ fontWeight: 700, fontSize: 18, color: 'text.primary', mb: 0.5 }}>
         Gestión de roles
       </Typography>
-      <Typography sx={{ fontSize: 14, color: 'text.secondary', mb: 2.5 }}>
+      <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 2.5 }}>
         Activa, edita o elimina los roles disponibles en el sistema
       </Typography>
 
       <RolesKpis kpis={kpis} />
-      <RolesInfoBanner />
+     
 
       <Paper variant="outlined" sx={{ borderColor: 'divider', borderRadius: 3, overflow: 'hidden' }}>
+        <RolesInfoBanner />
         <RolesToolbar
           search={search}
           onSearchChange={setSearch}

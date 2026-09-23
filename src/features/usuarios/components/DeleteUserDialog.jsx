@@ -41,13 +41,13 @@ export default function DeleteUserDialog({ open, usuario, esUnicoGerente, onClos
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="xs">
       <DialogTitle sx={{ fontWeight: 700 }}>
-        {bloqueado ? 'Acción no permitida' : 'Eliminar / Inhabilitar usuario'}
+        {bloqueado ? 'Acción no permitida' : ' Inhabilitar usuario'}
       </DialogTitle>
       <DialogContent>
         {bloqueado ? (
           <Alert severity="warning" icon={<WarningAmberRoundedIcon />}>
             <strong>{usuario.nombre}</strong> es el único Gerente del sistema. No se puede
-            eliminar ni inhabilitar porque el sistema debe tener al menos un Gerente activo.
+            inhabilitar porque el sistema debe tener al menos un Gerente activo.
           </Alert>
         ) : (
           <Box sx={{ fontSize: 14, color: 'text.secondary' }}>
@@ -57,8 +57,6 @@ export default function DeleteUserDialog({ open, usuario, esUnicoGerente, onClos
             <Typography sx={{ fontSize: 13 }}>
               • <strong>Inhabilitar</strong>: el usuario no podrá acceder al sistema, pero se
               conserva y puede reactivarse luego.
-              <br />• <strong>Eliminar permanentemente</strong>: el usuario se borra del sistema y
-              no puede deshacerse.
             </Typography>
           </Box>
         )}
