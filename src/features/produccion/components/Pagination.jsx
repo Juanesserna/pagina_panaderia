@@ -14,7 +14,7 @@ export function Pagination({ page, total, pageSize, onPageChange }) {
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2, flexWrap: 'wrap', gap: 1.5 }}>
-      <Typography sx={{ fontSize: 13, color: 'text.dim' }}>
+      <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }}>
         Mostrando {from}–{to} de {total} registros
       </Typography>
 

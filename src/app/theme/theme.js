@@ -4,7 +4,7 @@ import { lightColors, darkColors, fonts } from './colors'
 function buildTheme(mode) {
   const c = mode === 'dark' ? darkColors : lightColors
 
-  return createTheme({
+  const theme = createTheme({
     palette: {
       mode,
       primary: { main: c.accent, contrastText: c.buttonText },
@@ -28,67 +28,6 @@ function buildTheme(mode) {
     shape: {
       borderRadius: 8,
     },
-    components: {
-      MuiOutlinedInput: {
-        defaultProps: {
-          notched: false,
-        },
-        styleOverrides: {
-          root: {
-            borderRadius: 8,
-            overflow: 'hidden',
-            backgroundColor: '#F0EBE3',
-          },
-          input: {
-            borderRadius: 8,
-          },
-          notchedOutline: {
-            borderRadius: 8,
-            borderColor: '#E0D5C7',
-          },
-        },
-      },
-      MuiTextField: {
-        defaultProps: {
-          variant: 'outlined',
-        },
-      },
-      MuiSelect: {
-        styleOverrides: {
-          root: { 
-            borderRadius: 8,
-            backgroundColor: '#F0EBE3',
-          },
-          select: {
-            borderRadius: 8,
-            overflow: 'hidden',
-          },
-          outlined: {
-            borderRadius: 8,
-          },
-        },
-      },
-      MuiButton: {
-        styleOverrides: {
-          root: { borderRadius: 8 },
-        },
-      },
-      MuiChip: {
-        styleOverrides: {
-          root: { borderRadius: 8 },
-        },
-      },
-      MuiCard: {
-        styleOverrides: {
-          root: { borderRadius: 16 },
-        },
-      },
-      MuiPaper: {
-        styleOverrides: {
-          root: { borderRadius: 16 },
-        },
-      },
-    },
     typography: {
       fontFamily: fonts.sans,
       fontSize: 13,
@@ -103,7 +42,65 @@ function buildTheme(mode) {
       caption: { fontSize: '0.6875rem' },
       button: { textTransform: 'none', fontWeight: 600, fontSize: '0.8125rem' },
     },
+    // NOTA: antes existían dos claves `components` separadas en este mismo
+    // objeto. En un literal de JS la segunda pisa completamente a la
+    // primera, así que `MuiTextField` se estaba perdiendo en silencio.
+    // Quedan fusionadas en un solo bloque; donde un componente estaba
+    // definido en ambos bloques originales, gana la versión más específica
+    // (la que venía en el segundo bloque).
     components: {
+      MuiTextField: {
+        defaultProps: {
+          variant: 'outlined',
+        },
+      },
+      MuiOutlinedInput: {
+        defaultProps: {
+          notched: false,
+        },
+        styleOverrides: {
+          root: {
+            borderRadius: 8,
+            overflow: 'hidden',
+            backgroundColor: '#F0EBE3',
+            fontSize: '0.8125rem',
+          },
+          input: {
+            borderRadius: 8,
+            padding: '7.5px 10px',
+          },
+          notchedOutline: {
+            borderRadius: 8,
+            borderColor: c.border,
+          },
+        },
+      },
+      MuiInputBase: {
+        styleOverrides: {
+          root: { fontSize: '0.8125rem' },
+        },
+      },
+      MuiSelect: {
+        styleOverrides: {
+          root: {
+            borderRadius: 8,
+            backgroundColor: '#F0EBE3',
+          },
+          select: {
+            borderRadius: 8,
+            overflow: 'hidden',
+            fontSize: '0.8125rem',
+          },
+          outlined: {
+            borderRadius: 8,
+          },
+        },
+      },
+      MuiMenuItem: {
+        styleOverrides: {
+          root: { fontSize: '0.8125rem', minHeight: 32 },
+        },
+      },
       MuiButton: {
         styleOverrides: {
           root: { borderRadius: 8, textTransform: 'none', fontWeight: 600, boxShadow: 'none' },
@@ -117,39 +114,33 @@ function buildTheme(mode) {
           sizeSmall: { padding: 5 },
         },
       },
-      MuiCard: { styleOverrides: { root: { borderRadius: 14 } } },
-      MuiPaper: { styleOverrides: { root: { borderRadius: 14 } } },
-      MuiDialog: { styleOverrides: { paper: { borderRadius: 16 } } },
-      MuiDialogTitle: { styleOverrides: { root: { padding: '16px 20px' } } },
-      MuiDialogContent: { styleOverrides: { root: { padding: '4px 20px 20px' } } },
-      MuiDialogActions: { styleOverrides: { root: { padding: '12px 20px 20px' } } },
       MuiChip: {
         styleOverrides: {
           root: { borderRadius: 999, fontWeight: 600 },
           sizeSmall: { height: 22, fontSize: '0.6875rem' },
         },
       },
-      MuiOutlinedInput: {
+      MuiCard: {
         styleOverrides: {
-          root: { borderRadius: 8, fontSize: '0.8125rem' },
-          notchedOutline: { borderColor: c.border },
-          input: { padding: '7.5px 10px' },
+          root: { borderRadius: 14 },
         },
       },
-      MuiInputBase: {
+      MuiPaper: {
         styleOverrides: {
-          root: { fontSize: '0.8125rem' },
+          root: { borderRadius: 14 },
         },
       },
-      MuiSelect: {
-        styleOverrides: {
-          select: { fontSize: '0.8125rem' },
-        },
+      MuiDialog: {
+        styleOverrides: { paper: { borderRadius: 16 } },
       },
-      MuiMenuItem: {
-        styleOverrides: {
-          root: { fontSize: '0.8125rem', minHeight: 32 },
-        },
+      MuiDialogTitle: {
+        styleOverrides: { root: { padding: '16px 20px' } },
+      },
+      MuiDialogContent: {
+        styleOverrides: { root: { padding: '4px 20px 20px' } },
+      },
+      MuiDialogActions: {
+        styleOverrides: { root: { padding: '12px 20px 20px' } },
       },
       MuiTableCell: {
         styleOverrides: {
@@ -164,6 +155,28 @@ function buildTheme(mode) {
       },
     },
   })
+
+  // Capa de compatibilidad: algunos módulos (el de theming original) leen
+  // los tokens crudos como `theme.alhorno.*` en vez de `theme.palette.ah*`.
+  // Se expone el mismo shape que tenía el TOKENS/buildTheme viejo, tomado
+  // de los mismos colores (`c`) que ya alimentan el resto del theme, para
+  // que ambas convenciones convivan sin duplicar la fuente de verdad.
+  theme.alhorno = {
+    bg: c.bg,
+    sidebar: c.sidebar,
+    surface: c.surface,
+    surface2: c.surface2,
+    accent: c.accent,
+    text: c.text,
+    textMuted: c.textMuted,
+    border: c.border,
+    success: c.success,
+    warning: c.warning,
+    danger: c.danger,
+    info: c.info,
+  }
+
+  return theme
 }
 
 export const lightTheme = buildTheme('light')

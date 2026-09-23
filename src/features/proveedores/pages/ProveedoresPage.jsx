@@ -1,9 +1,7 @@
 import { useState } from 'react'
 import { Box, Stack, Typography, Badge } from '@mui/material'
 import { IconSearch, IconPlus, IconFilter } from '@tabler/icons-react'
-import { Input } from '@features/proveedores/components/Input'
-import { Button } from '@features/proveedores/components/Button'
-import { Pagination } from '@features/proveedores/components/Pagination'
+import { Input, Button, Pagination } from '@shared/components'
 
 import { useProveedores } from '../hooks/useProveedores'
 import { ProveedoresKpis } from '../components/ProveedoresKpis'
@@ -48,17 +46,6 @@ export function ProveedoresPage() {
 
   const [showFiltros, setShowFiltros] = useState(false)
   const hayFiltros = filtrosActivosCount > 0
-
-  if (vista === 'crear' || vista === 'editar') {
-    return (
-      <FormularioProveedor
-        modo={vista}
-        proveedor={seleccionado}
-        onGuardar={handleGuardar}
-        onCancelar={() => setVista('lista')}
-      />
-    )
-  }
 
   if (vista === 'detalle' && seleccionado) {
     return (
@@ -179,6 +166,14 @@ export function ProveedoresPage() {
           <Pagination page={page} total={filtered.length} pageSize={pageSize} onPageChange={setPage} />
         </Stack>
       </Box>
+
+      <FormularioProveedor
+        open={vista === 'crear' || vista === 'editar'}
+        modo={vista === 'editar' ? 'editar' : 'crear'}
+        proveedor={seleccionado}
+        onGuardar={handleGuardar}
+        onCancelar={() => setVista('lista')}
+      />
 
       <EliminarProveedorDialog
         open={modalEliminar}

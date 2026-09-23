@@ -1,75 +1,128 @@
-import { Box, Stack, Typography, IconButton } from '@mui/material'
-import { IconArrowLeft, IconPencil } from '@tabler/icons-react'
-import { Button } from '@features/produccion/components/Button'
-import { StatusBadge } from '@features/produccion/components/StatusBadge'
-import { CampoInfo, dimLabelSx } from './Campo'
-import { formatoCodigo, getEstadoVisual, estadoVisualVariant } from '../utils/proveedoresHelpers'
+import { Box, Grid, Card, CardContent, Typography, Stack, Button } from "@mui/material";
+import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
+import EditIcon from "@mui/icons-material/Edit";
+import BusinessIcon from "@mui/icons-material/Business";
+import PhoneIcon from "@mui/icons-material/Phone";
+import { StatusBadge } from "@shared/components";
+import { formatoCodigo, getEstadoVisual, estadoVisualVariant } from "../utils/proveedoresHelpers";
 
-const panelSx = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 1.5,
-  borderRadius: 2.5,
-  p: 2.5,
-  bgcolor: 'background.paper',
-  border: '1px solid',
-  borderColor: 'divider',
+function CampoInfo({ label, value }) {
+    return (
+        <Box>
+            <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 600, fontSize: 11.5 }}
+            >
+                {label}
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 0.25 }}>
+                {value || "—"}
+            </Typography>
+        </Box>
+    );
 }
 
 export function DetalleProveedor({ proveedor, onEditar, onVolver }) {
-  const estadoVisual = getEstadoVisual(proveedor)
+    const estadoVisual = getEstadoVisual(proveedor);
 
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, p: 1.5 }}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between">
-        <Stack direction="row" spacing={1.5} alignItems="center">
-          <IconButton onClick={onVolver} sx={{ color: 'text.secondary' }}>
-            <IconArrowLeft size={18} />
-          </IconButton>
-          <Box>
-            <Typography sx={{ fontSize: 15, fontWeight: 700, color: 'text.primary' }}>{proveedor.nombre}</Typography>
-            <Typography sx={{ fontSize: 12, fontFamily: 'monospace', color: 'text.dim' }}>
-              {formatoCodigo(proveedor.id)} · NIT {proveedor.nit}
-            </Typography>
-          </Box>
-        </Stack>
-        <Button variant="primary" size="sm" leftIcon={<IconPencil size={13} />} onClick={onEditar}>
-          Editar
-        </Button>
-      </Stack>
+    return (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
+                <Stack direction="row" spacing={2} alignItems="center">
+                    <Button
+                        onClick={onVolver}
+                        startIcon={<ArrowBackIosNewIcon sx={{ fontSize: 14 }} />}
+                        sx={{ color: "text.secondary", minWidth: 0 }}
+                    >
+                        Volver
+                    </Button>
+                    <Box>
+                        <Typography variant="h5" fontWeight={600}>
+                            {proveedor.nombre}
+                        </Typography>
+                        <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}
+                        >
+                            {formatoCodigo(proveedor.id)} · NIT {proveedor.nit}
+                        </Typography>
+                    </Box>
+                </Stack>
+                <Button variant="contained" startIcon={<EditIcon />} onClick={onEditar}>
+                    Editar
+                </Button>
+            </Stack>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '2fr 1fr' }, gap: 2.5, alignItems: 'start' }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          <Box sx={panelSx}>
-            <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'text.primary' }}>Información general</Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
-              <CampoInfo label="Código" value={formatoCodigo(proveedor.id)} />
-              <CampoInfo label="NIT" value={proveedor.nit} />
-              <CampoInfo label="Nombre empresa" value={proveedor.nombre} />
-              <CampoInfo label="Descripción" value={proveedor.descripcion} />
-            </Box>
-          </Box>
+            <Grid container spacing={3}>
+                <Grid size={{ xs: 12, md: 8 }}>
+                    <Stack spacing={3}>
+                        <Card variant="outlined" sx={{ borderRadius: 3 }}>
+                            <CardContent sx={{ p: 3 }}>
+                                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2.5 }}>
+                                    <BusinessIcon fontSize="small" color="primary" />
+                                    <Typography variant="subtitle1" fontWeight={600}>
+                                        Información General
+                                    </Typography>
+                                </Stack>
+                                <Grid container spacing={2.5}>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
+                                        <CampoInfo label="Código" value={formatoCodigo(proveedor.id)} />
+                                    </Grid>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
+                                        <CampoInfo label="NIT" value={proveedor.nit} />
+                                    </Grid>
+                                    <Grid size={{ xs: 12 }}>
+                                        <CampoInfo label="Nombre Empresa" value={proveedor.nombre} />
+                                    </Grid>
+                                    <Grid size={{ xs: 12 }}>
+                                        <CampoInfo label="Descripción" value={proveedor.descripcion} />
+                                    </Grid>
+                                </Grid>
+                            </CardContent>
+                        </Card>
 
-          <Box sx={panelSx}>
-            <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'text.primary' }}>Contacto</Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
-              <CampoInfo label="Nombre contacto" value={proveedor.nombreContacto} />
-              <CampoInfo label="Teléfono" value={proveedor.telefono} />
-              <CampoInfo label="Correo" value={proveedor.email} />
-              <CampoInfo label="Dirección" value={proveedor.direccion} />
-            </Box>
-          </Box>
+                        <Card variant="outlined" sx={{ borderRadius: 3 }}>
+                            <CardContent sx={{ p: 3 }}>
+                                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2.5 }}>
+                                    <PhoneIcon fontSize="small" color="primary" />
+                                    <Typography variant="subtitle1" fontWeight={600}>
+                                        Información de Contacto
+                                    </Typography>
+                                </Stack>
+                                <Grid container spacing={2.5}>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
+                                        <CampoInfo label="Nombre Contacto" value={proveedor.nombreContacto} />
+                                    </Grid>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
+                                        <CampoInfo label="Teléfono" value={proveedor.telefono} />
+                                    </Grid>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
+                                        <CampoInfo label="Correo" value={proveedor.email} />
+                                    </Grid>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
+                                        <CampoInfo label="Dirección" value={proveedor.direccion} />
+                                    </Grid>
+                                </Grid>
+                            </CardContent>
+                        </Card>
+                    </Stack>
+                </Grid>
+
+                <Grid size={{ xs: 12, md: 4 }}>
+                    <Card variant="outlined" sx={{ borderRadius: 3 }}>
+                        <CardContent sx={{ p: 3, display: "flex", flexDirection: "column", gap: 1.5 }}>
+                            <Typography variant="subtitle1" fontWeight={600}>
+                                Estado
+                            </Typography>
+                            <Box>
+                                <StatusBadge variant={estadoVisualVariant[estadoVisual]}>{estadoVisual}</StatusBadge>
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
         </Box>
-
-        <Box sx={panelSx}>
-          <Typography sx={dimLabelSx}>Estado</Typography>
-          <Box>
-            <StatusBadge variant={estadoVisualVariant[estadoVisual]} dot>
-              {estadoVisual}
-            </StatusBadge>
-          </Box>
-        </Box>
-      </Box>
-    </Box>
-  )
+    );
 }

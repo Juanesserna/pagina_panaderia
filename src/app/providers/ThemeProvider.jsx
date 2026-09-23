@@ -1,11 +1,15 @@
-import { createContext, useContext, useMemo, useState } from 'react'
+import { createContext, useContext, useMemo, useState, useEffect } from 'react'
 import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import { lightTheme, darkTheme } from '@app/theme/theme'
 
+// Valor por defecto del contexto. Se exponen los dos nombres de "toggle"
+// (toggleMode y toggleColorMode) para no romper ningún módulo que ya
+// dependa de uno u otro.
 const ColorModeContext = createContext({
   mode: 'light',
-  toggleMode: () => {},
+  toggleMode: () => { },
+  toggleColorMode: () => { },
 })
 
 export function useColorMode() {
@@ -13,12 +17,22 @@ export function useColorMode() {
 }
 
 export default function ThemeProvider({ children }) {
-  const [mode, setMode] = useState('light')
+  const [mode, setMode] = useState(() => {
+    if (typeof window === 'undefined') return 'light'
+    return localStorage.getItem('ah-theme-mode') || 'light'
+  })
+
+  useEffect(() => {
+    localStorage.setItem('ah-theme-mode', mode)
+  }, [mode])
+
+  const toggle = () => setMode((prev) => (prev === 'light' ? 'dark' : 'light'))
 
   const value = useMemo(
     () => ({
       mode,
-      toggleMode: () => setMode((prev) => (prev === 'light' ? 'dark' : 'light')),
+      toggleMode: toggle,
+      toggleColorMode: toggle, // alias de compatibilidad
     }),
     [mode]
   )
