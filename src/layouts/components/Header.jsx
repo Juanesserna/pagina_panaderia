@@ -71,12 +71,31 @@ export function Header({ page }) {
           sx={{ color: theme.palette.text.secondary, "&:hover": { bgcolor: theme.palette.accentDim, color: theme.palette.text.primary } }}>
           <Badge variant="dot" color="error" invisible={unread === 0}><Bell size={16} /></Badge>
         </IconButton>
-        <Menu anchorEl={notifAnchor} open={Boolean(notifAnchor)} onClose={() => setNotifAnchor(null)}
-          PaperProps={{ sx: { width: 320, bgcolor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}` } }}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", px: 2, py: 1.5, borderBottom: `1px solid ${theme.palette.divider}` }}>
+        <Menu
+          anchorEl={notifAnchor}
+          open={Boolean(notifAnchor)}
+          onClose={() => setNotifAnchor(null)}
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+          transformOrigin={{ vertical: "top", horizontal: "right" }}
+          PaperProps={{
+            sx: {
+              width: 260,
+              mt: 1,
+              ml: -6,
+              bgcolor: theme.palette.background.paper,
+              border: `1px solid ${theme.palette.divider}`,
+            },
+          }}
+        >
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", px: 2, py: 0.75, borderBottom: `1px solid ${theme.palette.divider}` }}>
             <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Notificaciones {unread > 0 && `(${unread})`}</Typography>
             {unread > 0 && (
-              <Button size="small" startIcon={<Check size={11} />} onClick={markAllRead} sx={{ fontSize: 12, textTransform: "none" }}>
+              <Button
+                size="small"
+                startIcon={<Check size={11} />}
+                onClick={markAllRead}
+                sx={{ fontSize: 12, textTransform: "none", color: theme.palette.text.secondary, "&:hover": { color: theme.palette.text.secondary, bgcolor: "transparent" } }}
+              >
                 Marcar todo
               </Button>
             )}
@@ -103,8 +122,21 @@ export function Header({ page }) {
           </Box>
           <ChevronDown size={12} style={{ marginLeft: 4 }} />
         </IconButton>
-        <Menu anchorEl={userAnchor} open={Boolean(userAnchor)} onClose={() => setUserAnchor(null)}
-          PaperProps={{ sx: { width: 208, bgcolor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}` } }}>
+        <Menu
+          anchorEl={userAnchor}
+          open={Boolean(userAnchor)}
+          onClose={() => setUserAnchor(null)}
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+          transformOrigin={{ vertical: "top", horizontal: "right" }}
+          PaperProps={{
+            sx: {
+              width: 260,
+              mt: 1,
+              bgcolor: theme.palette.background.paper,
+              border: `1px solid ${theme.palette.divider}`,
+            },
+          }}
+        >
           <Box sx={{ px: 2, py: 1.5, borderBottom: `1px solid ${theme.palette.divider}` }}>
             <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Ana Martínez</Typography>
             <Typography sx={{ fontSize: 12, color: theme.palette.text.secondary }}>ana@alhorno.mx</Typography>
