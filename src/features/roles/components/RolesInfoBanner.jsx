@@ -8,17 +8,23 @@ export default function RolesInfoBanner() {
       sx={{
         display: 'flex',
         alignItems: 'center',
-        gap: 1.5,
-        p: 2,
-        mb: 2.5,
+        gap: 1,
+        px: 2,
+        py: 1.5,
+        my: 0, 
         bgcolor: 'background.paper',
-        border: '1px solid',
+        borderLeft: '1px solid',
+        borderRight: '1px solid',
+        borderBottom: '1px solid',
         borderColor: 'divider',
-        borderRadius: 3,
+        borderRadius: 0, 
+        borderTopLeftRadius: 12,
+        borderTopRightRadius: 12,
       }}
+
     >
-      <TuneOutlinedIcon sx={{ color: 'text.secondary', fontSize: 20, flexShrink: 0 }} />
-      <Typography sx={{ fontSize: 13.5, color: 'text.secondary' }}>
+      <TuneOutlinedIcon sx={{ color: '#b46e38', fontSize: 18, flexShrink: 0 }} />
+      <Typography sx={{ fontSize: 13, color: 'text.secondary', lineHeight: 1.5 }}>
         Un rol desactivado deja de aparecer como opción al crear o editar usuarios, pero los
         usuarios que ya lo tienen asignado conservan su rol y sus módulos.
       </Typography>

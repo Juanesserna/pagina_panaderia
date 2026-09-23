@@ -136,15 +136,21 @@ export default function UsuariosPage() {
 
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={4000}
+        autoHideDuration={3000}
         onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
         <Alert
           onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
           severity="success"
           variant="filled"
-          sx={{ width: '100%' }}
+          sx={{
+            width: '100%',
+            borderRadius: 2,
+            boxShadow: 3,
+            fontSize: 13.5,
+            fontWeight: 500,
+          }}
         >
           {snackbar.message}
         </Alert>
