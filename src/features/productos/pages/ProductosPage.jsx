@@ -1,25 +1,31 @@
-import { Box, Typography, Stack } from '@mui/material'
+import { Box, Stack, Card } from '@mui/material'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { IconLeaf, IconBox } from '@tabler/icons-react'
-import { fonts } from '@app/theme/colors'
+import { IconBox, IconBread } from '@tabler/icons-react'
 import { ROUTES } from '@app/router/routes'
-import ResumenCard from '../components/ResumenCard'
+import StatsCard from '@shared/components/StatsCard'
 import CatalogoProductos from '../components/CatalogoProductos'
 import ProductosTable from '../components/ProductosTable'
 import PaginacionProductos from '../components/PaginacionProductos'
 import NuevoProductoModal from '../components/NuevoProductoModal'
 import EditarProductoModal from '../components/EditarProductoModal'
 import DetalleProductoModal from '../components/DetalleProductoModal'
-import { resumenStats } from '../services/productos.service'
+import EliminarProductoModal from '../components/EliminarProductoModal'
+import { useProductos } from '../hooks/useProductos'
 
 export default function ProductosPage() {
   const navigate = useNavigate()
+  const { productos, crearProducto, editarProducto, eliminarProducto } = useProductos()
   const [nuevoProductoModal, setNuevoProductoModal] = useState(false)
   const [editarProductoModal, setEditarProductoModal] = useState(false)
   const [productoEditar, setProductoEditar] = useState(null)
   const [detalleProductoModal, setDetalleProductoModal] = useState(false)
   const [productoDetalle, setProductoDetalle] = useState(null)
+  const [eliminarProductoModal, setEliminarProductoModal] = useState(false)
+  const [productoAEliminar, setProductoAEliminar] = useState(null)
+  const [busqueda, setBusqueda] = useState('')
+  const [filtroCategoria, setFiltroCategoria] = useState('')
+  const [filtroEstado, setFiltroEstado] = useState('')
 
   const handleNuevoProducto = () => {
     setNuevoProductoModal(true)
@@ -36,20 +42,49 @@ export default function ProductosPage() {
   }
 
   const handleGuardarProducto = (datos) => {
-    const producto = {
-      ...datos,
-      id: datos.id ?? Date.now(),
-      codigo: datos.codigo ?? `PR-${Math.floor(Math.random() * 900) + 100}`,
-    }
+    const producto = crearProducto(datos)
     setNuevoProductoModal(false)
     navigate(ROUTES.AGREGAR_RECETA, { state: { producto } })
   }
 
   const handleGuardarEdicion = (datos) => {
-    console.log('Guardar edición:', datos)
+    editarProducto(productoEditar.id, datos)
     setEditarProductoModal(false)
     setProductoEditar(null)
   }
+
+  const handleEliminarProducto = (producto) => {
+    setProductoAEliminar(producto)
+    setEliminarProductoModal(true)
+  }
+
+  const handleConfirmarEliminar = () => {
+    eliminarProducto(productoAEliminar.id)
+    setEliminarProductoModal(false)
+    setProductoAEliminar(null)
+  }
+
+  const handleBuscar = (e) => {
+    setBusqueda(e.target.value)
+  }
+
+  const handleFiltroCategoriaChange = (valor) => {
+    setFiltroCategoria(valor)
+  }
+
+  const handleFiltroEstadoChange = (valor) => {
+    setFiltroEstado(valor)
+  }
+
+  const productosFiltrados = productos.filter((p) => {
+    const coincideBusqueda =
+      !busqueda ||
+      p.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+      p.codigo.toLowerCase().includes(busqueda.toLowerCase())
+    const coincideCategoria = !filtroCategoria || p.categoria === filtroCategoria
+    const coincideEstado = !filtroEstado || p.estado === filtroEstado
+    return coincideBusqueda && coincideCategoria && coincideEstado
+  })
 
   return (
     <Box
@@ -65,39 +100,45 @@ export default function ProductosPage() {
         boxSizing: 'border-box',
       }}
     >
-      <Typography
-        variant="h3"
-        sx={{
-          fontFamily: fonts.sans,
-          fontSize: 28,
-          fontWeight: 600,
-        }}
-      >
-        Productos
-      </Typography>
-
       <Stack direction="row" spacing={2}>
-        <ResumenCard
-          titulo="PRODUCTOS ACTIVOS"
-          valor={resumenStats.productosActivos}
-          variacion={resumenStats.variacionActivos}
-          icono={<IconLeaf size={20} />}
-          iconoColor="success"
+        <StatsCard
+          label="PRODUCTOS ACTIVOS"
+          value={productos.filter((p) => p.estado === 'Activo').length}
+          icon={<IconBread size={20} />}
+          iconBgColor="success"
         />
-        <ResumenCard
-          titulo="AGOTADOS"
-          valor={resumenStats.agotados}
-          variacion={resumenStats.variacionAgotados}
-          icono={<IconBox size={20} />}
-          iconoColor="error"
+        <StatsCard
+          label="AGOTADOS"
+          value={productos.filter((p) => p.estado === 'Agotado').length}
+          icon={<IconBox size={20} />}
+          iconBgColor="error"
         />
       </Stack>
 
-      <CatalogoProductos onNuevoClick={handleNuevoProducto} />
-
-      <ProductosTable onEdit={handleEditarProducto} onVer={handleVerDetalle} />
-
-      <PaginacionProductos totalRegistros={6} />
+      <Card
+        variant="outlined"
+        sx={{
+          borderRadius: 3,
+          borderColor: 'divider',
+          backgroundColor: 'background.paper',
+        }}
+      >
+        <CatalogoProductos
+          onNuevoClick={handleNuevoProducto}
+          onBuscar={handleBuscar}
+          onFiltroCategoriaChange={handleFiltroCategoriaChange}
+          onFiltroEstadoChange={handleFiltroEstadoChange}
+          filtroCategoria={filtroCategoria}
+          filtroEstado={filtroEstado}
+        />
+        <ProductosTable
+          productos={productosFiltrados}
+          onEdit={handleEditarProducto}
+          onVer={handleVerDetalle}
+          onEliminar={handleEliminarProducto}
+        />
+        <PaginacionProductos totalRegistros={6} />
+      </Card>
 
       <NuevoProductoModal
         open={nuevoProductoModal}
@@ -120,6 +161,15 @@ export default function ProductosPage() {
           setProductoDetalle(null)
         }}
         producto={productoDetalle}
+      />
+      <EliminarProductoModal
+        open={eliminarProductoModal}
+        onClose={() => {
+          setEliminarProductoModal(false)
+          setProductoAEliminar(null)
+        }}
+        onConfirm={handleConfirmarEliminar}
+        nombreProducto={productoAEliminar?.nombre}
       />
     </Box>
   )

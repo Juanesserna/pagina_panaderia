@@ -657,7 +657,7 @@ export default function ComprasPage() {
       accessor: (r) => {
         const bloqueado = r.estado === 'Cancelada'
         return (
-          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+<Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
             <Box
               onClick={(e) => {
                 e.stopPropagation()
@@ -715,6 +715,18 @@ export default function ComprasPage() {
             sx={{ color: 'text.secondary' }}
           >
             <IconPencil size={15} />
+          </IconButton>
+          <IconButton
+            size="small"
+            title={r.estado === 'Cancelada' ? 'Una orden cancelada no se puede modificar' : 'Cambiar estado'}
+            disabled={r.estado === 'Cancelada'}
+            onClick={(e) => {
+              e.stopPropagation()
+              abrirModalEstado(r)
+            }}
+            sx={{ color: 'text.secondary' }}
+          >
+            <IconToggleLeft size={15} />
           </IconButton>
           <IconButton
             size="small"
@@ -1228,6 +1240,11 @@ export default function ComprasPage() {
                                 sx={campoBeigeSx}
                               />
                               <Typography sx={{ fontSize: 10, color: 'text.dim' }}>Opcional, si aplica</Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                              <Typography sx={{ fontSize: 10.5, color: 'text.dim' }}>Cant. disponible</Typography>
+                              <Input type="number" value={item.cantidadDisponible} disabled sx={{ borderStyle: 'dashed', ...campoBeigeSx }} />
+                              <Typography sx={{ fontSize: 10, color: 'text.dim' }}>Igual al total comprado</Typography>
                             </Box>
                           </Box>
                         )}

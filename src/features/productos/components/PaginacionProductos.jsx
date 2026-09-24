@@ -18,14 +18,15 @@ export default function PaginacionProductos({ paginaActual = 1, totalRegistros =
   const to = Math.min(paginaActual * porPagina, totalRegistros)
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        py: 2,
-      }}
-    >
+     <Box
+       sx={{
+         display: 'flex',
+         alignItems: 'center',
+         justifyContent: 'space-between',
+         py: 2,
+         px: 3,
+       }}
+     >
       <Typography
         variant="body2"
         sx={{ fontFamily: fonts.sans, fontSize: 12, color: theme.palette.text.secondary }}

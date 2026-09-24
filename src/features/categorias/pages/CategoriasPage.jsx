@@ -1,34 +1,33 @@
 import { useState } from 'react'
-import { Box, Typography, Stack } from '@mui/material'
-import { useNavigate } from 'react-router-dom'
+import { Box, Stack, Card } from '@mui/material'
 import { IconStack, IconTag, IconCheck, IconX } from '@tabler/icons-react'
-import { fonts } from '@app/theme/colors'
-import { ROUTES } from '@app/router/routes'
 import CatalogoCategorias from '../components/CatalogoCategorias'
 import CategoriasTable from '../components/CategoriasTable'
 import PaginacionCategorias from '../components/PaginacionCategorias'
 import NuevaCategoriaModal from '../components/NuevaCategoriaModal'
 import EditarCategoriaModal from '../components/EditarCategoriaModal'
 import EliminarCategoriaDialog from '../components/EliminarCategoriaDialog'
+import FiltrosCategoriasDrawer from '../components/FiltrosCategoriasDrawer'
 import StatsCard from '@shared/components/StatsCard'
-import { resumenStats } from '../services/categorias.service'
 import { useCategorias } from '../hooks/useCategorias'
 
 export default function CategoriasPage() {
-  const navigate = useNavigate()
   const {
     categorias,
     allCategorias,
     searchTerm,
     handleSearch,
+    filtros,
+    aplicarFiltros,
+    limpiarFiltros,
     paginaActual,
-    totalPaginas,
     totalRegistros,
     porPagina,
     handlePageChange,
-    toggleEstado,
-    eliminarCategoria,
-    editarCategoria,
+    crear,
+    editar,
+    eliminar,
+    cambiarEstado,
   } = useCategorias()
 
   const totalCategorias = allCategorias.length
@@ -41,21 +40,32 @@ export default function CategoriasPage() {
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null)
   const [eliminarDialogOpen, setEliminarDialogOpen] = useState(false)
   const [categoriaAEliminar, setCategoriaAEliminar] = useState(null)
+  const [filtrosDrawerOpen, setFiltrosDrawerOpen] = useState(false)
 
   const handleNuevoClick = () => {
     setNuevaCategoriaModal(true)
   }
 
   const handleNuevaCategoriaSubmit = (datos) => {
-    console.log('Nueva categoría:', datos)
+    crear(datos)
+    setNuevaCategoriaModal(false)
   }
 
   const handleFiltrarClick = () => {
-    console.log('Filtrar click')
+    setFiltrosDrawerOpen(true)
+  }
+
+  const handleApplyFiltros = (nuevosFiltros) => {
+    aplicarFiltros(nuevosFiltros)
+    setFiltrosDrawerOpen(false)
+  }
+
+  const handleLimpiarFiltros = () => {
+    limpiarFiltros()
   }
 
   const handleToggleEstado = (id) => {
-    toggleEstado(id)
+    cambiarEstado(id)
   }
 
   const handleEditar = (id) => {
@@ -65,7 +75,7 @@ export default function CategoriasPage() {
   }
 
   const handleEditarCategoriaSubmit = (id, datosActualizados) => {
-    editarCategoria(id, datosActualizados)
+    editar(id, datosActualizados)
     setEditarCategoriaModal(false)
     setCategoriaSeleccionada(null)
   }
@@ -77,7 +87,9 @@ export default function CategoriasPage() {
   }
 
   const handleConfirmarEliminar = () => {
-    eliminarCategoria(categoriaAEliminar.id)
+    if (categoriaAEliminar) {
+      eliminar(categoriaAEliminar.id)
+    }
     setEliminarDialogOpen(false)
     setCategoriaAEliminar(null)
   }
@@ -96,17 +108,6 @@ export default function CategoriasPage() {
         boxSizing: 'border-box',
       }}
     >
-      <Typography
-        variant="h3"
-        sx={{
-          fontFamily: fonts.sans,
-          fontSize: 28,
-          fontWeight: 600,
-        }}
-      >
-        Categorías
-      </Typography>
-
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} sx={{ flexWrap: 'wrap' }}>
         <StatsCard
           label="TOTAL CATEGORÍAS"
@@ -134,25 +135,36 @@ export default function CategoriasPage() {
         />
       </Stack>
 
-      <CatalogoCategorias
-        onBuscar={handleSearch}
-        onNuevoClick={handleNuevoClick}
-        onFiltrarClick={handleFiltrarClick}
-      />
+      <Card
+        variant="outlined"
+        sx={{
+          borderRadius: 3,
+          borderColor: 'divider',
+          backgroundColor: 'background.paper',
+          overflow: 'hidden',
+        }}
+      >
+        <CatalogoCategorias
+          valorBusqueda={searchTerm}
+          onBuscar={handleSearch}
+          onNuevoClick={handleNuevoClick}
+          onFiltrarClick={handleFiltrarClick}
+        />
 
-      <CategoriasTable
-        categorias={categorias}
-        onToggleEstado={handleToggleEstado}
-        onEditar={handleEditar}
-        onEliminar={handleEliminar}
-      />
+        <CategoriasTable
+          categorias={categorias}
+          onToggleEstado={handleToggleEstado}
+          onEditar={handleEditar}
+          onEliminar={handleEliminar}
+        />
 
-      <PaginacionCategorias
-        paginaActual={paginaActual}
-        totalRegistros={totalRegistros}
-        porPagina={porPagina}
-        onPageChange={handlePageChange}
-      />
+        <PaginacionCategorias
+          paginaActual={paginaActual}
+          totalRegistros={totalRegistros}
+          porPagina={porPagina}
+          onPageChange={handlePageChange}
+        />
+      </Card>
 
       <NuevaCategoriaModal
         open={nuevaCategoriaModal}
@@ -161,6 +173,7 @@ export default function CategoriasPage() {
       />
 
       <EditarCategoriaModal
+        key={categoriaSeleccionada?.id}
         open={editarCategoriaModal}
         onClose={() => {
           setEditarCategoriaModal(false)
@@ -178,6 +191,15 @@ export default function CategoriasPage() {
         }}
         onConfirm={handleConfirmarEliminar}
         nombreCategoria={categoriaAEliminar?.nombre}
+      />
+
+      <FiltrosCategoriasDrawer
+        key={`${filtrosDrawerOpen}-${filtros.tipo}-${filtros.estado}`}
+        open={filtrosDrawerOpen}
+        onClose={() => setFiltrosDrawerOpen(false)}
+        filtros={filtros}
+        onApply={handleApplyFiltros}
+        onClear={handleLimpiarFiltros}
       />
     </Box>
   )

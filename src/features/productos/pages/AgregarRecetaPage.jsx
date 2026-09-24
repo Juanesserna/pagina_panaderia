@@ -23,10 +23,20 @@ export default function AgregarRecetaPage() {
   const codigo = producto?.codigo ?? 'PR-000'
   const nombre = producto?.nombre ?? 'Producto sin nombre'
 
-  const [insumos] = useState([])
+  const [insumos, setInsumos] = useState([])
 
-  const handleAgregarInsumo = () => {
-    console.log('Agregar insumo')
+  const handleAgregarInsumo = (nuevoInsumo) => {
+    setInsumos((prev) => [...prev, nuevoInsumo])
+  }
+
+  const handleEditarInsumo = (id, datosActualizados) => {
+    setInsumos((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, ...datosActualizados } : i))
+    )
+  }
+
+  const handleEliminarInsumo = (id) => {
+    setInsumos((prev) => prev.filter((i) => i.id !== id))
   }
 
   const handleOmitir = () => {
@@ -178,7 +188,13 @@ export default function AgregarRecetaPage() {
           }}
         >
           <CardContent sx={{ p: 3 }}>
-            <RecetaTabla insumos={insumos} onAgregarInsumo={handleAgregarInsumo} />
+            <RecetaTabla
+              insumos={insumos}
+              onAgregarInsumo={handleAgregarInsumo}
+              onEditInsumo={handleEditarInsumo}
+              onDeleteInsumo={handleEliminarInsumo}
+              codigoProducto={codigo}
+            />
           </CardContent>
         </Card>
 
