@@ -1,5 +1,4 @@
 import { Box, Chip, Typography, useTheme } from '@mui/material'
-import { alpha } from '@mui/material/styles'
 import { fonts } from '@app/theme/colors'
 
 const TIPO_COLORS = {
@@ -30,7 +29,8 @@ export default function TipoBadge({ tipo, productosCount = 0, insumosCount = 0 }
           border: 'none',
           height: 22,
           borderRadius: 1,
-          px: 0.75,
+          px: 1,
+          justifyContent: 'flex-start',
         }}
       />
       {countText && (

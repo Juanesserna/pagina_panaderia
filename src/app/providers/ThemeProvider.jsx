@@ -26,6 +26,14 @@ export default function ThemeProvider({ children }) {
     localStorage.setItem('ah-theme-mode', mode)
   }, [mode])
 
+  useEffect(() => {
+  const favicon = document.querySelector('link[rel="icon"]')
+
+  if (favicon) {
+    favicon.href = mode === 'dark' ? '/logo_oscuro.png' : '/logo_claro.png'
+  }
+  }, [mode])
+
   const toggle = () => setMode((prev) => (prev === 'light' ? 'dark' : 'light'))
 
   const value = useMemo(

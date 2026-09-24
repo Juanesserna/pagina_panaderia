@@ -107,14 +107,6 @@ const imagePreviewSx = (theme) => ({
   overflow: 'hidden',
 })
 
-const insumosMock = [
-  { id: 1, idProducto: 'P-0001', idInsumo: 'I-001', insumo: 'Harina de trigo', cantidad: 500, unidad: 'kg' },
-  { id: 2, idProducto: 'P-0001', idInsumo: 'I-002', insumo: 'Mantequilla', cantidad: 200, unidad: 'kg' },
-  { id: 3, idProducto: 'P-0001', idInsumo: 'I-003', insumo: 'Sal', cantidad: 10, unidad: 'kg' },
-  { id: 4, idProducto: 'P-0001', idInsumo: 'I-004', insumo: 'Levadura', cantidad: 5, unidad: 'kg' },
-  { id: 5, idProducto: 'P-0001', idInsumo: 'I-005', insumo: 'Agua', cantidad: 300, unidad: 'L' },
-]
-
 export default function EditarProductoModal({
   open,
   onClose,
@@ -123,6 +115,27 @@ export default function EditarProductoModal({
 }) {
   const theme = useTheme()
   const [formulario, setFormulario] = useState(valoresIniciales)
+  const [insumos, setInsumos] = useState([
+    { id: 1, idProducto: 'P-0001', idInsumo: 'I-001', insumo: 'Harina de trigo', cantidad: 500, unidad: 'kg' },
+    { id: 2, idProducto: 'P-0001', idInsumo: 'I-002', insumo: 'Mantequilla', cantidad: 200, unidad: 'kg' },
+    { id: 3, idProducto: 'P-0001', idInsumo: 'I-003', insumo: 'Sal', cantidad: 10, unidad: 'kg' },
+    { id: 4, idProducto: 'P-0001', idInsumo: 'I-004', insumo: 'Levadura', cantidad: 5, unidad: 'kg' },
+    { id: 5, idProducto: 'P-0001', idInsumo: 'I-005', insumo: 'Agua', cantidad: 300, unidad: 'L' },
+  ])
+
+  const handleAgregarInsumo = (nuevoInsumo) => {
+    setInsumos((prev) => [...prev, nuevoInsumo])
+  }
+
+  const handleEditarInsumo = (id, datosActualizados) => {
+    setInsumos((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, ...datosActualizados } : i))
+    )
+  }
+
+  const handleEliminarInsumo = (id) => {
+    setInsumos((prev) => prev.filter((i) => i.id !== id))
+  }
 
   useEffect(() => {
     if (producto) {
@@ -454,9 +467,11 @@ export default function EditarProductoModal({
             >
               <CardContent sx={{ p: 3 }}>
                 <RecetaTabla
-                  insumos={insumosMock}
-                  onEditInsumo={() => {}}
-                  onDeleteInsumo={() => {}}
+                  insumos={insumos}
+                  onAgregarInsumo={handleAgregarInsumo}
+                  onEditInsumo={handleEditarInsumo}
+                  onDeleteInsumo={handleEliminarInsumo}
+                  codigoProducto={producto?.codigo}
                 />
               </CardContent>
             </Card>
@@ -510,6 +525,6 @@ export default function EditarProductoModal({
           </Button>
         </DialogActions>
       </form>
-    </Dialog>
+</Dialog>
   )
 }

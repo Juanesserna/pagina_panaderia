@@ -114,7 +114,7 @@ function buildTheme(mode) {
           sizeSmall: { padding: 5 },
         },
       },
-      MuiChip: {
+MuiChip: {
         styleOverrides: {
           root: { borderRadius: 999, fontWeight: 600 },
           sizeSmall: { height: 22, fontSize: '0.6875rem' },
@@ -125,7 +125,7 @@ function buildTheme(mode) {
           root: { borderRadius: 14 },
         },
       },
-      MuiPaper: {
+MuiPaper: {
         styleOverrides: {
           root: { borderRadius: 14 },
         },
