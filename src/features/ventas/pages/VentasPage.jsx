@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Box, Stack, Typography, IconButton, Divider, Collapse, Autocomplete, TextField, OutlinedInput, InputAdornment, MenuItem, RadioGroup, FormControlLabel, Radio } from '@mui/material'
+import { Box, Stack, Typography, IconButton, Divider, Collapse, Autocomplete, TextField, OutlinedInput, InputAdornment, MenuItem, FormControlLabel, Checkbox } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 import {
   IconSearch,
@@ -48,11 +48,10 @@ const canalOptions = [
   { value: 'presencial', label: 'Presencial' },
 ]
 
-// Comprobantes permitidos según canal y pago_unico:
-// - presencial / página            → 1 comprobante (url_comprobante_1, 100%)
-// - encargo con pago_unico = true  → 1 comprobante (url_comprobante_1, 100%)
-// - encargo con pago_unico = false → 2 comprobantes (url_comprobante_1 y url_comprobante_2, 50% c/u)
-const pagosPermitidos = (venta) => (venta?.canal === 'encargo' && !venta?.pagoUnico ? 2 : 1)
+// Comprobantes permitidos según pago_unico:
+// - pago_unico = true  → 1 comprobante (url_comprobante_1, 100%)
+// - pago_unico = false → 2 comprobantes (url_comprobante_1 y url_comprobante_2, 50% c/u)
+const pagosPermitidos = (venta) => (venta?.pagoUnico === false ? 2 : 1)
 
 function FilterLabel({ children }) {
   return (
@@ -169,10 +168,8 @@ export default function VentasPage() {
   const [formFecha, setFormFecha] = useState('')
   const [formHora, setFormHora] = useState('')
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null)
-  const [nuevoEstado, setNuevoEstado] = useState('pendiente')
   const [formMetodo, setFormMetodo] = useState('efectivo')
-  const [formCanal, setFormCanal] = useState('presencial')
-  const [formPagoUnico, setFormPagoUnico] = useState(false) // solo aplica cuando el canal es "encargo"
+  const [formPagoDividido, setFormPagoDividido] = useState(false) // false = pago único (100%) · true = pago dividido (2 pagos de 50%)
   const [busquedaProducto, setBusquedaProducto] = useState('')
 
   const comprobanteRef = useRef(null)
@@ -321,6 +318,9 @@ export default function VentasPage() {
     if (!file || !slot || !ventaAbonoModal || !file.type.startsWith('image/')) return
 
     const idVenta = ventaAbonoModal.id
+    // ¿Con este comprobante queda cubierto el 100% de la venta?
+    const otrosComprobantes = abonos.filter((a) => a.idVenta === idVenta && a.slot !== slot).length
+    const pagoCompleto = otrosComprobantes + 1 >= pagosPermitidos(ventaAbonoModal)
     const reader = new FileReader()
     reader.onload = () => {
       const urlComprobante = reader.result
@@ -333,6 +333,13 @@ export default function VentasPage() {
         }
         return [...prev, { id: `AB-${idVenta.replace('#', '')}-${slot}`, idVenta, slot, fecha: fechaHoyFormateada(), urlComprobante }]
       })
+
+      // Al subir una captura la venta pasa a "pago parcial" mientras aún quede saldo por pagar
+      if (!pagoCompleto) {
+        setVentas((prev) =>
+          prev.map((v) => (v.id === idVenta && esTransicionValida(v.estado, 'pago parcial') ? { ...v, estado: 'pago parcial' } : v))
+        )
+      }
     }
     reader.readAsDataURL(file)
   }
@@ -418,10 +425,8 @@ export default function VentasPage() {
   const resetFormularioVenta = () => {
     setFormItems([])
     setClienteSeleccionado(null)
-    setNuevoEstado('pendiente')
     setFormMetodo('efectivo')
-    setFormCanal('presencial')
-    setFormPagoUnico(false)
+    setFormPagoDividido(false)
     setBusquedaProducto('')
     clienteTuvoCaracterEspecialRef.current = false
     productoTuvoCaracterEspecialRef.current = false
@@ -501,10 +506,10 @@ export default function VentasPage() {
       origen: 'manual',
       productos: formItems.reduce((s, i) => s + i.cantidad, 0),
       total: totalFormulario,
-      estado: nuevoEstado,
+      estado: 'pendiente',
       metodo: formMetodo,
-      canal: formCanal,
-      pagoUnico: formCanal === 'encargo' ? formPagoUnico : true,
+      canal: 'presencial',
+      pagoUnico: !formPagoDividido,
       fecha: formFecha,
       hora: formHora,
       items: formItems,
@@ -1054,7 +1059,7 @@ export default function VentasPage() {
                 <Typography sx={{ fontWeight: 700, fontSize: 14 }}>${totalAbonadoVenta.toFixed(2)}</Typography>
               </Box>
               <Box>
-                <FilterLabel>Pendiente</FilterLabel>
+                <FilterLabel>Saldo pendiente</FilterLabel>
                 <Typography sx={{ fontWeight: 700, fontSize: 14, color: saldoPendienteVenta <= 0 ? 'success.main' : 'text.primary' }}>
                   ${saldoPendienteVenta.toFixed(2)}
                 </Typography>
@@ -1091,6 +1096,7 @@ export default function VentasPage() {
                           style={{ width: '100%', height: 130, borderRadius: 6, border: `1px solid ${theme.palette.divider}`, objectFit: 'cover', cursor: 'pointer' }}
                         />
                         <Stack direction="row" justifyContent="space-between" alignItems="center">
+                          <Typography sx={{ fontSize: 11, color: 'text.dim' }}>{abono.fecha}</Typography>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -1147,7 +1153,7 @@ export default function VentasPage() {
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '0.8fr 1.3fr 1fr 1.5fr 1fr 1fr' },
+              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '0.8fr 1.3fr 1.5fr 1fr 1.8fr' },
               gap: 2,
               alignItems: 'end',
             }}
@@ -1172,24 +1178,6 @@ export default function VentasPage() {
                 disabled
                 sx={autocompleteInputSx}
               />
-            </Box>
-
-            <Box sx={{ minWidth: 0 }}>
-              <FilterLabel>Estado inicial</FilterLabel>
-              <TextField
-                select
-                fullWidth
-                size="small"
-                value={nuevoEstado}
-                onChange={(e) => setNuevoEstado(e.target.value)}
-                sx={autocompleteInputSx}
-              >
-                {estadoOptions.map((opcion) => (
-                  <MenuItem key={opcion.value} value={opcion.value}>
-                    {opcion.label}
-                  </MenuItem>
-                ))}
-              </TextField>
             </Box>
 
             <Box sx={{ minWidth: 0 }}>
@@ -1220,24 +1208,6 @@ export default function VentasPage() {
             </Box>
 
             <Box sx={{ minWidth: 0 }}>
-              <FilterLabel>Canal</FilterLabel>
-              <TextField
-                select
-                fullWidth
-                size="small"
-                value={formCanal}
-                onChange={(e) => setFormCanal(e.target.value)}
-                sx={autocompleteInputSx}
-              >
-                {canalOptions.map((opcion) => (
-                  <MenuItem key={opcion.value} value={opcion.value}>
-                    {opcion.label}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Box>
-
-            <Box sx={{ minWidth: 0 }}>
               <FilterLabel>Método de pago</FilterLabel>
               <TextField
                 select
@@ -1255,29 +1225,19 @@ export default function VentasPage() {
               </TextField>
             </Box>
 
-            {formCanal === 'encargo' && (
-              <Box sx={{ gridColumn: '1 / -1', minWidth: 0 }}>
-                <FilterLabel>Tipo de pago</FilterLabel>
-                <RadioGroup
-                  row
-                  value={formPagoUnico ? 'unico' : 'abonos'}
-                  onChange={(e) => setFormPagoUnico(e.target.value === 'unico')}
-                >
-                  <FormControlLabel
-                    value="unico"
-                    control={<Radio size="small" />}
-                    label="Pago único (100%)"
-                    sx={{ '& .MuiFormControlLabel-label': { fontSize: 12 } }}
+            <Box sx={{ minWidth: 0 }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={formPagoDividido}
+                    onChange={(e) => setFormPagoDividido(e.target.checked)}
                   />
-                  <FormControlLabel
-                    value="abonos"
-                    control={<Radio size="small" />}
-                    label="Dos abonos (50% + 50%)"
-                    sx={{ '& .MuiFormControlLabel-label': { fontSize: 12 } }}
-                  />
-                </RadioGroup>
-              </Box>
-            )}
+                }
+                label="Pago dividido (dos pagos del 50%)"
+                sx={{ m: 0, '& .MuiFormControlLabel-label': { fontSize: 12 } }}
+              />
+            </Box>
           </Box>
 
           <Divider />
@@ -1378,6 +1338,26 @@ export default function VentasPage() {
                     }}
                   />
                 </Box>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  leftIcon={<IconPlus size={12} />}
+                  disabled={!busquedaProducto.trim() || productosFiltrados.length === 0}
+                  onClick={handleAgregarProducto}
+                  sx={{
+                    border: '1px solid',
+                    backgroundColor: isDark ? '#32251F' : '#F0EBE3',
+                    color: isDark ? '#F2E9DD' : '#4A2E17',
+                    borderColor: isDark ? '#3D2C21' : '#E4D9C8',
+                    '&:hover': {
+                      backgroundColor: isDark ? '#32251F' : '#F0EBE3',
+                      borderColor: isDark ? '#3D2C21' : '#E4D9C8',
+                      opacity: 0.85,
+                    },
+                  }}
+                >
+                  Agregar
+                </Button>
               </Box>
             </Box>
 
