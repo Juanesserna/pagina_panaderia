@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Box, Stack, Typography, IconButton, Divider, Collapse, Autocomplete, TextField, OutlinedInput, InputAdornment, MenuItem } from '@mui/material'
+import { Box, Stack, Typography, IconButton, Divider, Collapse, Autocomplete, TextField, OutlinedInput, InputAdornment, MenuItem, RadioGroup, FormControlLabel, Radio } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 import {
   IconSearch,
@@ -48,10 +48,11 @@ const canalOptions = [
   { value: 'presencial', label: 'Presencial' },
 ]
 
-// Pagos permitidos según el canal:
-// - encargo: 2 comprobantes (50% cada uno)
-// - página / presencial: 1 comprobante (100%)
-const pagosPermitidos = (venta) => (venta?.canal === 'encargo' ? 2 : 1)
+// Comprobantes permitidos según canal y pago_unico:
+// - presencial / página            → 1 comprobante (url_comprobante_1, 100%)
+// - encargo con pago_unico = true  → 1 comprobante (url_comprobante_1, 100%)
+// - encargo con pago_unico = false → 2 comprobantes (url_comprobante_1 y url_comprobante_2, 50% c/u)
+const pagosPermitidos = (venta) => (venta?.canal === 'encargo' && !venta?.pagoUnico ? 2 : 1)
 
 function FilterLabel({ children }) {
   return (
@@ -171,6 +172,7 @@ export default function VentasPage() {
   const [nuevoEstado, setNuevoEstado] = useState('pendiente')
   const [formMetodo, setFormMetodo] = useState('efectivo')
   const [formCanal, setFormCanal] = useState('presencial')
+  const [formPagoUnico, setFormPagoUnico] = useState(false) // solo aplica cuando el canal es "encargo"
   const [busquedaProducto, setBusquedaProducto] = useState('')
 
   const comprobanteRef = useRef(null)
@@ -419,6 +421,7 @@ export default function VentasPage() {
     setNuevoEstado('pendiente')
     setFormMetodo('efectivo')
     setFormCanal('presencial')
+    setFormPagoUnico(false)
     setBusquedaProducto('')
     clienteTuvoCaracterEspecialRef.current = false
     productoTuvoCaracterEspecialRef.current = false
@@ -501,6 +504,7 @@ export default function VentasPage() {
       estado: nuevoEstado,
       metodo: formMetodo,
       canal: formCanal,
+      pagoUnico: formCanal === 'encargo' ? formPagoUnico : true,
       fecha: formFecha,
       hora: formHora,
       items: formItems,
@@ -1050,7 +1054,7 @@ export default function VentasPage() {
                 <Typography sx={{ fontWeight: 700, fontSize: 14 }}>${totalAbonadoVenta.toFixed(2)}</Typography>
               </Box>
               <Box>
-                <FilterLabel>Saldo pendiente</FilterLabel>
+                <FilterLabel>Pendiente</FilterLabel>
                 <Typography sx={{ fontWeight: 700, fontSize: 14, color: saldoPendienteVenta <= 0 ? 'success.main' : 'text.primary' }}>
                   ${saldoPendienteVenta.toFixed(2)}
                 </Typography>
@@ -1087,7 +1091,6 @@ export default function VentasPage() {
                           style={{ width: '100%', height: 130, borderRadius: 6, border: `1px solid ${theme.palette.divider}`, objectFit: 'cover', cursor: 'pointer' }}
                         />
                         <Stack direction="row" justifyContent="space-between" alignItems="center">
-                          <Typography sx={{ fontSize: 11, color: 'text.dim' }}>{abono.fecha}</Typography>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -1251,6 +1254,30 @@ export default function VentasPage() {
                 ))}
               </TextField>
             </Box>
+
+            {formCanal === 'encargo' && (
+              <Box sx={{ gridColumn: '1 / -1', minWidth: 0 }}>
+                <FilterLabel>Tipo de pago</FilterLabel>
+                <RadioGroup
+                  row
+                  value={formPagoUnico ? 'unico' : 'abonos'}
+                  onChange={(e) => setFormPagoUnico(e.target.value === 'unico')}
+                >
+                  <FormControlLabel
+                    value="unico"
+                    control={<Radio size="small" />}
+                    label="Pago único (100%)"
+                    sx={{ '& .MuiFormControlLabel-label': { fontSize: 12 } }}
+                  />
+                  <FormControlLabel
+                    value="abonos"
+                    control={<Radio size="small" />}
+                    label="Dos abonos (50% + 50%)"
+                    sx={{ '& .MuiFormControlLabel-label': { fontSize: 12 } }}
+                  />
+                </RadioGroup>
+              </Box>
+            )}
           </Box>
 
           <Divider />
