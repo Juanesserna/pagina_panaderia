@@ -4,6 +4,8 @@ import { Box, Stack, Typography, IconButton, ClickAwayListener, Popper, Paper, C
 import {
   IconTrendingUp,
   IconShoppingCart,
+  IconShoppingBag,
+  IconReceipt,
   IconDotsVertical,
   IconDownload,
   IconX,
@@ -38,6 +40,9 @@ const MS_DAY = 86_400_000
 
 const DAY_NAMES_SHORT = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 const MONTH_NAMES_SHORT = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+
+// Formateador de dinero para los KPIs
+const formatMoney = (n) => `$${n.toLocaleString('en-US')}`
 
 function toInputValue(d) {
   const y = d.getFullYear()
@@ -476,6 +481,16 @@ export default function DashboardPage() {
     return aggregateSeries(daily, grouping)
   }, [dateRange, grouping])
 
+  // KPI: total de compras según el rango de fechas activo
+  const totalCompras = useMemo(
+    () => aggregated.reduce((acc, item) => acc + item.compras, 0),
+    [aggregated]
+  )
+
+  // KPI: resumen de pedidos recientes
+  const pedidosCompletados = recentOrders.filter((o) => o.estado === 'completado').length
+  const pedidosEnCurso = recentOrders.filter((o) => o.estado === 'pendiente' || o.estado === 'en proceso').length
+
   const groupingLabel = GROUPING_LABEL[grouping]
   const filterLabel = `${formatShortDate(dateRange.start)} - ${formatShortDate(dateRange.end)}`
 
@@ -523,9 +538,41 @@ export default function DashboardPage() {
       </Stack>
 
       {/* KPI Cards */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-        <KPICard title="Total ventas del mes" value="$319,330" subtitle="Actualizado hace 2 min" icon={<IconTrendingUp size={16} />} variant="accent" />
-        <KPICard title="Pedidos activos" value="127" subtitle="34 listos para entrega" icon={<IconShoppingCart size={16} />} variant="success" />
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', xl: 'repeat(4, 1fr)' },
+          gap: 2,
+        }}
+      >
+        <KPICard
+          title="Total ventas del mes"
+          value="$319,330"
+          subtitle="Actualizado hace 2 min"
+          icon={<IconTrendingUp size={16} />}
+          variant="accent"
+        />
+        <KPICard
+          title="Pedidos activos"
+          value="127"
+          subtitle="34 listos para entrega"
+          icon={<IconShoppingCart size={16} />}
+          variant="success"
+        />
+        <KPICard
+          title="Compras del período"
+          value={formatMoney(totalCompras)}
+          subtitle={filterLabel}
+          icon={<IconShoppingBag size={16} />}
+          variant="warning"
+        />
+        <KPICard
+          title="Pedidos recientes"
+          value={String(recentOrders.length)}
+          subtitle={`${pedidosCompletados} completados · ${pedidosEnCurso} en curso`}
+          icon={<IconReceipt size={16} />}
+          variant="accent"
+        />
       </Box>
 
       {/* Ingresos */}
