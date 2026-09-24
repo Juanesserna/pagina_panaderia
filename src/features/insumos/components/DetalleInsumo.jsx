@@ -58,7 +58,6 @@ export function DetalleInsumo({ open, insumo, onEditar, onCerrar }) {
                         <CampoInfo label="Código" value={formatoCodigo(insumo.id)} />
                         <CampoInfo label="Categoría" value={nombreCategoria(insumo.idCategoria)} />
                         <CampoInfo label="Nombre" value={insumo.nombre} sx={anchoCompletoSx} />
-                        <CampoInfo label="Descripción" value={insumo.descripcion} sx={anchoCompletoSx} />
                     </Box>
                 </Box>
 

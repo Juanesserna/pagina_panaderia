@@ -12,10 +12,8 @@ import {
 } from "@mui/material";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import ToggleOnOutlinedIcon from "@mui/icons-material/ToggleOnOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import {
-  StatusBadge,
   tableSx,
   tableHeadCellSx,
   tableBodyCellSx,
@@ -25,7 +23,8 @@ import {
   linkCellSx,
   accionIconSx,
 } from "@shared/components";
-import { formatoCodigo, getEstadoVisual, estadoVisualVariant } from "../utils/proveedoresHelpers";
+import { formatoCodigo } from "../utils/proveedoresHelpers";
+import { EstadoSwitch } from "./EstadoSwitch";
 
 // Tabla más compacta (menos alto por fila), igual que la de Insumos, para
 // que ambos módulos se vean como parte del mismo sistema.
@@ -91,7 +90,6 @@ export function ProveedoresTable({
 
         <TableBody>
           {rows.map((r) => {
-            const ev = getEstadoVisual(r);
             return (
               <TableRow key={r.id} hover>
                 <TableCell sx={{ ...codigoCellSx, ...compactoPy }}>{formatoCodigo(r.id)}</TableCell>
@@ -103,7 +101,7 @@ export function ProveedoresTable({
                 <TableCell sx={{ ...tableBodyCellSx, ...compactoPy, whiteSpace: "nowrap" }}>{r.telefono}</TableCell>
                 <TableCell sx={{ ...linkCellSx, ...compactoPy }}>{r.email}</TableCell>
                 <TableCell sx={{ ...tableBodyCellSx, ...compactoPy }}>
-                  <StatusBadge variant={estadoVisualVariant[ev]}>{ev}</StatusBadge>
+                  <EstadoSwitch activo={r.estado} nombre={r.nombre} onChange={() => onCambiarEstado(r)} />
                 </TableCell>
                 <TableCell align="right" sx={{ ...tableBodyCellSx, ...compactoPy, whiteSpace: "nowrap" }}>
                   <Stack direction="row" spacing={0.25} justifyContent="flex-end">
@@ -112,14 +110,6 @@ export function ProveedoresTable({
                     </IconButton>
                     <IconButton size="small" title="Editar" sx={accionIconSx} onClick={() => onEditar(r)}>
                       <EditOutlinedIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      title="Cambiar estado"
-                      sx={accionIconSx}
-                      onClick={() => onCambiarEstado(r)}
-                    >
-                      <ToggleOnOutlinedIcon fontSize="small" />
                     </IconButton>
                     <IconButton
                       size="small"

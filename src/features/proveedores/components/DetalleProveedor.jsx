@@ -51,7 +51,6 @@ export function DetalleProveedor({ open, proveedor, onEditar, onCerrar }) {
                         <CampoInfo label="Código" value={formatoCodigo(proveedor.id)} />
                         <CampoInfo label="NIT" value={proveedor.nit} />
                         <CampoInfo label="Nombre empresa" value={proveedor.nombre} sx={anchoCompletoSx} />
-                        <CampoInfo label="Descripción" value={proveedor.descripcion} sx={anchoCompletoSx} />
                     </Box>
                 </Box>
 
