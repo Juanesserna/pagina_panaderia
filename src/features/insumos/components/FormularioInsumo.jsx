@@ -6,7 +6,6 @@ import { formatoCodigo, formatoMoneda, unidadAbrev } from '../utils/insumosHelpe
 
 const formVacio = {
   nombre: '',
-  descripcion: '',
   idCategoria: '',
   idUnidadMedida: '',
   stockMinimo: '',
@@ -28,7 +27,6 @@ function CuerpoFormulario({ modo, insumo, onGuardar, onCancelar }) {
     insumo
       ? {
         nombre: insumo.nombre,
-        descripcion: insumo.descripcion,
         idCategoria: insumo.idCategoria,
         idUnidadMedida: insumo.idUnidadMedida,
         stockMinimo: String(insumo.stockMinimo),
@@ -95,15 +93,6 @@ function CuerpoFormulario({ modo, insumo, onGuardar, onCancelar }) {
               ]}
               value={form.idCategoria}
               onChange={(e) => set('idCategoria', e.target.value ? Number(e.target.value) : '')}
-              sx={campoSx}
-            />
-          </FormField>
-
-          <FormField label="Descripción" sx={anchoCompletoSx}>
-            <Input
-              placeholder="Descripción del insumo…"
-              value={form.descripcion}
-              onChange={(e) => set('descripcion', e.target.value)}
               sx={campoSx}
             />
           </FormField>

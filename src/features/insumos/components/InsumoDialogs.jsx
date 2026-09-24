@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { StatusBadge } from "@shared/components";
-import { formatoCodigo, getEstadoVisual, estadoVisualVariant } from "../utils/insumosHelpers";
+import { formatoCodigo, estadoVisualVariant } from "../utils/insumosHelpers";
 
 export function EliminarInsumoDialog({ open, insumo, onClose, onConfirmar }) {
     return (
@@ -47,35 +47,28 @@ export function EliminarInsumoDialog({ open, insumo, onClose, onConfirmar }) {
 
 export function CambiarEstadoInsumoDialog({ open, insumo, onClose, onCambiar }) {
     if (!insumo) return null;
-    const ev = getEstadoVisual(insumo);
+    const actual = insumo.estado ? "Activo" : "Inactivo";
+    const nuevo = insumo.estado ? "Inactivo" : "Activo";
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
             <DialogTitle>Cambiar Estado</DialogTitle>
             <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ bgcolor: "action.hover", p: 1.5, borderRadius: 2 }}>
-                    <Typography variant="caption" color="text.secondary">
-                        Estado actual:
-                    </Typography>
-                    <StatusBadge variant={estadoVisualVariant[ev]}>{ev}</StatusBadge>
-                </Stack>
-                <Typography variant="caption" color="text.secondary">
-                    Selecciona el nuevo estado para <strong>{insumo.nombre}</strong>:
+                <Typography variant="body2">
+                    Está a punto de cambiar el estado de <strong>{insumo.nombre}</strong> de {actual} a {nuevo}. ¿Desea continuar?
                 </Typography>
-                <Button
-                    variant="outlined"
-                    onClick={() => onCambiar(!insumo.estado)}
-                    sx={{ justifyContent: "flex-start", gap: 1.5, textTransform: "none" }}
-                >
-                    <StatusBadge variant={insumo.estado ? "danger" : "success"}>
-                        {insumo.estado ? "Inactivo" : "Activo"}
-                    </StatusBadge>
-                    Cambiar a {insumo.estado ? "Inactivo" : "Activo"}
-                </Button>
+                <Stack direction="row" spacing={1} alignItems="center" sx={{ bgcolor: "action.hover", p: 1.5, borderRadius: 2 }}>
+                    <StatusBadge variant={estadoVisualVariant[actual]}>{actual}</StatusBadge>
+                    <Typography variant="caption" color="text.secondary">→</Typography>
+                    <StatusBadge variant={estadoVisualVariant[nuevo]}>{nuevo}</StatusBadge>
+                </Stack>
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 2 }}>
-                <Button variant="outlined" fullWidth onClick={onClose}>
+                <Button variant="outlined" onClick={onClose}>
                     Cancelar
+                </Button>
+                <Button variant="contained" onClick={() => onCambiar(!insumo.estado)}>
+                    Aceptar
                 </Button>
             </DialogActions>
         </Dialog>

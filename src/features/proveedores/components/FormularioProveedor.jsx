@@ -6,7 +6,6 @@ import { formatoCodigo } from '../utils/proveedoresHelpers'
 const formVacio = {
   nombre: '',
   nit: '',
-  descripcion: '',
   nombreContacto: '',
   telefono: '',
   email: '',
@@ -16,7 +15,6 @@ const formVacio = {
 
 const seccionTituloSx = { fontSize: 14, fontWeight: 700, color: 'text.primary' }
 const gridSx = { display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }
-const anchoCompletoSx = { gridColumn: { sm: '1 / -1' } }
 
 // El theme global fija el fondo de MuiOutlinedInput/MuiSelect en un hex
 // claro fijo (#F0EBE3), que no cambia en modo oscuro. Se sobreescribe acá
@@ -30,7 +28,6 @@ function CuerpoFormulario({ modo, proveedor, onGuardar, onCancelar }) {
       ? {
         nombre: proveedor.nombre ?? '',
         nit: proveedor.nit ?? '',
-        descripcion: proveedor.descripcion ?? '',
         nombreContacto: proveedor.nombreContacto ?? '',
         telefono: proveedor.telefono ?? '',
         email: proveedor.email ?? '',
@@ -84,15 +81,6 @@ function CuerpoFormulario({ modo, proveedor, onGuardar, onCancelar }) {
           </FormField>
           <FormField label="NIT" required>
             <Input placeholder="900.123.456-7" value={form.nit} onChange={(e) => set('nit', e.target.value)} sx={campoSx} />
-          </FormField>
-
-          <FormField label="Descripción" sx={anchoCompletoSx}>
-            <Input
-              placeholder="Descripción del proveedor…"
-              value={form.descripcion}
-              onChange={(e) => set('descripcion', e.target.value)}
-              sx={campoSx}
-            />
           </FormField>
         </Box>
       </Box>

@@ -12,10 +12,8 @@ import {
 } from "@mui/material";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import ToggleOnOutlinedIcon from "@mui/icons-material/ToggleOnOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import {
-  StatusBadge,
   tableSx,
   tableHeadCellSx,
   tableBodyCellSx,
@@ -29,8 +27,8 @@ import {
   nombreCategoria,
   unidadAbrev,
   getEstadoVisual,
-  estadoVisualVariant,
 } from "../utils/insumosHelpers";
+import { EstadoSwitch } from "./EstadoSwitch";
 
 const COLUMNS = [
   { key: "id", label: "Código", sortable: true },
@@ -112,7 +110,12 @@ export function InsumosTable({ rows, sortKey, sortDir, onSort, onVer, onEditar, 
                   {formatoMoneda(r.costoPromedio)}
                 </TableCell>
                 <TableCell sx={{ ...tableBodyCellSx, ...compactoPy }}>
-                  <StatusBadge variant={estadoVisualVariant[ev]}>{ev}</StatusBadge>
+                  <EstadoSwitch
+                    activo={r.estado}
+                    stockBajo={ev === "Stock Bajo"}
+                    nombre={r.nombre}
+                    onChange={() => onCambiarEstado(r)}
+                  />
                 </TableCell>
                 <TableCell align="right" sx={{ ...tableBodyCellSx, ...compactoPy, whiteSpace: "nowrap" }}>
                   <Stack direction="row" spacing={0.25} justifyContent="flex-end">
@@ -121,14 +124,6 @@ export function InsumosTable({ rows, sortKey, sortDir, onSort, onVer, onEditar, 
                     </IconButton>
                     <IconButton size="small" title="Editar" sx={accionIconSx} onClick={() => onEditar(r)}>
                       <EditOutlinedIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      title="Cambiar estado"
-                      sx={accionIconSx}
-                      onClick={() => onCambiarEstado(r)}
-                    >
-                      <ToggleOnOutlinedIcon fontSize="small" />
                     </IconButton>
                     <IconButton
                       size="small"
