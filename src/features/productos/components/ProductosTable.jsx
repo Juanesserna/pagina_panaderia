@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import {
-  Card,
   Table,
   TableBody,
   TableCell,
@@ -9,7 +8,6 @@ import {
   TableRow,
   Typography,
   Box,
-  Avatar,
   IconButton,
   useTheme,
 } from '@mui/material'
@@ -22,7 +20,7 @@ import {
 } from '@tabler/icons-react'
 import { fonts } from '@app/theme/colors'
 import { alpha } from '@mui/material/styles'
-import { productos, formatPrice } from '../services/productos.service'
+import { formatPrice } from '../services/productos.service'
 import EstadoBadge from './EstadoBadge'
 
 const HEADER_SX = {
@@ -95,7 +93,7 @@ function HeaderLabel({ children }) {
   )
 }
 
-export default function ProductosTable({ onEdit, onVer }) {
+export default function ProductosTable({ productos, onEdit, onVer, onEliminar }) {
   const theme = useTheme()
   const [sortConfig, setSortConfig] = useState({ column: null, direction: 'asc' })
 
@@ -126,163 +124,158 @@ export default function ProductosTable({ onEdit, onVer }) {
   })
 
   return (
-    <Card
-      variant="outlined"
+    <TableContainer
       sx={{
-        borderRadius: 3,
-        borderColor: theme.palette.divider,
-        backgroundColor: 'background.paper',
         overflow: 'hidden',
       }}
     >
-      <TableContainer>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell sx={HEADER_SX} style={{ width: 80 }}>
-                <SortableHeader nombre="CÓDIGO" columna="codigo" sortConfig={sortConfig} onSort={handleSort} />
-              </TableCell>
-              <TableCell sx={HEADER_SX} style={{ width: 240 }}>
-                <SortableHeader nombre="PRODUCTO" columna="nombre" sortConfig={sortConfig} onSort={handleSort} />
-              </TableCell>
-              <TableCell sx={HEADER_SX} style={{ width: 140 }}>
-                <HeaderLabel>CATEGORÍA</HeaderLabel>
-              </TableCell>
-              <TableCell sx={{ ...HEADER_SX, textAlign: 'right' }} style={{ width: 120 }}>
-                <SortableHeader nombre="PRECIO VENTA" columna="precioVenta" sortConfig={sortConfig} onSort={handleSort} />
-              </TableCell>
-              <TableCell sx={HEADER_SX} style={{ width: 80 }}>
-                <SortableHeader nombre="STOCK" columna="stock" sortConfig={sortConfig} onSort={handleSort} />
-              </TableCell>
-              <TableCell sx={HEADER_SX} style={{ width: 100 }}>
-                <HeaderLabel>ESTADO</HeaderLabel>
-              </TableCell>
-              <TableCell sx={{ ...HEADER_SX, textAlign: 'right' }} style={{ width: 100 }}>
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-              {sortedProductos.map((p, index) => (
-              <TableRow
-                key={p.id}
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell sx={HEADER_SX} style={{ width: 80 }}>
+              <SortableHeader nombre="CÓDIGO" columna="codigo" sortConfig={sortConfig} onSort={handleSort} />
+            </TableCell>
+            <TableCell sx={HEADER_SX} style={{ width: 240 }}>
+              <SortableHeader nombre="PRODUCTO" columna="nombre" sortConfig={sortConfig} onSort={handleSort} />
+            </TableCell>
+            <TableCell sx={HEADER_SX} style={{ width: 140 }}>
+              <HeaderLabel>CATEGORÍA</HeaderLabel>
+            </TableCell>
+            <TableCell sx={{ ...HEADER_SX, textAlign: 'right' }} style={{ width: 120 }}>
+              <SortableHeader nombre="PRECIO VENTA" columna="precioVenta" sortConfig={sortConfig} onSort={handleSort} />
+            </TableCell>
+            <TableCell sx={HEADER_SX} style={{ width: 80 }}>
+              <SortableHeader nombre="STOCK" columna="stock" sortConfig={sortConfig} onSort={handleSort} />
+            </TableCell>
+            <TableCell sx={HEADER_SX} style={{ width: 100 }}>
+              <HeaderLabel>ESTADO</HeaderLabel>
+            </TableCell>
+            <TableCell sx={{ ...HEADER_SX, textAlign: 'right' }} style={{ width: 100 }}>
+            </TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+            {sortedProductos.map((p, index) => (
+          <TableRow
+            key={p.id}
+            sx={{
+              backgroundColor: index % 2 === 1 ? alpha(theme.palette.text.primary, 0.03) : 'transparent',
+              '&:hover': { bgcolor: theme.palette.action.hover },
+            }}
+          >
+            <TableCell sx={CELL_SX}>
+              <Typography
                 sx={{
-                  backgroundColor: index % 2 === 1 ? alpha(theme.palette.text.primary, 0.03) : 'transparent',
-                  '&:hover': { bgcolor: theme.palette.action.hover },
+                  fontFamily: fonts.sans,
+                  fontSize: 13,
+                  color: theme.palette.text.primary,
                 }}
               >
-                <TableCell sx={CELL_SX}>
-                  <Typography
-                    sx={{
-                      fontFamily: fonts.sans,
-                      fontSize: 13,
-                      color: theme.palette.text.primary,
-                    }}
-                  >
-                    {p.codigo}
-                  </Typography>
-                </TableCell>
-                <TableCell sx={CELL_SX}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-                    <Box
-                      component="img"
-                      src={p.imagenUrl}
-                      alt={p.nombre}
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 1,
-                        objectFit: 'cover',
-                      }}
-                    />
-                    <Typography
-                      sx={{
-                        fontFamily: fonts.sans,
-                        fontSize: 13,
-                        color: theme.palette.text.primary,
-                      }}
-                    >
-                      {p.nombre}
-                    </Typography>
-                  </Box>
-                </TableCell>
-                <TableCell sx={CELL_SX}>
-                  <Typography
-                    sx={{
-                      fontFamily: fonts.sans,
-                      fontSize: 13,
-                      color: theme.palette.text.primary,
-                    }}
-                  >
-                    {p.categoria}
-                  </Typography>
-                </TableCell>
-                <TableCell sx={{ ...CELL_SX, textAlign: 'right' }}>
-                  <Typography
-                    sx={{
-                      fontFamily: fonts.sans,
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: theme.palette.text.primary,
-                    }}
-                  >
-                    {formatPrice(p.precioVenta)}
-                  </Typography>
-                </TableCell>
-                <TableCell sx={CELL_SX}>
-                  <Typography
-                    sx={{
-                      fontFamily: fonts.sans,
-                      fontSize: 13,
-                      color: theme.palette.text.primary,
-                    }}
-                  >
-                    {p.stock}
-                  </Typography>
-                </TableCell>
-                <TableCell sx={CELL_SX}>
-                  <EstadoBadge estado={p.estado} />
-                </TableCell>
-                <TableCell sx={{ ...CELL_SX, textAlign: 'right' }}>
-                  <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.25 }}>
-                    <IconButton
-                      size="small"
-                      onClick={() => onVer?.(p)}
-                      sx={{
-                        color: theme.palette.text.secondary,
-                        width: 28,
-                        height: 28,
-                      }}
-                    >
-                      <IconEye size={15} />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => onEdit?.(p)}
-                      sx={{
-                        color: theme.palette.text.secondary,
-                        width: 28,
-                        height: 28,
-                      }}
-                    >
-                      <IconPencil size={15} />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      sx={{
-                        color: theme.palette.error.main,
-                        width: 28,
-                        height: 28,
-                      }}
-                    >
-                      <IconTrash size={15} />
-                    </IconButton>
-                  </Box>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Card>
+                {p.codigo}
+              </Typography>
+            </TableCell>
+            <TableCell sx={CELL_SX}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                <Box
+                  component="img"
+                  src={p.imagenUrl}
+                  alt={p.nombre}
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 1,
+                    objectFit: 'cover',
+                  }}
+                />
+                <Typography
+                  sx={{
+                    fontFamily: fonts.sans,
+                    fontSize: 13,
+                    color: theme.palette.text.primary,
+                  }}
+                >
+                  {p.nombre}
+                </Typography>
+              </Box>
+            </TableCell>
+            <TableCell sx={CELL_SX}>
+              <Typography
+                sx={{
+                  fontFamily: fonts.sans,
+                  fontSize: 13,
+                  color: theme.palette.text.primary,
+                }}
+              >
+                {p.categoria}
+              </Typography>
+            </TableCell>
+            <TableCell sx={{ ...CELL_SX, textAlign: 'right' }}>
+              <Typography
+                sx={{
+                  fontFamily: fonts.sans,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: theme.palette.text.primary,
+                }}
+              >
+                {formatPrice(p.precioVenta)}
+              </Typography>
+            </TableCell>
+            <TableCell sx={CELL_SX}>
+              <Typography
+                sx={{
+                  fontFamily: fonts.sans,
+                  fontSize: 13,
+                  color: theme.palette.text.primary,
+                }}
+              >
+                {p.stock}
+              </Typography>
+            </TableCell>
+            <TableCell sx={CELL_SX}>
+              <EstadoBadge estado={p.estado} />
+            </TableCell>
+            <TableCell sx={{ ...CELL_SX, textAlign: 'right' }}>
+              <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.25 }}>
+                <IconButton
+                  size="small"
+                  onClick={() => onVer?.(p)}
+                  sx={{
+                    color: theme.palette.text.secondary,
+                    width: 28,
+                    height: 28,
+                  }}
+                >
+                  <IconEye size={15} />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={() => onEdit?.(p)}
+                  sx={{
+                    color: theme.palette.text.secondary,
+                    width: 28,
+                    height: 28,
+                  }}
+                >
+                  <IconPencil size={15} />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={() => onEliminar?.(p)}
+                  sx={{
+                    color: theme.palette.error.main,
+                    width: 28,
+                    height: 28,
+                  }}
+                >
+                  <IconTrash size={15} />
+                </IconButton>
+              </Box>
+            </TableCell>
+          </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
   )
 }

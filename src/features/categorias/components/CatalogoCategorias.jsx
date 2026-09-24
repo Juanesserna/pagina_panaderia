@@ -1,30 +1,28 @@
 import {
-  Card,
-  CardContent,
   Box,
   Typography,
   TextField,
   Button,
   InputAdornment,
+  Divider,
   useTheme,
 } from '@mui/material'
 import { IconCirclePlus, IconFilter, IconSearch } from '@tabler/icons-react'
 import { fonts } from '@app/theme/colors'
 
-export default function CatalogoCategorias({ onBuscar, onNuevoClick, onFiltrarClick }) {
+export default function CatalogoCategorias({
+  onBuscar,
+  onNuevoClick,
+  onFiltrarClick,
+  valorBusqueda = '',
+}) {
   const theme = useTheme()
 
   return (
-    <Card
-      variant="outlined"
-      sx={{
-        borderRadius: 3,
-        borderColor: theme.palette.divider,
-        backgroundColor: 'background.paper',
-      }}
-    >
-      <CardContent
+    <Box sx={{ width: '100%' }}>
+      <Box
         sx={{
+          p: 3,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -46,6 +44,7 @@ export default function CatalogoCategorias({ onBuscar, onNuevoClick, onFiltrarCl
           <TextField
             placeholder="Buscar categoría..."
             size="small"
+            value={valorBusqueda}
             onChange={onBuscar}
             InputProps={{
               startAdornment: (
@@ -57,6 +56,7 @@ export default function CatalogoCategorias({ onBuscar, onNuevoClick, onFiltrarCl
             sx={{
               width: 280,
               '& .MuiOutlinedInput-root': {
+                backgroundColor: '#F0EBE3',
                 overflow: 'hidden',
               },
             }}
@@ -88,18 +88,20 @@ export default function CatalogoCategorias({ onBuscar, onNuevoClick, onFiltrarCl
               fontWeight: 500,
               px: 2,
               py: 1,
+              backgroundColor: '#F0EBE3',
               borderColor: theme.palette.divider,
               color: theme.palette.text.primary,
               '&:hover': {
                 borderColor: theme.palette.primary.main,
-                bgcolor: theme.palette.action.hover,
+                backgroundColor: '#F0EBE3',
               },
             }}
           >
             Filtrar
           </Button>
         </Box>
-      </CardContent>
-    </Card>
+      </Box>
+      <Divider />
+    </Box>
   )
 }

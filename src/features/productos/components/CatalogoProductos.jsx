@@ -1,30 +1,42 @@
+import { useState } from 'react'
 import {
-  Card,
-  CardContent,
   Box,
   Typography,
   TextField,
   Button,
   InputAdornment,
+  Divider,
+  MenuItem,
   useTheme,
 } from '@mui/material'
 import { IconCirclePlus, IconFilter, IconSearch } from '@tabler/icons-react'
 import { fonts } from '@app/theme/colors'
 
-export default function CatalogoProductos({ onBuscar, onNuevoClick, onFiltrarClick }) {
+const categoriasFiltro = ['Pan Artesanal', 'Pastelería', 'Tortas', 'Bebidas']
+const estadosFiltro = ['Activo', 'Agotado']
+
+export default function Catalogoproductos({
+  onBuscar,
+  onNuevoClick,
+  onFiltrarClick,
+  onFiltroCategoriaChange,
+  onFiltroEstadoChange,
+  filtroCategoria = '',
+  filtroEstado = '',
+}) {
   const theme = useTheme()
+  const [mostrarFiltros, setMostrarFiltros] = useState(false)
+
+  const handleFiltrarClick = () => {
+    setMostrarFiltros((prev) => !prev)
+    if (onFiltrarClick) onFiltrarClick()
+  }
 
   return (
-    <Card
-      variant="outlined"
-      sx={{
-        borderRadius: 3,
-        borderColor: theme.palette.divider,
-        backgroundColor: 'background.paper',
-      }}
-    >
-      <CardContent
+    <Box sx={{ width: '100%' }}>
+      <Box
         sx={{
+          p: 3,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -44,7 +56,7 @@ export default function CatalogoProductos({ onBuscar, onNuevoClick, onFiltrarCli
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <TextField
-            placeholder="Buscar producto o código..."
+            placeholder=" Buscar producto o código..."
             size="small"
             onChange={onBuscar}
             InputProps={{
@@ -81,7 +93,7 @@ export default function CatalogoProductos({ onBuscar, onNuevoClick, onFiltrarCli
           <Button
             variant="outlined"
             startIcon={<IconFilter size={16} />}
-            onClick={onFiltrarClick}
+            onClick={handleFiltrarClick}
             sx={{
               textTransform: 'none',
               fontSize: 13,
@@ -99,7 +111,145 @@ export default function CatalogoProductos({ onBuscar, onNuevoClick, onFiltrarCli
             Filtrar
           </Button>
         </Box>
-      </CardContent>
-    </Card>
+      </Box>
+      <Divider />
+
+      {mostrarFiltros && (
+        <Box
+          sx={{
+            p: 2,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+            flexWrap: 'wrap',
+            backgroundColor: theme.palette.background.default,
+          }}
+        >
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 220 }}>
+            <Typography
+              component="label"
+              sx={{
+                fontFamily: fonts.sans,
+                fontSize: 11,
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                color: theme.palette.text.secondary,
+              }}
+            >
+              Categoría
+            </Typography>
+            <TextField
+              select
+              size="small"
+              value={filtroCategoria}
+              onChange={(e) => onFiltroCategoriaChange?.(e.target.value)}
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: theme.palette.divider,
+                },
+                '&:hover fieldset': {
+                  borderColor: theme.palette.divider,
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: theme.palette.primary.main,
+                },
+                '& .MuiSelect-select': {
+                  fontFamily: fonts.sans,
+                  fontSize: 13,
+                  color: filtroCategoria ? theme.palette.text.primary : theme.palette.text.secondary,
+                },
+              }}
+              SelectProps={{
+                displayEmpty: true,
+                MenuProps: {
+                  PaperProps: {
+                    sx: {
+                      backgroundColor: theme.palette.background.paper,
+                      '& .MuiMenuItem-root': {
+                        fontFamily: fonts.sans,
+                        fontSize: 14,
+                      },
+                    },
+                  },
+                },
+              }}
+            >
+              <MenuItem value="" disabled>
+                Todas las categorías
+              </MenuItem>
+              {categoriasFiltro.map((c) => (
+                <MenuItem key={c} value={c}>
+                  {c}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 200 }}>
+            <Typography
+              component="label"
+              sx={{
+                fontFamily: fonts.sans,
+                fontSize: 11,
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                color: theme.palette.text.secondary,
+              }}
+            >
+              Estado
+            </Typography>
+            <TextField
+              select
+              size="small"
+              value={filtroEstado}
+              onChange={(e) => onFiltroEstadoChange?.(e.target.value)}
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: theme.palette.divider,
+                },
+                '&:hover fieldset': {
+                  borderColor: theme.palette.divider,
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: theme.palette.primary.main,
+                },
+                '& .MuiSelect-select': {
+                  fontFamily: fonts.sans,
+                  fontSize: 13,
+                  color: filtroEstado ? theme.palette.text.primary : theme.palette.text.secondary,
+                },
+              }}
+              SelectProps={{
+                displayEmpty: true,
+                MenuProps: {
+                  PaperProps: {
+                    sx: {
+                      backgroundColor: theme.palette.background.paper,
+                      '& .MuiMenuItem-root': {
+                        fontFamily: fonts.sans,
+                        fontSize: 14,
+                      },
+                    },
+                  },
+                },
+              }}
+            >
+              <MenuItem value="" disabled>
+                Todos los estados
+              </MenuItem>
+              {estadosFiltro.map((e) => (
+                <MenuItem key={e} value={e}>
+                  {e}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
+        </Box>
+      )}
+    </Box>
   )
 }

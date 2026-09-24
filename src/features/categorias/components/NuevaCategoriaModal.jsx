@@ -3,11 +3,9 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogContentText,
   DialogActions,
   TextField,
   FormControl,
-  InputLabel,
   Select,
   MenuItem,
   Button,
@@ -116,6 +114,7 @@ export default function NuevaCategoriaModal({
                 variant="outlined"
                 sx={{
                   '& .MuiOutlinedInput-root': {
+                    backgroundColor: '#F0EBE3',
                     overflow: 'hidden',
                   },
                 }}
@@ -141,7 +140,21 @@ export default function NuevaCategoriaModal({
                   value={tipo}
                   label="TIPO DE CATEGORÍA"
                   onChange={(e) => setTipo(e.target.value)}
+                  notched={false}
                   variant="outlined"
+                  sx={{
+                    backgroundColor: '#F0EBE3',
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                    '&.MuiOutlinedInput-root': {
+                      backgroundColor: '#F0EBE3',
+                      overflow: 'hidden',
+                    },
+                    '& .MuiSelect-select': {
+                      backgroundColor: '#F0EBE3',
+                      overflow: 'hidden',
+                    },
+                  }}
                 >
                   <MenuItem value="Producto">Producto</MenuItem>
                   <MenuItem value="Insumo">Insumo</MenuItem>
@@ -169,7 +182,21 @@ export default function NuevaCategoriaModal({
                   value={estado}
                   label="ESTADO"
                   onChange={(e) => setEstado(e.target.value)}
+                  notched={false}
                   variant="outlined"
+                  sx={{
+                    backgroundColor: '#F0EBE3',
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                    '&.MuiOutlinedInput-root': {
+                      backgroundColor: '#F0EBE3',
+                      overflow: 'hidden',
+                    },
+                    '& .MuiSelect-select': {
+                      backgroundColor: '#F0EBE3',
+                      overflow: 'hidden',
+                    },
+                  }}
                 >
                   <MenuItem value="Activa">Activa</MenuItem>
                   <MenuItem value="Inactiva">Inactiva</MenuItem>
@@ -220,6 +247,11 @@ export default function NuevaCategoriaModal({
               fontWeight: 500,
               px: 2.5,
               py: 1,
+              '&.Mui-disabled': {
+                backgroundColor: '#E4BCA2',
+                color: '#FFFFFF',
+                opacity: 1,
+              },
             }}
           >
             Crear categoría
