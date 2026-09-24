@@ -1,0 +1,51 @@
+// src/features/landing/data/products.js
+export const products = [
+  {
+    id: 1,
+    category: 'Pan Artesanal',
+    name: 'Sourdough Campesino',
+    description: 'Masa madre 72h, corteza crujiente, miga abierta',
+    price: 18500,
+    img: 'https://images.unsplash.com/photo-1725297952102-ab28892a31ab?w=600&h=450&fit=crop&auto=format',
+  },
+  {
+    id: 2,
+    category: 'Pastelería',
+    name: 'Croissant de Mantequilla',
+    description: 'Hojaldrado con mantequilla importada, 27 capas',
+    price: 8900,
+    img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=600&h=450&fit=crop&auto=format',
+  },
+  {
+    id: 3,
+    category: 'Pastelería',
+    name: 'Pain au Chocolat',
+    description: 'Chocolate 70% Tumaco, masa hojaldrada artesanal',
+    price: 9500,
+    img: 'https://images.unsplash.com/photo-1530610476181-d83430b64dcd?w=600&h=450&fit=crop&auto=format',
+  },
+  {
+    id: 4,
+    category: 'Pan Artesanal',
+    name: 'Ciabatta al Romero',
+    description: 'Aceite de oliva extra virgen, romero fresco',
+    price: 14000,
+    img: 'https://images.unsplash.com/photo-1587912001191-0cd4f14fd89e?w=600&h=450&fit=crop&auto=format',
+  },
+  {
+    id: 5,
+    category: 'Bebidas',
+    name: 'Café de Origen',
+    description: 'Selección de finca, método filtrado con precisión',
+    price: 7500,
+    img: 'https://images.unsplash.com/photo-1515823662972-da6a2e4d3002?w=600&h=450&fit=crop&auto=format',
+  },
+  {
+    id: 6,
+    category: 'Tortas',
+    name: 'Torta de Temporada',
+    description: 'Frutos de estación, crema diplomática, bizcocho húmedo',
+    price: 89000,
+    img: 'https://images.unsplash.com/photo-1604413191066-4dd20bedf486?w=600&h=450&fit=crop&auto=format',
+  },
+]

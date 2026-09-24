@@ -2,11 +2,12 @@ import { Box, Drawer, Typography, IconButton, Button } from '@mui/material'
 import { IconX, IconShoppingCart, IconTrash } from '@tabler/icons-react'
 import { fonts } from '@app/theme/colors'
 
+
 function formatPrice(p) {
   return `$${p.toLocaleString('es-CO')}`
 }
 
-export function CartDrawer({ isOpen, onClose, items, onRemove, onUpdateQty, isDark }) {
+export function CartDrawer({ isOpen, onClose, items, onRemove, onUpdateQty, onCheckout, isDark }) {
   const subtotal = items.reduce((acc, i) => acc + i.price * i.qty, 0)
 
   return (
@@ -109,6 +110,7 @@ export function CartDrawer({ isOpen, onClose, items, onRemove, onUpdateQty, isDa
           </Box>
           <Button
             fullWidth
+            onClick={onCheckout}
             sx={{ bgcolor: '#5B3023', color: '#FAF5EE', py: 1.75, fontSize: 13, '&:hover': { bgcolor: '#4a2519' } }}
           >
             Confirmar pedido

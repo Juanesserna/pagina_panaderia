@@ -34,6 +34,7 @@ export const initialVentas = [
 export const estadoVariant = {
   completado: 'success',
   'en proceso': 'process', // 👈 Nueva variante para el tono terracota/rosa
+  'pago parcial': 'process',
   pendiente: 'warning',
   cancelado: 'danger',
 }
@@ -42,6 +43,7 @@ export const estadoDotColor = {
   completado: "#34d399",
   "en proceso": "#f87171",
   pendiente: "#fbbf24",
+  "pago parcial": "#C97A45",
   cancelado: "#f87171",
 };
 
@@ -49,11 +51,13 @@ export const estadoDarkColors = {
   completado:  { bg: "#34372A", color: "#A3D115" },
   "en proceso": { bg: "#3D271B", color: "#F53926" },
   pendiente:   { bg: "#48321C", color: "#F29126" },
+  "pago parcial": { bg: "#3D2C21", color: "#C97A45" },
   cancelado:   { bg: "#361F17", color: "#702B20" },
 };
 
 export const estadoOptions = [
   { value: "pendiente", label: "Pendiente" },
+  { value: "pago parcial", label: "Pago parcial" },
   { value: "en proceso", label: "En proceso" },
   { value: "completado", label: "Completado" },
   { value: "cancelado", label: "Cancelado" },

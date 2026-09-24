@@ -13,4 +13,6 @@ export const ROUTES = {
   ROLES: '/roles',
   USUARIOS: '/usuarios',
   VENTAS: '/ventas',
+  CATALOGO: '/catalogo',
+  CHECKOUT: '/checkout',
 }
