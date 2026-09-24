@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Box, Stack, Typography, IconButton } from '@mui/material'
+import { Box, Stack, Typography, IconButton, OutlinedInput, InputAdornment } from '@mui/material'
 import {
   IconSearch,
   IconPlus,
@@ -16,6 +16,7 @@ import {
   IconCurrencyDollar,
   IconClock,
   IconCircleCheck,
+  IconToggleLeft,
 } from '@tabler/icons-react'
 import { KPICard } from '@features/compras/components/KPICard'
 import { StatusBadge } from '@features/compras/components/StatusBadge'
@@ -190,6 +191,15 @@ const PAGE_SIZE = 8
 
 const dimLabelSx = { fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.dim' }
 
+// Fondo/borde beige cálido usado en los campos del modal "Nueva orden de compra",
+// tal como se ve en el diseño de Figma.
+const campoBeigeSx = {
+  bgcolor: '#F3ECE0',
+  '& fieldset': { borderColor: '#E4D9C8' },
+  '&:hover fieldset': { borderColor: '#E4D9C8' },
+  '&.Mui-focused fieldset': { borderColor: 'primary.main' },
+}
+
 const nuevoFormItem = () => ({
   nombre: INSUMOS[0],
   cantidad: 1,
@@ -199,6 +209,114 @@ const nuevoFormItem = () => ({
   fechaVencimiento: '',
   cantidadDisponible: 1,
 })
+
+// ── Subcomponente de edición ────────────────────────────────────────────────
+
+function EditForm({ compra, onSave, onClose }) {
+  const [proveedor, setProveedor] = useState(compra.proveedor)
+  const [categoria, setCategoria] = useState(compra.categoria)
+  const [estado, setEstado] = useState(compra.estado)
+  const [notas, setNotas] = useState(compra.notas)
+  const [solicitante, setSolicitante] = useState(compra.solicitante)
+  const [detalle, setDetalle] = useState(compra.detalle.map((d) => ({ ...d })))
+
+  const handleDetalleChange = (i, field, val) => {
+    const updated = [...detalle]
+    updated[i] = { ...updated[i], [field]: field === 'cantidad' ? parseInt(val) || 1 : val }
+    setDetalle(updated)
+  }
+
+  const handleSubmit = () => {
+    onSave({
+      ...compra,
+      proveedor,
+      categoria,
+      estado,
+      notas,
+      solicitante,
+      detalle,
+      cantidadItems: detalle.length,
+    })
+  }
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Typography sx={dimLabelSx}>Proveedor</Typography>
+          <Select
+            options={PROVIDERS.map((p) => ({ value: `${p.id} - ${p.name}`, label: `${p.id} - ${p.name}` }))}
+            value={proveedor}
+            onChange={(e) => setProveedor(e.target.value)}
+          />
+        </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Typography sx={dimLabelSx}>Categoría</Typography>
+          <Select options={CATEGORIES.map((c) => ({ value: c, label: c }))} value={categoria} onChange={(e) => setCategoria(e.target.value)} />
+        </Box>
+      </Box>
+
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Typography sx={dimLabelSx}>Estado</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, bgcolor: estadoDotColor[estado] }} />
+            <Select options={estadoOptions} value={estado} onChange={(e) => setEstado(e.target.value)} />
+          </Box>
+        </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Typography sx={dimLabelSx}>Solicitante</Typography>
+          <Input value={solicitante} onChange={(e) => setSolicitante(e.target.value)} />
+        </Box>
+      </Box>
+
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <Typography sx={dimLabelSx}>Ítems</Typography>
+        {detalle.map((item, idx) => (
+          <Box key={idx} sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 1 }}>
+            <Input placeholder="Insumo" value={item.nombre} onChange={(e) => handleDetalleChange(idx, 'nombre', e.target.value)} />
+            <Input type="number" placeholder="Cant." value={item.cantidad} onChange={(e) => handleDetalleChange(idx, 'cantidad', e.target.value)} />
+            <Input placeholder="Unidad" value={item.unidad} onChange={(e) => handleDetalleChange(idx, 'unidad', e.target.value)} />
+            <Input placeholder="Valor" value={item.precio} onChange={(e) => handleDetalleChange(idx, 'precio', e.target.value)} />
+          </Box>
+        ))}
+      </Box>
+
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        <Typography sx={dimLabelSx}>Observaciones</Typography>
+        <Box
+          component="textarea"
+          rows={2}
+          value={notas}
+          onChange={(e) => setNotas(e.target.value)}
+          placeholder="Notas internas…"
+          sx={{
+            width: '100%',
+            p: 1.25,
+            fontSize: 13,
+            fontFamily: 'inherit',
+            borderRadius: 1.5,
+            border: '1px solid',
+            borderColor: 'divider',
+            bgcolor: 'transparent',
+            outline: 'none',
+            resize: 'none',
+            color: 'text.primary',
+          }}
+        />
+      </Box>
+
+      <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ pt: 1 }}>
+        <Button variant="secondary" size="sm" onClick={onClose}>
+          Cancelar
+        </Button>
+        <Button variant="primary" size="sm" onClick={handleSubmit}>
+          Guardar cambios
+        </Button>
+      </Stack>
+    </Box>
+  )
+}
 
 // ── Componente principal ────────────────────────────────────────────────
 
@@ -226,10 +344,13 @@ export default function ComprasPage() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
 
+  // Modal de cambio de estado (mismo patrón que el módulo de Ventas)
+  const [showEstadoModal, setShowEstadoModal] = useState(false)
+  const [compraEstadoModal, setCompraEstadoModal] = useState(null)
+
   // Formulario "Nueva compra"
   const [formItems, setFormItems] = useState([nuevoFormItem()])
   const [formProvider, setFormProvider] = useState(PROVIDERS[0].id)
-  const [formNotes, setFormNotes] = useState('')
   const [formDiscount, setFormDiscount] = useState(0)
   const [formEstado, setFormEstado] = useState('Pendiente')
   const [formSolicitor, setFormSolicitor] = useState('Andrés Mesa')
@@ -267,6 +388,23 @@ export default function ComprasPage() {
     setSelected((prev) =>
       prev && prev.id === id && esTransicionValida(prev.estado, nuevoEstado) ? { ...prev, estado: nuevoEstado } : prev
     )
+  }
+
+  const abrirModalEstado = (compra) => {
+    if (compra.estado === 'Cancelada') return
+    setCompraEstadoModal(compra)
+    setShowEstadoModal(true)
+  }
+
+  const cerrarModalEstado = () => {
+    setShowEstadoModal(false)
+    setCompraEstadoModal(null)
+  }
+
+  const handleSeleccionarNuevoEstado = (nuevoEstado) => {
+    if (!compraEstadoModal) return
+    handleCambiarEstado(compraEstadoModal.id, nuevoEstado)
+    cerrarModalEstado()
   }
 
   // ── Filtrado + ordenamiento ──────────────────────────────────────────
@@ -326,7 +464,6 @@ export default function ComprasPage() {
     setFormFecha(`${pad(ahora.getDate())}/${pad(ahora.getMonth() + 1)}/${ahora.getFullYear()}`)
     setFormItems([nuevoFormItem()])
     setFormProvider(PROVIDERS[0].id)
-    setFormNotes('')
     setFormDiscount(0)
     setFormEstado('Pendiente')
     setFormSolicitor('Andrés Mesa')
@@ -402,7 +539,7 @@ export default function ComprasPage() {
         fechaVencimiento: i.fechaVencimiento,
         cantidadDisponible: i.cantidadDisponible,
       })),
-      notas: formNotes + (formDiscount > 0 ? ` (Descuento del ${formDiscount}% aplicado)` : ''),
+      notas: formDiscount > 0 ? `Descuento del ${formDiscount}% aplicado` : '',
     }
     setCompras((prev) => [nuevaCompra, ...prev])
     setShowCreateModal(false)
@@ -504,17 +641,16 @@ export default function ComprasPage() {
         const bloqueado = r.estado === 'Cancelada'
         return (
           <Box
-            onClick={(e) => e.stopPropagation()}
-            title={bloqueado ? 'Una orden cancelada no se puede modificar' : undefined}
-            sx={{ display: 'flex', alignItems: 'center', gap: 1, width: 152, opacity: bloqueado ? 0.5 : 1 }}
+            onClick={(e) => {
+              e.stopPropagation()
+              abrirModalEstado(r)
+            }}
+            title={bloqueado ? 'Una orden cancelada no se puede modificar' : 'Cambiar estado'}
+            sx={{ display: 'inline-flex', cursor: bloqueado ? 'not-allowed' : 'pointer', opacity: bloqueado ? 0.5 : 1 }}
           >
-            <Box sx={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, bgcolor: estadoDotColor[r.estado] }} />
-            <Select
-              options={opcionesEstadoParaFila(r.estado)}
-              value={r.estado}
-              disabled={bloqueado}
-              onChange={(e) => handleCambiarEstado(r.id, e.target.value)}
-            />
+            <StatusBadge variant={estadoVariant[r.estado]} dot>
+              {r.estado}
+            </StatusBadge>
           </Box>
         )
       },
@@ -551,6 +687,18 @@ export default function ComprasPage() {
           </IconButton>
           <IconButton
             size="small"
+            title={r.estado === 'Cancelada' ? 'Una orden cancelada no se puede modificar' : 'Cambiar estado'}
+            disabled={r.estado === 'Cancelada'}
+            onClick={(e) => {
+              e.stopPropagation()
+              abrirModalEstado(r)
+            }}
+            sx={{ color: 'text.secondary' }}
+          >
+            <IconToggleLeft size={15} />
+          </IconButton>
+          <IconButton
+            size="small"
             title="Eliminar orden"
             onClick={(e) => {
               e.stopPropagation()
@@ -565,114 +713,6 @@ export default function ComprasPage() {
       ),
     },
   ]
-
-  // ── Subcomponente de edición ─────────────────────────────────────────
-
-  const EditForm = ({ compra }) => {
-    const [proveedor, setProveedor] = useState(compra.proveedor)
-    const [categoria, setCategoria] = useState(compra.categoria)
-    const [estado, setEstado] = useState(compra.estado)
-    const [notas, setNotas] = useState(compra.notas)
-    const [solicitante, setSolicitante] = useState(compra.solicitante)
-    const [detalle, setDetalle] = useState(compra.detalle.map((d) => ({ ...d })))
-
-    const handleDetalleChange = (i, field, val) => {
-      const updated = [...detalle]
-      updated[i] = { ...updated[i], [field]: field === 'cantidad' ? parseInt(val) || 1 : val }
-      setDetalle(updated)
-    }
-
-    const handleSubmit = () => {
-      handleGuardarEdicion({
-        ...compra,
-        proveedor,
-        categoria,
-        estado,
-        notas,
-        solicitante,
-        detalle,
-        cantidadItems: detalle.length,
-      })
-    }
-
-    return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            <Typography sx={dimLabelSx}>Proveedor</Typography>
-            <Select
-              options={PROVIDERS.map((p) => ({ value: `${p.id} - ${p.name}`, label: `${p.id} - ${p.name}` }))}
-              value={proveedor}
-              onChange={(e) => setProveedor(e.target.value)}
-            />
-          </Box>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            <Typography sx={dimLabelSx}>Categoría</Typography>
-            <Select options={CATEGORIES.map((c) => ({ value: c, label: c }))} value={categoria} onChange={(e) => setCategoria(e.target.value)} />
-          </Box>
-        </Box>
-
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            <Typography sx={dimLabelSx}>Estado</Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, bgcolor: estadoDotColor[estado] }} />
-              <Select options={estadoOptions} value={estado} onChange={(e) => setEstado(e.target.value)} />
-            </Box>
-          </Box>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            <Typography sx={dimLabelSx}>Solicitante</Typography>
-            <Input value={solicitante} onChange={(e) => setSolicitante(e.target.value)} />
-          </Box>
-        </Box>
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <Typography sx={dimLabelSx}>Ítems</Typography>
-          {detalle.map((item, idx) => (
-            <Box key={idx} sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 1 }}>
-              <Input placeholder="Insumo" value={item.nombre} onChange={(e) => handleDetalleChange(idx, 'nombre', e.target.value)} />
-              <Input type="number" placeholder="Cant." value={item.cantidad} onChange={(e) => handleDetalleChange(idx, 'cantidad', e.target.value)} />
-              <Input placeholder="Unidad" value={item.unidad} onChange={(e) => handleDetalleChange(idx, 'unidad', e.target.value)} />
-              <Input placeholder="Valor" value={item.precio} onChange={(e) => handleDetalleChange(idx, 'precio', e.target.value)} />
-            </Box>
-          ))}
-        </Box>
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-          <Typography sx={dimLabelSx}>Observaciones</Typography>
-          <Box
-            component="textarea"
-            rows={2}
-            value={notas}
-            onChange={(e) => setNotas(e.target.value)}
-            placeholder="Notas internas…"
-            sx={{
-              width: '100%',
-              p: 1.25,
-              fontSize: 13,
-              fontFamily: 'inherit',
-              borderRadius: 1.5,
-              border: '1px solid',
-              borderColor: 'divider',
-              bgcolor: 'transparent',
-              outline: 'none',
-              resize: 'none',
-              color: 'text.primary',
-            }}
-          />
-        </Box>
-
-        <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ pt: 1 }}>
-          <Button variant="secondary" size="sm" onClick={() => setShowEditModal(false)}>
-            Cancelar
-          </Button>
-          <Button variant="primary" size="sm" onClick={handleSubmit}>
-            Guardar cambios
-          </Button>
-        </Stack>
-      </Box>
-    )
-  }
 
   // ── Render principal ──────────────────────────────────────────────────
 
@@ -693,32 +733,47 @@ export default function ComprasPage() {
 
       {/* Tabla principal */}
       <Box sx={{ borderRadius: 2.5, overflow: 'hidden', bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
+        {/* Header: título a la izquierda, controles pegados al borde derecho */}
         <Box
           sx={{
-            display: 'grid',
-            gridTemplateColumns: '1fr auto 1fr',
+            display: 'flex',
             alignItems: 'center',
-            columnGap: 2,
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+            gap: 2,
             px: 2.5,
             py: 2,
             borderBottom: '1px solid',
             borderColor: 'divider',
           }}
         >
-          <Box />
-          <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'text.primary', textAlign: 'center', whiteSpace: 'nowrap' }}>
+          <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'text.primary', textAlign: 'left', whiteSpace: 'nowrap' }}>
             Órdenes de compra
           </Typography>
           <Stack direction="row" flexWrap="wrap" alignItems="center" justifyContent="flex-end" sx={{ gap: 3, columnGap: 3, rowGap: 1.5 }}>
             <Box sx={{ width: 224 }}>
-              <Input
+              <OutlinedInput
                 placeholder="Buscar orden o proveedor…"
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value)
                   setPage(1)
                 }}
-                leftIcon={<IconSearch size={13} />}
+                startAdornment={
+                  <InputAdornment position="start">
+                    <IconSearch size={16} color="#A0968C" />
+                  </InputAdornment>
+                }
+                fullWidth
+                sx={{
+                  height: 36,
+                  borderRadius: 1.5,
+                  fontSize: 13,
+                  bgcolor: 'background.paper',
+                  '& fieldset': { borderColor: 'divider' },
+                  '&:hover fieldset': { borderColor: 'primary.main' },
+                  '&.Mui-focused fieldset': { borderColor: 'primary.main' },
+                }}
               />
             </Box>
             <Button variant="primary" size="sm" leftIcon={<IconPlus size={13} />} onClick={handleNuevaCompra}>
@@ -856,6 +911,67 @@ export default function ComprasPage() {
         </Box>
       </Box>
 
+      {/* Modal: Cambiar estado */}
+      <Modal open={showEstadoModal} onClose={cerrarModalEstado} title="Cambiar Estado" size="sm">
+        {compraEstadoModal && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                bgcolor: 'background.alt',
+                borderRadius: 1.5,
+                px: 1.5,
+                py: 1.25,
+              }}
+            >
+              <Typography sx={{ fontSize: 12.5, color: 'text.dim' }}>Estado actual:</Typography>
+              <StatusBadge variant={estadoVariant[compraEstadoModal.estado]} dot>
+                {compraEstadoModal.estado}
+              </StatusBadge>
+            </Box>
+
+            <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>
+              Selecciona el nuevo estado para la orden <b>{compraEstadoModal.id}</b>:
+            </Typography>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+              {opcionesEstadoParaFila(compraEstadoModal.estado)
+                .filter((o) => o.value !== compraEstadoModal.estado)
+                .map((o) => {
+                  const color = estadoDotColor[o.value]
+                  return (
+                    <Box
+                      key={o.value}
+                      onClick={() => handleSeleccionarNuevoEstado(o.value)}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1.25,
+                        cursor: 'pointer',
+                        borderRadius: 1.5,
+                        px: 1.25,
+                        py: 1,
+                        bgcolor: 'background.alt',
+                        '&:hover': { bgcolor: 'action.hover' },
+                      }}
+                    >
+                      <Box sx={{ width: 7, height: 7, borderRadius: '50%', flexShrink: 0, bgcolor: color }} />
+                      <Typography sx={{ fontSize: 13, fontWeight: 600, color: 'text.primary' }}>{o.label}</Typography>
+                      <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>Cambiar a {o.label}</Typography>
+                    </Box>
+                  )
+                })}
+            </Box>
+
+            <Button variant="secondary" size="sm" onClick={cerrarModalEstado}>
+              Cancelar
+            </Button>
+          </Box>
+        )}
+      </Modal>
+
       {/* Modal: Ver detalle */}
       <Modal open={showViewModal} onClose={() => setShowViewModal(false)} title="Detalle de compra" size="md">
         {selected && (
@@ -958,12 +1074,12 @@ export default function ComprasPage() {
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                   <Typography sx={dimLabelSx}>ID de orden</Typography>
-                  <Input value={formNewId} disabled rightIcon={<IconLock size={12} />} sx={{ fontFamily: 'monospace', borderStyle: 'dashed' }} />
+                  <Input value={formNewId} disabled rightIcon={<IconLock size={12} />} sx={{ fontFamily: 'monospace', borderStyle: 'dashed', ...campoBeigeSx }} />
                   <Typography sx={{ fontSize: 10.5, color: 'text.dim' }}>Generado automáticamente</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                   <Typography sx={dimLabelSx}>Fecha</Typography>
-                  <Input value={formFecha} disabled sx={{ borderStyle: 'dashed' }} />
+                  <Input value={formFecha} disabled sx={{ borderStyle: 'dashed', ...campoBeigeSx }} />
                   <Typography sx={{ fontSize: 10.5, color: 'text.dim' }}>Fecha del sistema</Typography>
                 </Box>
               </Box>
@@ -972,7 +1088,7 @@ export default function ComprasPage() {
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                   <Typography sx={dimLabelSx}>Estado inicial</Typography>
-                  <Select options={estadoOptions} value={formEstado} onChange={(e) => setFormEstado(e.target.value)} />
+                  <Select options={estadoOptions} value={formEstado} onChange={(e) => setFormEstado(e.target.value)} sx={campoBeigeSx} />
                 </Box>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                   <Typography sx={dimLabelSx}>Proveedor</Typography>
@@ -980,6 +1096,7 @@ export default function ComprasPage() {
                     options={PROVIDERS.map((p) => ({ value: p.id, label: `${p.id} - ${p.name}` }))}
                     value={formProvider}
                     onChange={(e) => setFormProvider(e.target.value)}
+                    sx={campoBeigeSx}
                   />
                 </Box>
               </Box>
@@ -991,6 +1108,7 @@ export default function ComprasPage() {
                   placeholder="Ej: 10"
                   value={formDiscount || ''}
                   onChange={(e) => setFormDiscount(Math.max(0, parseInt(e.target.value) || 0))}
+                  sx={campoBeigeSx}
                 />
               </Box>
 
@@ -1017,7 +1135,7 @@ export default function ComprasPage() {
                       <Box sx={{ display: 'grid', gridTemplateColumns: '1.6fr 0.8fr 0.8fr 1fr', gap: 1.5 }}>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                           <Typography sx={{ fontSize: 10.5, color: 'text.dim' }}>Insumo</Typography>
-                          <Select options={INSUMOS.map((ins) => ({ value: ins, label: ins }))} value={item.nombre} onChange={(e) => handleItemChange(idx, 'nombre', e.target.value)} />
+                          <Select options={INSUMOS.map((ins) => ({ value: ins, label: ins }))} value={item.nombre} onChange={(e) => handleItemChange(idx, 'nombre', e.target.value)} sx={campoBeigeSx} />
                         </Box>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                           <Typography sx={{ fontSize: 10.5, color: 'text.dim' }}>Cantidad</Typography>
@@ -1026,13 +1144,14 @@ export default function ComprasPage() {
                             min={1}
                             value={item.cantidad}
                             onChange={(e) => handleItemChange(idx, 'cantidad', Math.max(1, parseInt(e.target.value) || 1))}
+                            sx={campoBeigeSx}
                           />
                         </Box>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                           <Typography sx={{ fontSize: 10.5, color: 'text.dim' }}>Unidad</Typography>
                           {/* Ya no es texto libre: se hereda del insumo elegido (INSUMO_META)
                               para no terminar con "kg"/"Kg"/"KILOS" mezclados para el mismo insumo. */}
-                          <Input value={item.unidad} disabled sx={{ borderStyle: 'dashed' }} />
+                          <Input value={item.unidad} disabled sx={{ borderStyle: 'dashed', ...campoBeigeSx }} />
                         </Box>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                           <Typography sx={{ fontSize: 10.5, color: 'text.dim' }}>Valor ($)</Typography>
@@ -1041,6 +1160,7 @@ export default function ComprasPage() {
                             placeholder="0"
                             value={item.precio || ''}
                             onChange={(e) => handleItemChange(idx, 'precio', Math.max(0, parseInt(e.target.value) || 0))}
+                            sx={campoBeigeSx}
                           />
                         </Box>
                       </Box>
@@ -1076,7 +1196,7 @@ export default function ComprasPage() {
                           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                               <Typography sx={{ fontSize: 10.5, color: 'text.dim' }}>N.º de lote</Typography>
-                              <Input value={item.lote} disabled leftIcon={<IconHash size={11} />} sx={{ fontFamily: 'monospace', fontSize: 11, borderStyle: 'dashed' }} />
+                              <Input value={item.lote} disabled leftIcon={<IconHash size={11} />} sx={{ fontFamily: 'monospace', fontSize: 11, borderStyle: 'dashed', ...campoBeigeSx }} />
                               <Typography sx={{ fontSize: 10, color: 'text.dim' }}>Automático · no editable</Typography>
                             </Box>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -1086,12 +1206,13 @@ export default function ComprasPage() {
                                 value={item.fechaVencimiento}
                                 onChange={(e) => handleItemChange(idx, 'fechaVencimiento', e.target.value)}
                                 leftIcon={<IconCalendar size={12} />}
+                                sx={campoBeigeSx}
                               />
                               <Typography sx={{ fontSize: 10, color: 'text.dim' }}>Opcional, si aplica</Typography>
                             </Box>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                               <Typography sx={{ fontSize: 10.5, color: 'text.dim' }}>Cant. disponible</Typography>
-                              <Input type="number" value={item.cantidadDisponible} disabled sx={{ borderStyle: 'dashed' }} />
+                              <Input type="number" value={item.cantidadDisponible} disabled sx={{ borderStyle: 'dashed', ...campoBeigeSx }} />
                               <Typography sx={{ fontSize: 10, color: 'text.dim' }}>Igual al total comprado</Typography>
                             </Box>
                           </Box>
@@ -1104,30 +1225,6 @@ export default function ComprasPage() {
                 <Button variant="secondary" size="sm" leftIcon={<IconPlus size={13} />} onClick={handleAddFormItem}>
                   Agregar insumo
                 </Button>
-              </Box>
-
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-                <Typography sx={dimLabelSx}>Observaciones</Typography>
-                <Box
-                  component="textarea"
-                  rows={2}
-                  value={formNotes}
-                  onChange={(e) => setFormNotes(e.target.value)}
-                  placeholder="Notas internas sobre esta orden…"
-                  sx={{
-                    width: '100%',
-                    p: 1.25,
-                    fontSize: 13,
-                    fontFamily: 'inherit',
-                    borderRadius: 1.5,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    bgcolor: 'transparent',
-                    outline: 'none',
-                    resize: 'none',
-                    color: 'text.primary',
-                  }}
-                />
               </Box>
             </Box>
           </Box>
@@ -1160,7 +1257,7 @@ export default function ComprasPage() {
         title={`Editar orden ${editTarget?.id ?? ''}`}
         size="md"
       >
-        {editTarget && <EditForm compra={editTarget} />}
+        {editTarget && <EditForm compra={editTarget} onSave={handleGuardarEdicion} onClose={() => { setShowEditModal(false); setEditTarget(null) }} />}
       </Modal>
 
       {/* Modal: Eliminar */}

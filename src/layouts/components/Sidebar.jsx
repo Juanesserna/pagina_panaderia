@@ -13,30 +13,42 @@ import logoOscuro from "@assets/img/logo_oscuro.png";
 import logoClaro from "@assets/img/logo_claro.png";
 
 const NAV_GROUPS = [
-  { key: "general", label: "Dashboard", icon: <LayoutDashboard size={18} />,
-    items: [{ id: "dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> }] },
-  { key: "ventas", label: "Ventas", icon: <TrendingUp size={18} />,
-    items: [{ id: "ventas", label: "Ventas", icon: <TrendingUp size={18} /> }] },
-  { key: "produccion", label: "Producción", icon: <Factory size={18} />,
+  {
+    key: "general", label: "Dashboard", icon: <LayoutDashboard size={18} />,
+    items: [{ id: "dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> }]
+  },
+  {
+    key: "ventas", label: "Ventas", icon: <TrendingUp size={18} />,
+    items: [{ id: "ventas", label: "Ventas", icon: <TrendingUp size={18} /> }]
+  },
+  {
+    key: "produccion", label: "Producción", icon: <Factory size={18} />,
     items: [
       { id: "produccion", label: "Producción", icon: <Factory size={18} /> },
       { id: "insumos", label: "Insumos", icon: <Package size={18} /> },
-    ] },
-  { key: "compras", label: "Compras", icon: <ShoppingCart size={18} />,
+    ]
+  },
+  {
+    key: "compras", label: "Compras", icon: <ShoppingCart size={18} />,
     items: [
       { id: "compras", label: "Compras", icon: <ShoppingCart size={18} /> },
       { id: "proveedores", label: "Proveedores", icon: <Truck size={18} /> },
-    ] },
-  { key: "catalogo", label: "Catálogo", icon: <Layers size={18} />,
+    ]
+  },
+  {
+    key: "catalogo", label: "Catálogo", icon: <Layers size={18} />,
     items: [
       { id: "categorias", label: "Categorías", icon: <Tag size={18} /> },
       { id: "productos", label: "Productos", icon: <Layers size={18} /> },
-    ] },
-  { key: "administracion", label: "Administración", icon: <Shield size={18} />,
+    ]
+  },
+  {
+    key: "administracion", label: "Administración", icon: <Shield size={18} />,
     items: [
       { id: "usuarios", label: "Usuarios", icon: <Users size={18} /> },
       { id: "roles", label: "Roles", icon: <Shield size={18} /> },
-    ] },
+    ]
+  },
 ];
 
 function findGroupKeyByPage(page) {

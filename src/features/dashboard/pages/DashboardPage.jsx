@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTheme } from '@mui/material/styles'
 import { Box, Stack, Typography, IconButton, ClickAwayListener, Popper, Paper, Checkbox } from '@mui/material'
 import {
   IconTrendingUp,
@@ -233,7 +234,7 @@ function ChartCard({ title, subtitle, height = 260, children }) {
 
 // ── Modal de exportación ─────────────────────────────────────────────────
 
-function ExportModal({ open, onClose }) {
+function ExportModal({ open, onClose, onExport }) {
   const [fechaInicio, setFechaInicio] = useState('')
   const [fechaFin, setFechaFin] = useState('')
   const [selectedModules, setSelectedModules] = useState([])
@@ -347,7 +348,7 @@ function ExportModal({ open, onClose }) {
           <Button variant="secondary" size="sm" fullWidth onClick={onClose}>
             Cancelar
           </Button>
-          <Button variant="primary" size="sm" fullWidth disabled={!canExport} leftIcon={<IconDownload size={14} />}>
+          <Button variant="primary" size="sm" fullWidth disabled={!canExport} leftIcon={<IconDownload size={14} />} onClick={() => onExport?.()}>
             Exportar
           </Button>
         </Stack>
@@ -410,12 +411,63 @@ function FilterPanel({ anchorEl, onClose, initialRange, onApply, onReset }) {
   )
 }
 
+// ── Toast flotante de exportación ─────────────────────────────────────────
+
+function ExportToast({ open }) {
+  if (!open) return null
+
+  return (
+    <Box
+      role="status"
+      sx={{
+        position: 'fixed',
+        bottom: 24,
+        right: 24,
+        zIndex: 1400,
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 1.25,
+        minWidth: 300,
+        maxWidth: 380,
+        px: 2.25,
+        py: 1.75,
+        borderRadius: 2,
+        bgcolor: '#E4F3F4',
+        boxShadow: '0 10px 28px rgba(15, 61, 66, 0.18)',
+        animation: 'exportToastIn 0.25s ease-out',
+        '@keyframes exportToastIn': {
+          from: { opacity: 0, transform: 'translateY(10px)' },
+          to: { opacity: 1, transform: 'translateY(0)' },
+        },
+      }}
+    >
+      <Box sx={{ width: 8, height: 8, mt: 0.7, borderRadius: '50%', bgcolor: '#12767F', flexShrink: 0 }} />
+      <Box sx={{ minWidth: 0 }}>
+        <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: '#0F3238', lineHeight: 1.3 }}>
+          Reporte generado
+        </Typography>
+        <Typography sx={{ fontSize: 12.5, color: '#3E6468', mt: 0.25, lineHeight: 1.4 }}>
+          El reporte de producción está listo para descargar
+        </Typography>
+      </Box>
+    </Box>
+  )
+}
+
 // ── Página principal ──────────────────────────────────────────────────────
 
 export default function DashboardPage() {
+  const theme = useTheme()
   const [showExport, setShowExport] = useState(false)
   const [filterAnchor, setFilterAnchor] = useState(null)
   const [dateRange, setDateRange] = useState(() => getLast7DaysRange())
+  const [showNotificacion, setShowNotificacion] = useState(false)
+
+  const handleExport = () => {
+    setShowExport(false)
+    setShowNotificacion(true)
+    setTimeout(() => setShowNotificacion(false), 4000)
+  }
 
   const grouping = useMemo(() => getGroupingMode(dateRange.start, dateRange.end), [dateRange])
 
@@ -430,13 +482,13 @@ export default function DashboardPage() {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, p: 1.5 }}>
       {/* Barra superior */}
-      <Stack direction="row" alignItems="center" justifyContent="space-between">
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ width: '100%' }}>
         <Box>
           <Typography sx={{ fontSize: 15, fontWeight: 700, color: 'text.primary' }}>Panel general</Typography>
           <Typography sx={{ fontSize: 12, color: 'text.dim', mt: 0.25 }}>Resumen de operaciones</Typography>
         </Box>
 
-        <Stack direction="row" spacing={1.5} alignItems="center">
+        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ ml: 'auto' }}>
           <Button
             variant={filterAnchor ? 'primary' : 'secondary'}
             size="sm"
@@ -495,7 +547,7 @@ export default function DashboardPage() {
             <XAxis dataKey="name" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} />
             <Tooltip />
-            <Bar dataKey="compras" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="compras" radius={[4, 4, 0, 0]} fill={theme.palette.primary.main} />
           </BarChart>
         </ChartCard>
 
@@ -565,8 +617,11 @@ export default function DashboardPage() {
         © 2026 Al Horno. Todos los derechos reservados a la institución educativa SENA
       </Box>
 
+      {/* Toast de reporte generado (4s) */}
+      <ExportToast open={showNotificacion} />
+
       {/* Modal de exportación */}
-      <ExportModal open={showExport} onClose={() => setShowExport(false)} />
+      <ExportModal open={showExport} onClose={() => setShowExport(false)} onExport={handleExport} />
     </Box>
   )
 }

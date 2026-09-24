@@ -122,7 +122,10 @@ function EditableRow({
   const theme = useTheme()
 
   const handleInsumoChange = (event, value) => {
-    const insumoId = String(value)
+    const valorReal = value && typeof value === 'object' && 'props' in value
+      ? value.props.value
+      : value
+    const insumoId = String(valorReal)
     const insumoSeleccionado = insumosCatalogo.find((i) => String(i.id) === insumoId)
     if (insumoSeleccionado) {
       onChange('insumoId', insumoSeleccionado.id)
@@ -141,7 +144,10 @@ function EditableRow({
   }
 
   const handleUnidadChange = (event, value) => {
-    const unidadId = String(value)
+    const valorReal = value && typeof value === 'object' && 'props' in value
+      ? value.props.value
+      : value
+    const unidadId = String(valorReal)
     const unidad = unidadesMedida.find((u) => String(u.id) === unidadId)
     if (unidad) {
       onChange('unidadId', String(unidad.id))

@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { Box, Stack, Typography, IconButton, Divider, Collapse, Autocomplete, TextField, OutlinedInput, InputAdornment, MenuItem } from '@mui/material'
 import { useTheme, alpha } from '@mui/material/styles'
 import {
@@ -13,6 +13,7 @@ import {
   IconTrash,
   IconCircleCheck,
   IconCircleX,
+  IconToggleRight,
 } from '@tabler/icons-react'
 import {
   initialVentas, estadoVariant, estadoOptions, estadoDotColor, // 👈 agregar
@@ -42,12 +43,76 @@ function FilterLabel({ children }) {
   )
 }
 
+// ---------- Sistema de notificaciones (toasts) ----------
+
+const notificacionEstilos = {
+  exito: { bg: '#DCE6D0', dot: '#5B7F44', titulo: '#2F3B22', texto: '#586B45' },
+  advertencia: { bg: '#F5DFB3', dot: '#C97A45', titulo: '#4A2E17', texto: '#7A5230' },
+  error: { bg: '#F2D4D4', dot: '#C0392B', titulo: '#6B1E1E', texto: '#8A3D3D' },
+}
+
+function Notificacion({ tipo, titulo, mensaje }) {
+  const s = notificacionEstilos[tipo] || notificacionEstilos.exito
+  return (
+    <Box
+      sx={{
+        bgcolor: s.bg,
+        borderRadius: 2,
+        px: 2.25,
+        py: 1.5,
+        minWidth: 270,
+        maxWidth: 340,
+        boxShadow: '0 8px 24px rgba(0,0,0,0.14)',
+        animation: 'ah-notif-in 0.25s ease-out',
+        '@keyframes ah-notif-in': {
+          from: { opacity: 0, transform: 'translateX(24px)' },
+          to: { opacity: 1, transform: 'translateX(0)' },
+        },
+      }}
+    >
+      <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: s.dot, mb: 0.75 }} />
+      <Typography sx={{ fontWeight: 700, fontSize: 13.5, color: s.titulo, lineHeight: 1.3 }}>{titulo}</Typography>
+      <Typography sx={{ fontSize: 12.5, color: s.texto, mt: 0.25 }}>{mensaje}</Typography>
+    </Box>
+  )
+}
+
+function NotificacionesContainer({ notificaciones }) {
+  if (notificaciones.length === 0) return null
+  return (
+    <Box
+      sx={{
+        position: 'fixed',
+        top: 20,
+        right: 20,
+        zIndex: 2000,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 1.25,
+        pointerEvents: 'none',
+      }}
+    >
+      {notificaciones.map((n) => (
+        <Box key={n.id} sx={{ pointerEvents: 'auto' }}>
+          <Notificacion tipo={n.tipo} titulo={n.titulo} mensaje={n.mensaje} />
+        </Box>
+      ))}
+    </Box>
+  )
+}
+
+const contieneCaracterEspecial = (texto) => /[^a-zA-Z0-9À-ÿ\s]/.test(texto || '')
+
+const normalizarTexto = (s) =>
+  (s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+
 export default function VentasPage() {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
 
-  // El Autocomplete de MUI necesita un TextField como input interno;
-  // los demás campos usan el componente `Input` compartido.
   const autocompleteInputSx = {
     '& .MuiOutlinedInput-root': {
       bgcolor: isDark ? '#30231C' : theme.palette.ahSurface2,
@@ -101,6 +166,39 @@ export default function VentasPage() {
   const [abonoMetodo, setAbonoMetodo] = useState('efectivo')
   const abonoInputRef = useRef(null)
   const [abonoAConfirmarEliminar, setAbonoAConfirmarEliminar] = useState(null)
+
+  const [notificaciones, setNotificaciones] = useState([])
+  const timersNotificacionRef = useRef({})
+
+  const mostrarNotificacion = (tipo, titulo, mensaje) => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    setNotificaciones((prev) => [...prev, { id, tipo, titulo, mensaje }])
+    timersNotificacionRef.current[id] = setTimeout(() => {
+      setNotificaciones((prev) => prev.filter((n) => n.id !== id))
+      delete timersNotificacionRef.current[id]
+    }, 4000)
+  }
+
+  useEffect(() => {
+    return () => {
+      Object.values(timersNotificacionRef.current).forEach(clearTimeout)
+    }
+  }, [])
+
+  const clienteTuvoCaracterEspecialRef = useRef(false)
+  const productoTuvoCaracterEspecialRef = useRef(false)
+
+  const validarCaracterEspecial = (valor, ref) => {
+    const tieneEspecial = contieneCaracterEspecial(valor)
+    if (tieneEspecial && !ref.current) {
+      mostrarNotificacion(
+        'advertencia',
+        'Carácter no permitido',
+        'Evita usar símbolos especiales en el formulario de ventas'
+      )
+    }
+    ref.current = tieneEspecial
+  }
 
   const handleClickCargarTransferencia = (id) => {
     setUploadingVentaId(id)
@@ -331,6 +429,8 @@ export default function VentasPage() {
     setNuevoEstado('pendiente')
     setProductoAutocomplete(null)
     setCantidadSeleccionada(1)
+    clienteTuvoCaracterEspecialRef.current = false
+    productoTuvoCaracterEspecialRef.current = false
   }
 
   const nextId = () => {
@@ -348,8 +448,20 @@ export default function VentasPage() {
     setShowVentaModal(true)
   }
 
+  const productoSinStock = (producto) => {
+    if (!producto) return false
+    if (typeof producto.stock === 'number') return producto.stock <= 0
+    return normalizarTexto(producto.nombre) === 'pan frances'
+  }
+
   const handleAgregarProducto = () => {
     if (!productoAutocomplete || cantidadSeleccionada <= 0) return
+
+    if (productoSinStock(productoAutocomplete)) {
+      mostrarNotificacion('error', 'Sin stock disponible', `${productoAutocomplete.nombre} no cuenta con stock disponible`)
+      return
+    }
+
     setFormItems((prev) => {
       const existente = prev.find((i) => i.nombre === productoAutocomplete.nombre)
       if (existente) {
@@ -390,6 +502,7 @@ export default function VentasPage() {
     }
     setVentas((prev) => [nuevaVenta, ...prev])
     setShowVentaModal(false)
+    mostrarNotificacion('exito', 'Venta registrada', `La venta ${nuevaVenta.id} se creó correctamente`)
   }
 
   const completados = ventas.filter((v) => v.estado === 'completado').length
@@ -397,58 +510,50 @@ export default function VentasPage() {
   const abonosCount = (idVenta) => abonos.filter((a) => a.idVenta === idVenta).length
   const puedeVerComprobante = (v) => v.estado === 'completado' || v.estado === 'cancelado'
 
-  // ── Columnas de la tabla ────────────────────────────────────────────────
-
   const columns = [
     {
       key: 'id',
       header: 'ID',
       sortable: true,
-      accessor: (r) => <Typography sx={{ fontWeight: 600, color: 'text.primary' }}>{r.id}</Typography>,
+      width: '8%',
+      accessor: (r) => <Typography sx={{ fontSize: 12, fontWeight: 600, color: 'text.primary' }}>{r.id}</Typography>,
     },
     {
       key: 'nit',
       header: 'NIT/Cédula',
-      accessor: (r) => <Typography sx={{ color: 'text.secondary' }}>{r.nit || '—'}</Typography>,
+      width: '15%',
+      accessor: (r) => <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{r.nit || '—'}</Typography>,
     },
     {
       key: 'metodo',
       header: 'Método',
-      accessor: (r) => <Typography sx={{ color: 'text.secondary' }}>{r.metodo ? cap(r.metodo) : '—'}</Typography>,
+      width: '12%',
+      accessor: (r) => <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{r.metodo ? cap(r.metodo) : '—'}</Typography>,
     },
     {
       key: 'total',
       header: 'Total',
       align: 'right',
       sortable: true,
-      accessor: (r) => <Typography sx={{ fontWeight: 700, color: 'text.primary' }}>${r.total.toFixed(2)}</Typography>,
+      width: '10%',
+      accessor: (r) => <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary' }}>${r.total.toFixed(2)}</Typography>,
     },
     {
       key: 'estado',
       header: 'Estado',
-      accessor: (r) => {
-        const bloqueado = r.estado === 'cancelado'
-        return (
-          <Box
-            onClick={(e) => {
-              e.stopPropagation()
-              abrirModalEstado(r)
-            }}
-            title={bloqueado ? 'Una venta cancelada no se puede modificar' : 'Cambiar estado'}
-            sx={{ display: 'inline-flex', cursor: bloqueado ? 'not-allowed' : 'pointer', opacity: bloqueado ? 0.5 : 1 }}
-          >
-            <StatusBadge variant={estadoVariant[r.estado]} dot>
-              {cap(r.estado)}
-            </StatusBadge>
-          </Box>
-        )
-      },
+      width: '14%',
+      accessor: (r) => (
+        <StatusBadge variant={estadoVariant[r.estado]} dot>
+          {cap(r.estado)}
+        </StatusBadge>
+      ),
     },
     {
       key: 'fecha',
       header: 'Fecha',
+      width: '13%',
       accessor: (r) => (
-        <Typography sx={{ color: 'text.dim', fontSize: 11.5 }}>
+        <Typography sx={{ color: 'text.secondary', fontSize: 11 }}>
           {r.fecha} {r.hora}
         </Typography>
       ),
@@ -457,42 +562,61 @@ export default function VentasPage() {
       key: 'acciones',
       header: '',
       align: 'right',
-      accessor: (r) => (
-        <Stack direction="row" justifyContent="flex-end" spacing={0.5}>
-          <Button
-            variant="ghost"
-            size="sm"
-            leftIcon={<IconReceipt size={12} />}
-            onClick={(e) => {
-              e.stopPropagation()
-              abrirModalAbono(r)
-            }}
-          >
-            {abonosCount(r.id) > 0 ? `Abonos (${abonosCount(r.id)})` : 'Abonos'}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={!puedeVerComprobante(r)}
-            onClick={(e) => {
-              e.stopPropagation()
-              setSelected(r)
-              setShowModal(true)
-            }}
-          >
-            Ver comprobante
-          </Button>
-        </Stack>
-      ),
+      width: '28%',
+      accessor: (r) => {
+        const bloqueado = r.estado === 'cancelado'
+        return (
+          <Stack direction="row" alignItems="center" justifyContent="flex-end" spacing={0.5} sx={{ width: '100%' }}>
+            <IconButton
+              size="small"
+              disabled={bloqueado}
+              title={bloqueado ? 'Una venta cancelada no se puede modificar' : 'Cambiar estado'}
+              onClick={(e) => {
+                e.stopPropagation()
+                abrirModalEstado(r)
+              }}
+              sx={{ color: bloqueado ? 'text.dim' : 'text.secondary' }}
+            >
+              <IconToggleRight size={16} />
+            </IconButton>
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<IconReceipt size={12} />}
+              onClick={(e) => {
+                e.stopPropagation()
+                abrirModalAbono(r)
+              }}
+              sx={{ fontSize: 11 }}
+            >
+              {abonosCount(r.id) > 0 ? `Abonos (${abonosCount(r.id)})` : 'Abonos'}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={!puedeVerComprobante(r)}
+              onClick={(e) => {
+                e.stopPropagation()
+                setSelected(r)
+                setShowModal(true)
+              }}
+              sx={{ fontSize: 11 }}
+            >
+              Ver comprobante
+            </Button>
+          </Stack>
+        )
+      },
     },
   ]
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <NotificacionesContainer notificaciones={notificaciones} />
+
       <input ref={transferenciaInputRef} type="file" accept="image/*" hidden onChange={handleImagenTransferenciaSeleccionada} />
       <input ref={abonoInputRef} type="file" accept="image/*" hidden onChange={handleImagenAbonoSeleccionada} />
 
-      {/* KPIs */}
       <Box sx={{
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
@@ -504,10 +628,9 @@ export default function VentasPage() {
       </Box>
 
       <Box sx={{ borderRadius: 2.5, overflow: 'hidden', bgcolor: isDark ? '#2A1D16' : 'background.paper', border: '1px solid', borderColor: 'divider', backgroundImage: 'none' }}>
-        {/* Toolbar */}
-        <Stack direction="row" flexWrap="wrap" alignItems="center" sx={{ gap: 1.25, px: 2.5, py: 2, alignItems: 'center', }}>
-          <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'text.primary', mr: 'auto' }}>Registro de ventas</Typography>
-          <Box sx={{ width: 250 }}>
+        <Stack direction="row" flexWrap="wrap" alignItems="center" sx={{ px: 2.5, py: 2, alignItems: 'center', }}>
+          <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: 'text.primary', mr: 'auto' }}>Registro de ventas</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1.25 }}>
             <OutlinedInput
               placeholder="Buscar pedido o cliente…"
               value={search}
@@ -521,9 +644,11 @@ export default function VentasPage() {
                 </InputAdornment>
               }
               sx={{
+                width: 250,
                 bgcolor: isDark ? '#32251F' : '#F4EFEA',
                 height: 35,
                 borderRadius: 1,
+                fontSize: 12,
                 '& fieldset': {
                   borderColor: isDark ? 'transparent' : '#E5DCD3'
                 },
@@ -535,70 +660,71 @@ export default function VentasPage() {
                 }
               }}
             />
-          </Box>
-          <Button
-            variant="primary"
-            size="sm"
-            leftIcon={<IconPlus size={13} />}
-            onClick={handleNuevaVenta}
-            sx={{
-              height: 28,
-              borderRadius: 1,
-              ...(isDark && {
-                backgroundColor: '#A85D33',
-                color: '#000000',
-                '&:hover': { backgroundColor: '#8A4A28' }
-              })
-            }}
-          >
-            Nueva venta
-          </Button>
-          <Button
-            variant={filtrosActivos ? 'primary' : 'secondary'}
-            size="sm"
-            leftIcon={<IconFilter size={13} />}
-            onClick={() => setShowFiltros((v) => !v)}
-            sx={{
-              height: 28,
-              borderRadius: 1,
-              border: '1px solid',
-              backgroundColor: isDark ? '#32251F' : '#F0EBE3',
-              color: isDark ? '#F2E9DD' : '#4A2E17',
-              borderColor: isDark ? '#3D2C21' : '#E4D9C8',
-              '&:hover': {
+            <Button
+              variant="primary"
+              size="sm"
+              leftIcon={<IconPlus size={13} />}
+              onClick={handleNuevaVenta}
+              sx={{
+                height: 28,
+                borderRadius: 1,
+                fontSize: 12,
+                ...(isDark && {
+                  backgroundColor: '#A85D33',
+                  color: '#000000',
+                  '&:hover': { backgroundColor: '#8A4A28' }
+                })
+              }}
+            >
+              Nueva venta
+            </Button>
+            <Button
+              variant={filtrosActivos ? 'primary' : 'secondary'}
+              size="sm"
+              leftIcon={<IconFilter size={13} />}
+              onClick={() => setShowFiltros((v) => !v)}
+              sx={{
+                height: 28,
+                borderRadius: 1,
+                fontSize: 12,
+                border: '1px solid',
                 backgroundColor: isDark ? '#32251F' : '#F0EBE3',
+                color: isDark ? '#F2E9DD' : '#4A2E17',
                 borderColor: isDark ? '#3D2C21' : '#E4D9C8',
-                opacity: 0.85,
-              },
-            }}
-          >
-            Filtrar
-            {filtrosActivos && (
-              <Box
-                component="span"
-                sx={{
-                  ml: 0.75,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  height: 16,
-                  width: 16,
-                  borderRadius: '50%',
-                  fontSize: 9,
-                  fontWeight: 700,
-                  bgcolor: 'rgba(255,255,255,0.3)',
-                  color: 'inherit',
-                }}
-              >
-                {cantidadFiltrosActivos}
-              </Box>
-            )}
-          </Button>
+                '&:hover': {
+                  backgroundColor: isDark ? '#32251F' : '#F0EBE3',
+                  borderColor: isDark ? '#3D2C21' : '#E4D9C8',
+                  opacity: 0.85,
+                },
+              }}
+            >
+              Filtrar
+              {filtrosActivos && (
+                <Box
+                  component="span"
+                  sx={{
+                    ml: 0.75,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: 16,
+                    width: 16,
+                    borderRadius: '50%',
+                    fontSize: 9,
+                    fontWeight: 700,
+                    bgcolor: 'rgba(255,255,255,0.3)',
+                    color: 'inherit',
+                  }}
+                >
+                  {cantidadFiltrosActivos}
+                </Box>
+              )}
+            </Button>
+          </Box>
         </Stack>
 
         <Divider />
 
-        {/* Filtros */}
         <Collapse in={showFiltros}>
           <Stack
             direction="row"
@@ -610,7 +736,7 @@ export default function VentasPage() {
               py: 2,
               borderBottom: '1px solid',
               borderColor: 'divider',
-              bgcolor: isDark ? '#2C1F18' : '#FAF8F6', // 👈 antes: 'background.alt'
+              bgcolor: isDark ? '#2C1F18' : '#FAF8F6',
             }}
           >
             <Box sx={{ width: 130 }}>
@@ -718,7 +844,6 @@ export default function VentasPage() {
           </Stack>
         </Collapse>
 
-        {/* Tabla */}
         <DataTable
           columns={columns}
           data={paginated}
@@ -729,7 +854,17 @@ export default function VentasPage() {
           emptyMessage="Sin ventas encontradas"
         />
 
-        <Box sx={{ px: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
+        <Box
+          sx={{
+            px: 2.5,
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            '& p, & span, & .MuiTypography-root': {
+              fontSize: '11px !important',
+              color: `${theme.palette.text.secondary} !important`,
+            },
+          }}
+        >
           <Pagination page={page} total={filtered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
         </Box>
       </Box>
@@ -844,29 +979,26 @@ export default function VentasPage() {
               </Box>
             </Box>
 
-            <Box sx={{ width: '100%', maxWidth: 340, display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <FilterLabel>Captura de comprobante</FilterLabel>
-                <Button variant="ghost" size="sm" leftIcon={<IconUpload size={12} />} onClick={() => handleClickCargarTransferencia(selected.id)}>
-                  {selected.imagenTransferencia ? 'Reemplazar' : 'Cargar'}
-                </Button>
-              </Stack>
-              {selected.imagenTransferencia ? (
-                <ImageWithFallback
-                  src={selected.imagenTransferencia}
-                  alt="Comprobante"
-                  style={{ width: '100%', borderRadius: 6, border: `1px solid ${theme.palette.divider}`, maxHeight: 220, objectFit: 'contain' }}
-                />
-              ) : (
-                <Box sx={{ border: '1px dashed', borderColor: 'divider', borderRadius: 1.5, py: 2.5, textAlign: 'center', color: 'text.dim', fontSize: 11.5 }}>
-                  Sin comprobante cargado
-                </Box>
-              )}
+            <Box sx={{ width: '100%', maxWidth: 340, display: 'flex', justifyContent: 'flex-end' }}>
+              <Button
+                size="sm"
+                leftIcon={<IconDownload size={12} />}
+                onClick={handleDescargarComprobante}
+                sx={{
+                  border: '1px solid',
+                  backgroundColor: isDark ? '#32251F' : '#F0EBE3',
+                  color: isDark ? '#F2E9DD' : '#4A2E17',
+                  borderColor: isDark ? '#3D2C21' : '#E4D9C8',
+                  '&:hover': {
+                    backgroundColor: isDark ? '#32251F' : '#F0EBE3',
+                    borderColor: isDark ? '#3D2C21' : '#E4D9C8',
+                    opacity: 0.85,
+                  },
+                }}
+              >
+                Descargar comprobante
+              </Button>
             </Box>
-
-            <Button variant="primary" size="sm" leftIcon={<IconDownload size={12} />} onClick={handleDescargarComprobante}>
-              Descargar comprobante
-            </Button>
           </Box>
         )}
       </Modal>
@@ -879,15 +1011,17 @@ export default function VentasPage() {
               Venta <b>{ventaAbonoModal.id}</b> · {obtenerNombreCliente(ventaAbonoModal)}
             </Typography>
 
+            {/* Ajuste 1: Recuadro con información resumida con fondo #F9F8F8 */}
             <Box
               sx={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(3, 1fr)',
                 gap: 2,
                 border: '1px solid',
-                borderColor: 'divider',
+                borderColor: isDark ? '#4A3B32' : '#E4D9C8',
                 borderRadius: 1.5,
                 p: 1.75,
+                bgcolor: isDark ? '#30231C' : '#F9F8F8',
               }}
             >
               <Box>
@@ -1008,8 +1142,24 @@ export default function VentasPage() {
               </>
             )}
 
+            {/* Ajuste 2: Botón de cerrar ubicado en la esquina inferior derecha con los colores del botón filtrar */}
             <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ pt: 1 }}>
-              <Button variant="secondary" size="sm" onClick={cerrarModalAbono}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={cerrarModalAbono}
+                sx={{
+                  border: '1px solid',
+                  backgroundColor: isDark ? '#32251F' : '#F0EBE3',
+                  color: isDark ? '#F2E9DD' : '#4A2E17',
+                  borderColor: isDark ? '#3D2C21' : '#E4D9C8',
+                  '&:hover': {
+                    backgroundColor: isDark ? '#32251F' : '#F0EBE3',
+                    borderColor: isDark ? '#3D2C21' : '#E4D9C8',
+                    opacity: 0.85,
+                  },
+                }}
+              >
                 Cerrar
               </Button>
               {abonoComprobante && (
@@ -1040,7 +1190,6 @@ export default function VentasPage() {
       >
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', marginTop: '20px' }, gap: 2.5, alignItems: 'start', height: '100%' }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, minWidth: 0, width: '100%' }}>
-            {/* ID VENTA Y FECHA */}
             <Box sx={{
               borderRadius: 1.5,
               px: 1.5,
@@ -1068,6 +1217,7 @@ export default function VentasPage() {
                 getOptionLabel={(c) => `${c.nit} — ${c.nombre}`}
                 value={clienteSeleccionado}
                 onChange={(_, value) => setClienteSeleccionado(value)}
+                onInputChange={(_, value) => validarCaracterEspecial(value, clienteTuvoCaracterEspecialRef)}
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -1088,7 +1238,6 @@ export default function VentasPage() {
 
             <Box>
               <FilterLabel>Estado inicial</FilterLabel>
-              {/* Cambiado a TextField select para que tome exactamente el mismo color y estilo */}
               <TextField
                 select
                 fullWidth
@@ -1115,6 +1264,7 @@ export default function VentasPage() {
                 getOptionLabel={(p) => p.nombre}
                 value={productoAutocomplete}
                 onChange={(_, value) => setProductoAutocomplete(value)}
+                onInputChange={(_, value) => validarCaracterEspecial(value, productoTuvoCaracterEspecialRef)}
                 renderOption={(props, p) => (
                   <li {...props} key={p.nombre}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: 13 }}>
@@ -1146,6 +1296,7 @@ export default function VentasPage() {
                 <Typography sx={{ width: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>{cantidadSeleccionada}</Typography>
                 <IconButton size="small" onClick={() => setCantidadSeleccionada((c) => c + 1)}><IconPlus size={12} /></IconButton>
               </Box>
+              {/* Ajuste 3: Botón de agregar con los colores del botón filtrar */}
               <Button
                 variant="secondary"
                 size="sm"
@@ -1154,9 +1305,14 @@ export default function VentasPage() {
                 onClick={handleAgregarProducto}
                 sx={{
                   border: '1px solid',
-                  borderColor: isDark ? '#4A3B32' : '#E4D9C8',
-                  backgroundColor: isDark ? '#30231C' : '#F9F8F8',
-                  color: isDark ? '#FFFFFF' : undefined
+                  backgroundColor: isDark ? '#32251F' : '#F0EBE3',
+                  color: isDark ? '#F2E9DD' : '#4A2E17',
+                  borderColor: isDark ? '#3D2C21' : '#E4D9C8',
+                  '&:hover': {
+                    backgroundColor: isDark ? '#32251F' : '#F0EBE3',
+                    borderColor: isDark ? '#3D2C21' : '#E4D9C8',
+                    opacity: 0.85,
+                  },
                 }}
               >
                 Agregar
@@ -1168,7 +1324,7 @@ export default function VentasPage() {
             <FilterLabel>Resumen</FilterLabel>
             <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5, minHeight: 180, maxHeight: 320, overflowY: 'auto', flexGrow: 1 }}>
               {formItems.length === 0 ? (
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 5, color: isDark ? '#E4D9C8' : 'text.dim', fontSize: 13 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 5, color: 'text.secondary', fontSize: 13 }}>
                   Sin productos agregados
                 </Box>
               ) : (

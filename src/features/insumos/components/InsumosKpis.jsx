@@ -1,14 +1,25 @@
-import { Box } from '@mui/material'
-import { IconPackage, IconCircleCheck, IconAlertTriangle, IconCircleX } from '@tabler/icons-react'
-import { KPICard } from '@features/produccion/components/KPICard'
+import { Grid } from "@mui/material";
+import InventoryIcon from "@mui/icons-material/Inventory2";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import CancelIcon from "@mui/icons-material/Cancel";
+import { KPICard } from "./KPICard";
 
 export function InsumosKpis({ kpis }) {
-  return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 2 }}>
-      <KPICard title="Total insumos" value={kpis.total} icon={<IconPackage size={16} />} variant="accent" />
-      <KPICard title="Activos" value={kpis.activos} icon={<IconCircleCheck size={16} />} variant="success" />
-      <KPICard title="Stock bajo" value={kpis.stockBajo} icon={<IconAlertTriangle size={16} />} variant="warning" />
-      <KPICard title="Inactivos" value={kpis.inactivos} icon={<IconCircleX size={16} />} variant="danger" />
-    </Box>
-  )
+    return (
+        <Grid container spacing={2} alignItems="stretch">
+            <Grid size={{ xs: 6, md: 3 }}>
+                <KPICard title="Total Insumos" value={kpis.total} icon={<InventoryIcon />} variant="accent" />
+            </Grid>
+            <Grid size={{ xs: 6, md: 3 }}>
+                <KPICard title="Activos" value={kpis.activos} icon={<CheckCircleIcon />} variant="success" />
+            </Grid>
+            <Grid size={{ xs: 6, md: 3 }}>
+                <KPICard title="Stock Bajo" value={kpis.stockBajo} icon={<WarningAmberIcon />} variant="warning" />
+            </Grid>
+            <Grid size={{ xs: 6, md: 3 }}>
+                <KPICard title="Inactivos" value={kpis.inactivos} icon={<CancelIcon />} variant="danger" />
+            </Grid>
+        </Grid>
+    );
 }

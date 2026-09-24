@@ -1,92 +1,88 @@
-import { Box, Stack, Typography, IconButton } from '@mui/material'
-import { IconArrowLeft, IconPencil } from '@tabler/icons-react'
-import { Button } from '@features/produccion/components/Button'
-import { StatusBadge } from '@features/produccion/components/StatusBadge'
-import { CampoInfo, dimLabelSx } from './Campo'
+import { Box, Typography, Stack } from '@mui/material'
+import { Modal, ModalFooter, Button, StatusBadge } from '@shared/components'
 import { LotesCard } from './LotesCard'
 import {
-  formatoCodigo,
-  formatoMoneda,
-  nombreCategoria,
-  unidadAbrev,
-  getEstadoVisual,
-  estadoVisualVariant,
+    formatoCodigo,
+    formatoMoneda,
+    nombreCategoria,
+    unidadAbrev,
+    getEstadoVisual,
+    estadoVisualVariant,
 } from '../utils/insumosHelpers'
 
-const panelSx = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 1.5,
-  borderRadius: 2.5,
-  p: 2.5,
-  bgcolor: 'background.paper',
-  border: '1px solid',
-  borderColor: 'divider',
+// Misma tipografía que usa FormularioInsumo, para que "Ver detalle" y
+// "Editar/Nuevo insumo" se vean como parte del mismo módulo.
+const seccionTituloSx = { fontSize: 14, fontWeight: 700, color: 'text.primary' }
+const gridSx = { display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }
+const anchoCompletoSx = { gridColumn: { sm: '1 / -1' } }
+
+function CampoInfo({ label, value, sx }) {
+    return (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, ...sx }}>
+            <Typography
+                sx={{
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.6,
+                    fontWeight: 600,
+                    color: 'text.secondary',
+                    fontSize: 11.5,
+                }}
+            >
+                {label}
+            </Typography>
+            <Typography sx={{ fontSize: 13.5, color: 'text.primary' }}>{value || '—'}</Typography>
+        </Box>
+    )
 }
 
-export function DetalleInsumo({ insumo, onEditar, onVolver }) {
-  const estadoVisual = getEstadoVisual(insumo)
+/**
+ * Detalle de insumo como modal flotante sobre la lista, igual que
+ * FormularioInsumo (mismo componente <Modal>, misma tipografía y
+ * espaciado), en vez de una vista de página completa aparte.
+ */
+export function DetalleInsumo({ open, insumo, onEditar, onCerrar }) {
+    if (!insumo) return null
+    const estadoVisual = getEstadoVisual(insumo)
 
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, p: 1.5 }}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between">
-        <Stack direction="row" spacing={1.5} alignItems="center">
-          <IconButton onClick={onVolver} sx={{ color: 'text.secondary' }}>
-            <IconArrowLeft size={18} />
-          </IconButton>
-          <Box>
-            <Typography sx={{ fontSize: 15, fontWeight: 700, color: 'text.primary' }}>{insumo.nombre}</Typography>
-            <Typography sx={{ fontSize: 12, fontFamily: 'monospace', color: 'text.dim' }}>
-              {formatoCodigo(insumo.id)}
-            </Typography>
-          </Box>
-        </Stack>
-        <Button variant="primary" size="sm" leftIcon={<IconPencil size={13} />} onClick={onEditar}>
-          Editar
-        </Button>
-      </Stack>
+    return (
+        <Modal open={open} onClose={onCerrar} title={insumo.nombre} subtitle={formatoCodigo(insumo.id)} size="lg">
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <Stack direction="row" alignItems="center" justifyContent="space-between">
+                    <Typography sx={seccionTituloSx}>Estado</Typography>
+                    <StatusBadge variant={estadoVisualVariant[estadoVisual]}>{estadoVisual}</StatusBadge>
+                </Stack>
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '2fr 1fr' }, gap: 2.5, alignItems: 'start' }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          <Box sx={panelSx}>
-            <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'text.primary' }}>Información general</Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
-              <CampoInfo label="Código" value={formatoCodigo(insumo.id)} />
-              <CampoInfo label="Nombre" value={insumo.nombre} />
-              <CampoInfo label="Categoría" value={nombreCategoria(insumo.idCategoria)} />
-              <CampoInfo label="Descripción" value={insumo.descripcion} />
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <Typography sx={seccionTituloSx}>Información general</Typography>
+                    <Box sx={gridSx}>
+                        <CampoInfo label="Código" value={formatoCodigo(insumo.id)} />
+                        <CampoInfo label="Categoría" value={nombreCategoria(insumo.idCategoria)} />
+                        <CampoInfo label="Nombre" value={insumo.nombre} sx={anchoCompletoSx} />
+                        <CampoInfo label="Descripción" value={insumo.descripcion} sx={anchoCompletoSx} />
+                    </Box>
+                </Box>
+
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <Typography sx={seccionTituloSx}>Inventario</Typography>
+                    <Box sx={gridSx}>
+                        <CampoInfo label="Unidad de medida" value={unidadAbrev(insumo.idUnidadMedida)} />
+                        <CampoInfo label="Stock actual" value={`${insumo.stockActual} ${unidadAbrev(insumo.idUnidadMedida)}`} />
+                        <CampoInfo label="Stock mínimo" value={`${insumo.stockMinimo} ${unidadAbrev(insumo.idUnidadMedida)}`} />
+                        <CampoInfo label="Costo promedio" value={`${formatoMoneda(insumo.costoPromedio)} / ${unidadAbrev(insumo.idUnidadMedida)}`} />
+                    </Box>
+                </Box>
+
+                <LotesCard lotes={insumo.lotes} unidad={unidadAbrev(insumo.idUnidadMedida)} />
+
+                <ModalFooter>
+                    <Button variant="ghost" size="sm" onClick={onCerrar}>
+                        Cerrar
+                    </Button>
+                    <Button variant="primary" size="sm" onClick={onEditar}>
+                        Editar insumo
+                    </Button>
+                </ModalFooter>
             </Box>
-          </Box>
-
-          <Box sx={panelSx}>
-            <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'text.primary' }}>Inventario</Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' }, gap: 1.5 }}>
-              <CampoInfo label="Unidad de medida" value={unidadAbrev(insumo.idUnidadMedida)} />
-              <CampoInfo label="Stock actual" value={insumo.stockActual} />
-              <CampoInfo label="Stock mínimo" value={insumo.stockMinimo} />
-            </Box>
-          </Box>
-
-          <Box sx={panelSx}>
-            <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'text.primary' }}>Costos</Typography>
-            <CampoInfo
-              label="Costo promedio"
-              value={`${formatoMoneda(insumo.costoPromedio)} / ${unidadAbrev(insumo.idUnidadMedida)}`}
-            />
-          </Box>
-
-          <LotesCard lotes={insumo.lotes} unidad={unidadAbrev(insumo.idUnidadMedida)} />
-        </Box>
-
-        <Box sx={panelSx}>
-          <Typography sx={dimLabelSx}>Estado</Typography>
-          <Box>
-            <StatusBadge variant={estadoVisualVariant[estadoVisual]} dot>
-              {estadoVisual}
-            </StatusBadge>
-          </Box>
-        </Box>
-      </Box>
-    </Box>
-  )
+        </Modal>
+    )
 }

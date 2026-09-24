@@ -23,6 +23,9 @@ export default function ProductosPage() {
   const [productoDetalle, setProductoDetalle] = useState(null)
   const [eliminarProductoModal, setEliminarProductoModal] = useState(false)
   const [productoAEliminar, setProductoAEliminar] = useState(null)
+  const [busqueda, setBusqueda] = useState('')
+  const [filtroCategoria, setFiltroCategoria] = useState('')
+  const [filtroEstado, setFiltroEstado] = useState('')
 
   const handleNuevoProducto = () => {
     setNuevoProductoModal(true)
@@ -61,6 +64,28 @@ export default function ProductosPage() {
     setProductoAEliminar(null)
   }
 
+  const handleBuscar = (e) => {
+    setBusqueda(e.target.value)
+  }
+
+  const handleFiltroCategoriaChange = (valor) => {
+    setFiltroCategoria(valor)
+  }
+
+  const handleFiltroEstadoChange = (valor) => {
+    setFiltroEstado(valor)
+  }
+
+  const productosFiltrados = productos.filter((p) => {
+    const coincideBusqueda =
+      !busqueda ||
+      p.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+      p.codigo.toLowerCase().includes(busqueda.toLowerCase())
+    const coincideCategoria = !filtroCategoria || p.categoria === filtroCategoria
+    const coincideEstado = !filtroEstado || p.estado === filtroEstado
+    return coincideBusqueda && coincideCategoria && coincideEstado
+  })
+
   return (
     <Box
       sx={{
@@ -98,9 +123,16 @@ export default function ProductosPage() {
           backgroundColor: 'background.paper',
         }}
       >
-        <CatalogoProductos onNuevoClick={handleNuevoProducto} />
+        <CatalogoProductos
+          onNuevoClick={handleNuevoProducto}
+          onBuscar={handleBuscar}
+          onFiltroCategoriaChange={handleFiltroCategoriaChange}
+          onFiltroEstadoChange={handleFiltroEstadoChange}
+          filtroCategoria={filtroCategoria}
+          filtroEstado={filtroEstado}
+        />
         <ProductosTable
-          productos={productos}
+          productos={productosFiltrados}
           onEdit={handleEditarProducto}
           onVer={handleVerDetalle}
           onEliminar={handleEliminarProducto}
