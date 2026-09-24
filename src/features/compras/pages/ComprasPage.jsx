@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Box, Stack, Typography, IconButton, OutlinedInput, InputAdornment } from '@mui/material'
+import { Box, Stack, Typography, IconButton, OutlinedInput, InputAdornment, Snackbar } from '@mui/material'
 import {
   IconSearch,
   IconPlus,
@@ -189,6 +189,9 @@ const sortAccessors = {
 
 const PAGE_SIZE = 8
 
+// Duración (ms) de las notificaciones de confirmación
+const NOTIF_DURATION = 3000
+
 const dimLabelSx = { fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.dim' }
 
 // Fondo/borde beige cálido usado en los campos del modal "Nueva orden de compra",
@@ -348,6 +351,16 @@ export default function ComprasPage() {
   const [showEstadoModal, setShowEstadoModal] = useState(false)
   const [compraEstadoModal, setCompraEstadoModal] = useState(null)
 
+  // Notificación temporal (3 s) para confirmar acciones del usuario
+  const [notif, setNotif] = useState({ open: false, title: '', message: '' })
+
+  const notificar = (title, message) => setNotif({ open: true, title, message })
+
+  const cerrarNotif = (_, reason) => {
+    if (reason === 'clickaway') return
+    setNotif((prev) => ({ ...prev, open: false }))
+  }
+
   // Formulario "Nueva compra"
   const [formItems, setFormItems] = useState([nuevoFormItem()])
   const [formProvider, setFormProvider] = useState(PROVIDERS[0].id)
@@ -405,6 +418,7 @@ export default function ComprasPage() {
     if (!compraEstadoModal) return
     handleCambiarEstado(compraEstadoModal.id, nuevoEstado)
     cerrarModalEstado()
+    notificar('Estado actualizado', 'Cambios de estado realizados con exito')
   }
 
   // ── Filtrado + ordenamiento ──────────────────────────────────────────
@@ -543,12 +557,14 @@ export default function ComprasPage() {
     }
     setCompras((prev) => [nuevaCompra, ...prev])
     setShowCreateModal(false)
+    notificar('Orden registrada', 'Nueva orden registrada con exito')
   }
 
   const handleGuardarEdicion = (updated) => {
     setCompras((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
     setShowEditModal(false)
     setEditTarget(null)
+    notificar('Orden actualizada', 'Cambios realizados con exito')
   }
 
   const handleConfirmarEliminar = () => {
@@ -557,6 +573,7 @@ export default function ComprasPage() {
     setShowDeleteModal(false)
     setDeleteTarget(null)
     if (paginated.length === 1 && page > 1) setPage((p) => p - 1)
+    notificar('Orden eliminada', 'Compra eliminada de forma exitosa')
   }
 
   // ── KPIs ──────────────────────────────────────────────────────────────
@@ -640,17 +657,31 @@ export default function ComprasPage() {
       accessor: (r) => {
         const bloqueado = r.estado === 'Cancelada'
         return (
-          <Box
-            onClick={(e) => {
-              e.stopPropagation()
-              abrirModalEstado(r)
-            }}
-            title={bloqueado ? 'Una orden cancelada no se puede modificar' : 'Cambiar estado'}
-            sx={{ display: 'inline-flex', cursor: bloqueado ? 'not-allowed' : 'pointer', opacity: bloqueado ? 0.5 : 1 }}
-          >
-            <StatusBadge variant={estadoVariant[r.estado]} dot>
-              {r.estado}
-            </StatusBadge>
+          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+            <Box
+              onClick={(e) => {
+                e.stopPropagation()
+                abrirModalEstado(r)
+              }}
+              title={bloqueado ? 'Una orden cancelada no se puede modificar' : 'Cambiar estado'}
+              sx={{ display: 'inline-flex', cursor: bloqueado ? 'not-allowed' : 'pointer', opacity: bloqueado ? 0.5 : 1 }}
+            >
+              <StatusBadge variant={estadoVariant[r.estado]} dot>
+                {r.estado}
+              </StatusBadge>
+            </Box>
+            <IconButton
+              size="small"
+              title={bloqueado ? 'Una orden cancelada no se puede modificar' : 'Cambiar estado'}
+              disabled={bloqueado}
+              onClick={(e) => {
+                e.stopPropagation()
+                abrirModalEstado(r)
+              }}
+              sx={{ color: 'text.secondary' }}
+            >
+              <IconToggleLeft size={15} />
+            </IconButton>
           </Box>
         )
       },
@@ -684,18 +715,6 @@ export default function ComprasPage() {
             sx={{ color: 'text.secondary' }}
           >
             <IconPencil size={15} />
-          </IconButton>
-          <IconButton
-            size="small"
-            title={r.estado === 'Cancelada' ? 'Una orden cancelada no se puede modificar' : 'Cambiar estado'}
-            disabled={r.estado === 'Cancelada'}
-            onClick={(e) => {
-              e.stopPropagation()
-              abrirModalEstado(r)
-            }}
-            sx={{ color: 'text.secondary' }}
-          >
-            <IconToggleLeft size={15} />
           </IconButton>
           <IconButton
             size="small"
@@ -1193,7 +1212,7 @@ export default function ComprasPage() {
                         </Box>
 
                         {abierto && (
-                          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+                          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                               <Typography sx={{ fontSize: 10.5, color: 'text.dim' }}>N.º de lote</Typography>
                               <Input value={item.lote} disabled leftIcon={<IconHash size={11} />} sx={{ fontFamily: 'monospace', fontSize: 11, borderStyle: 'dashed', ...campoBeigeSx }} />
@@ -1209,11 +1228,6 @@ export default function ComprasPage() {
                                 sx={campoBeigeSx}
                               />
                               <Typography sx={{ fontSize: 10, color: 'text.dim' }}>Opcional, si aplica</Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                              <Typography sx={{ fontSize: 10.5, color: 'text.dim' }}>Cant. disponible</Typography>
-                              <Input type="number" value={item.cantidadDisponible} disabled sx={{ borderStyle: 'dashed', ...campoBeigeSx }} />
-                              <Typography sx={{ fontSize: 10, color: 'text.dim' }}>Igual al total comprado</Typography>
                             </Box>
                           </Box>
                         )}
@@ -1295,6 +1309,35 @@ export default function ComprasPage() {
           </Stack>
         </Box>
       </Modal>
+
+      {/* Notificación de confirmación (misma línea visual que el toast de Ventas; se cierra sola a los 3 s) */}
+      <Snackbar
+        open={notif.open}
+        autoHideDuration={NOTIF_DURATION}
+        onClose={cerrarNotif}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        sx={{ top: { xs: 72, sm: 72 } }}
+      >
+        <Box
+          role="status"
+          sx={{
+            minWidth: 280,
+            maxWidth: 340,
+            px: 2.5,
+            py: 1.75,
+            borderRadius: '16px',
+            bgcolor: '#DCE5D0',
+            boxShadow: '0 4px 16px rgba(60, 50, 30, 0.12)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 0.5,
+          }}
+        >
+          <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: '#5E8C3A' }} />
+          <Typography sx={{ fontSize: 14, fontWeight: 700, color: '#2E2A24', lineHeight: 1.3 }}>{notif.title}</Typography>
+          <Typography sx={{ fontSize: 13, color: '#5A5F4E', lineHeight: 1.35 }}>{notif.message}</Typography>
+        </Box>
+      </Snackbar>
     </Box>
   )
 }
