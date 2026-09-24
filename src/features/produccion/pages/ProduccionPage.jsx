@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Box, Stack, Typography, IconButton, Divider, Collapse, OutlinedInput, InputAdornment } from '@mui/material'
+import { Box, Stack, Typography, IconButton, Divider, Collapse, OutlinedInput, InputAdornment, TextField } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 import {
   IconSearch,
@@ -272,6 +272,27 @@ function FilterLabel({ children }) {
   )
 }
 
+// Campo de solo lectura (inhabilitado) con la misma apariencia que el resto de campos del modal.
+function CampoEstatico({ label, value, isDark }) {
+  return (
+    <Box sx={{ minWidth: 0 }}>
+      <FilterLabel>{label}</FilterLabel>
+      <TextField
+        fullWidth
+        size="small"
+        value={value}
+        disabled
+        sx={{
+          '& .MuiOutlinedInput-root': {
+            bgcolor: isDark ? '#30231C' : '#F0EBE3',
+            '& fieldset': { borderColor: 'transparent' },
+          },
+        }}
+      />
+    </Box>
+  )
+}
+
 export default function ProduccionPage() {
   const theme = useTheme()
   const isDark = theme.palette.mode === 'dark'
@@ -302,10 +323,7 @@ export default function ProduccionPage() {
   const [editingId, setEditingId] = useState(null)
   const [editingOrden, setEditingOrden] = useState(null)
   const [formItems, setFormItems] = useState([])
-  const [estadoSeleccionado, setEstadoSeleccionado] = useState('pendiente')
   const [productoBusqueda, setProductoBusqueda] = useState('')
-  const [productoSeleccionado, setProductoSeleccionado] = useState('')
-  const [cantidadSeleccionada, setCantidadSeleccionada] = useState(1)
   const [formId, setFormId] = useState('')
   const [formFechaSolicitud, setFormFechaSolicitud] = useState('')
 
@@ -364,6 +382,7 @@ export default function ProduccionPage() {
   const completados = ordenes.filter((o) => estadoEfectivo(o) === 'completado').length
   const retrasados = ordenes.filter((o) => estadoEfectivo(o) === 'retrasado').length
 
+  // Catálogo filtrado por el buscador
   const productosFiltrados = useMemo(
     () => catalogoProductos.filter((p) => p.toLowerCase().includes(productoBusqueda.toLowerCase())),
     [productoBusqueda]
@@ -371,10 +390,7 @@ export default function ProduccionPage() {
 
   const resetFormulario = () => {
     setProductoBusqueda('')
-    setProductoSeleccionado('')
-    setCantidadSeleccionada(1)
     setFormItems([])
-    setEstadoSeleccionado('pendiente')
   }
 
   const nextId = () => {
@@ -398,10 +414,7 @@ export default function ProduccionPage() {
     setEditingId(orden.id)
     setEditingOrden(orden)
     setProductoBusqueda('')
-    setProductoSeleccionado('')
-    setCantidadSeleccionada(1)
     setFormItems(orden.items.map((i) => ({ ...i })))
-    setEstadoSeleccionado(orden.estado)
     setShowOrderModal(true)
   }
 
@@ -411,20 +424,22 @@ export default function ProduccionPage() {
     setShowModal(true)
   }
 
-  const handleAgregarProducto = () => {
-    if (!productoSeleccionado || cantidadSeleccionada <= 0) return
+  // Agrega 1 unidad (la cantidad se modifica solo en el resumen). Devuelve true si se agregó.
+  const agregarProducto = (nombre) => {
+    if (!nombre) return false
     setFormItems((prev) => {
-      const existente = prev.find((i) => i.nombre === productoSeleccionado)
+      const existente = prev.find((i) => i.nombre === nombre)
       if (existente) {
-        return prev.map((i) =>
-          i.nombre === productoSeleccionado ? { ...i, cantidad: i.cantidad + cantidadSeleccionada } : i
-        )
+        return prev.map((i) => (i.nombre === nombre ? { ...i, cantidad: i.cantidad + 1 } : i))
       }
-      return [...prev, { nombre: productoSeleccionado, cantidad: cantidadSeleccionada }]
+      return [...prev, { nombre, cantidad: 1 }]
     })
-    setProductoBusqueda('')
-    setProductoSeleccionado('')
-    setCantidadSeleccionada(1)
+    return true
+  }
+
+  // Agrega el primer producto que coincide con la búsqueda
+  const handleAgregarProducto = () => {
+    if (agregarProducto(productosFiltrados[0])) setProductoBusqueda('')
   }
 
   const handleQuitarProducto = (nombre) => {
@@ -458,12 +473,7 @@ export default function ProduccionPage() {
         prev.map((o) => {
           if (o.id !== editingId) return o
           if (esEstadoFinal(o.estado)) return o
-          return {
-            ...o,
-            items: formItems,
-            estado: estadoSeleccionado,
-            fechaFabricacion: estadoSeleccionado === 'completado' && !o.fechaFabricacion ? formatFecha(new Date()) : o.fechaFabricacion,
-          }
+          return { ...o, items: formItems }
         })
       )
     }
@@ -492,9 +502,8 @@ export default function ProduccionPage() {
     setEstadoEditId(null)
   }
 
-  const fechaFabricacionPreviewEditar = editingOrden
-    ? editingOrden.fechaFabricacion || (estadoSeleccionado === 'completado' ? formatFecha(new Date()) : '')
-    : ''
+  const estadoEditando = editingOrden ? estadoEfectivo(editingOrden) : ''
+  const estadoEditandoLabel = estadoEditando.charAt(0).toUpperCase() + estadoEditando.slice(1)
 
   const columns = [
     {
@@ -529,21 +538,12 @@ export default function ProduccionPage() {
       header: 'Estado',
       accessor: (r) => {
         const efectivo = estadoEfectivo(r)
-        return (
-          <StatusBadge variant={estadoVariant[efectivo]} dot>
-            {efectivo.charAt(0).toUpperCase() + efectivo.slice(1)}
-          </StatusBadge>
-        )
-      },
-    },
-    {
-      key: 'acciones',
-      header: '',
-      align: 'right',
-      accessor: (r) => {
         const bloqueado = esEstadoFinal(r.estado)
         return (
-          <Stack direction="row" alignItems="center" justifyContent="flex-end" spacing={0.5}>
+          <Stack direction="row" alignItems="center" spacing={0.75}>
+            <StatusBadge variant={estadoVariant[efectivo]} dot>
+              {efectivo.charAt(0).toUpperCase() + efectivo.slice(1)}
+            </StatusBadge>
             <IconButton
               size="small"
               disabled={bloqueado}
@@ -556,6 +556,18 @@ export default function ProduccionPage() {
             >
               <IconToggleRight size={15} />
             </IconButton>
+          </Stack>
+        )
+      },
+    },
+    {
+      key: 'acciones',
+      header: '',
+      align: 'right',
+      accessor: (r) => {
+        const bloqueado = esEstadoFinal(r.estado)
+        return (
+          <Stack direction="row" alignItems="center" justifyContent="flex-end" spacing={0.5}>
             <IconButton
               size="small"
               title="Ver detalle"
@@ -967,18 +979,27 @@ export default function ProduccionPage() {
                     {efectivo.charAt(0).toUpperCase() + efectivo.slice(1)}
                   </StatusBadge>
                 </Box>
+
+                <Stack direction="row" justifyContent="flex-end" spacing={1}>
+                  <Button variant="secondary" size="sm" onClick={() => setShowModal(false)} sx={{ fontSize: 12 }}>
+                    Cerrar
+                  </Button>
+                </Stack>
               </Box>
             )
           })()}
       </Modal>
 
-      {/* Modal: Nueva orden / Editar */}
+      {/* Modal: Nueva orden / Editar (master-detail) */}
       <Modal
         open={showOrderModal}
         onClose={() => setShowOrderModal(false)}
         title={orderModalMode === 'nueva' ? 'Nueva orden' : `Editar orden ${editingId}`}
         size="lg"
         sx={{
+          width: '100%',
+          maxWidth: 1100,
+          minHeight: 600,
           ...(isDark && {
             bgcolor: '#2A1D16',
             backgroundImage: 'none !important',
@@ -987,237 +1008,200 @@ export default function ProduccionPage() {
         }}
       >
         <Divider />
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', marginTop: '20px' }, gap: 2.5 }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: '20px' }}>
+          {/* Parte superior: ID, fechas, estado, generado por y NIT/Cédula */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(auto-fit, minmax(150px, 1fr))' },
+              gap: 2,
+              alignItems: 'end',
+            }}
+          >
             {orderModalMode === 'nueva' && (
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 1,
-                  borderRadius: 1.5,
-                  px: 1.5,
-                  py: 1.25,
-                  border: '1px solid',
-                  borderColor: isDark ? '#4A3B32' : '#E4D9C8',
-                  bgcolor: isDark ? '#30231C' : '#F9F8F8',
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography sx={{ fontSize: 11, color: 'text.dim' }}>ID de orden</Typography>
-                  <Typography sx={{ fontSize: 11, fontFamily: 'monospace', fontWeight: 600, color: 'text.primary' }}>{formId}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography sx={{ fontSize: 11, color: 'text.dim' }}>Fecha solicitud</Typography>
-                  <Typography sx={{ fontSize: 11, color: 'text.primary' }}>{formFechaSolicitud}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography sx={{ fontSize: 11, color: 'text.dim' }}>Fecha fabricación</Typography>
-                  <Typography sx={{ fontSize: 11, fontStyle: 'italic', color: 'text.dim', opacity: 0.55 }}>Por definir</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography sx={{ fontSize: 11, color: 'text.dim' }}>Estado</Typography>
-                  <Typography sx={{ fontSize: 11, color: 'text.primary' }}>Pendiente</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography sx={{ fontSize: 11, color: 'text.dim' }}>Generado por</Typography>
-                  <Typography sx={{ fontSize: 11, color: 'text.primary' }}>{usuarioAutenticado.nombre}</Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography sx={{ fontSize: 11, color: 'text.dim' }}>NIT/Cédula</Typography>
-                  <Typography sx={{ fontSize: 11, color: 'text.primary' }}>{usuarioAutenticado.nit}</Typography>
-                </Box>
-              </Box>
+              <>
+                <CampoEstatico label="ID de orden" value={formId} isDark={isDark} />
+                <CampoEstatico label="Fecha solicitud" value={formFechaSolicitud} isDark={isDark} />
+                <CampoEstatico label="Fecha fabricación" value="Por definir" isDark={isDark} />
+                <CampoEstatico label="Estado" value="Pendiente" isDark={isDark} />
+                <CampoEstatico label="NIT/Cédula" value={usuarioAutenticado.nit} isDark={isDark} />
+                <CampoEstatico label="Generado por" value={usuarioAutenticado.nombre} isDark={isDark} />
+              </>
             )}
 
             {orderModalMode === 'editar' && editingOrden && (
               <>
-                <Box
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 1,
-                    borderRadius: 1.5,
-                    px: 1.5,
-                    py: 1.25,
-                    border: '1px solid',
-                    borderColor: isDark ? '#4A3B32' : '#E4D9C8',
-                    bgcolor: isDark ? '#30231C' : '#F9F8F8',
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Typography sx={{ fontSize: 11, color: 'text.dim' }}>ID de orden</Typography>
-                    <Typography sx={{ fontSize: 11, fontFamily: 'monospace', fontWeight: 600, color: 'text.primary' }}>{editingOrden.id}</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Typography sx={{ fontSize: 11, color: 'text.dim' }}>Fecha solicitud</Typography>
-                    <Typography sx={{ fontSize: 11, color: 'text.primary' }}>{editingOrden.fechaSolicitud}</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Typography sx={{ fontSize: 11, color: 'text.dim' }}>Fecha fabricación</Typography>
-                    <Typography
-                      sx={{
-                        fontSize: 11,
-                        fontStyle: fechaFabricacionPreviewEditar ? 'normal' : 'italic',
-                        color: 'text.primary',
-                        opacity: fechaFabricacionPreviewEditar ? 1 : 0.55,
-                        ...(fechaFabricacionPreviewEditar ? {} : { color: 'text.dim' }),
-                      }}
-                    >
-                      {fechaFabricacionPreviewEditar || 'Por definir'}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Typography sx={{ fontSize: 11, color: 'text.dim' }}>
-                      {editingOrden.producto === 'Pagina' ? 'Solicitado por' : 'Generado por'}
-                    </Typography>
-                    <Typography sx={{ fontSize: 11, color: 'text.primary' }}>{editingOrden.generadoPor.nombre}</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Typography sx={{ fontSize: 11, color: 'text.dim' }}>NIT/Cédula</Typography>
-                    <Typography sx={{ fontSize: 11, color: 'text.primary' }}>{editingOrden.generadoPor.documento}</Typography>
-                  </Box>
-                </Box>
-
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                  <FilterLabel>Estado</FilterLabel>
-                  <Select options={estadoOptions} value={estadoSeleccionado} onChange={(e) => setEstadoSeleccionado(e.target.value)} />
-                </Box>
-
+                <CampoEstatico label="ID de orden" value={editingOrden.id} isDark={isDark} />
+                <CampoEstatico label="Fecha solicitud" value={editingOrden.fechaSolicitud} isDark={isDark} />
+                <CampoEstatico label="Fecha fabricación" value={editingOrden.fechaFabricacion || 'Por definir'} isDark={isDark} />
+                <CampoEstatico label="Estado" value={estadoEditandoLabel} isDark={isDark} />
+                <CampoEstatico label="NIT/Cédula" value={editingOrden.generadoPor.documento} isDark={isDark} />
+                <CampoEstatico
+                  label={editingOrden.producto === 'Pagina' ? 'Solicitado por' : 'Generado por'}
+                  value={editingOrden.generadoPor.nombre}
+                  isDark={isDark}
+                />
                 {editingOrden.producto === 'Pagina' && editingOrden.ventaId && (
+                  <CampoEstatico label="Venta relacionada" value={editingOrden.ventaId} isDark={isDark} />
+                )}
+              </>
+            )}
+          </Box>
+
+          <Divider />
+
+          {/* Master-detail: catálogo (izquierda) + resumen (derecha) */}
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1.15fr 1fr' }, gap: 2.5, alignItems: 'stretch' }}>
+            {/* Catálogo de productos */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, minWidth: 0 }}>
+              <FilterLabel>Catálogo de productos</FilterLabel>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+                  gap: 1.25,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1.5,
+                  p: 1.25,
+                  minHeight: 180,
+                  maxHeight: 380,
+                  overflowY: 'auto',
+                }}
+              >
+                {productosFiltrados.map((nombre) => (
                   <Box
+                    key={nombre}
+                    component="button"
+                    type="button"
+                    onClick={() => agregarProducto(nombre)}
                     sx={{
                       display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
+                      flexDirection: 'column',
+                      alignItems: 'flex-start',
+                      gap: 0.75,
+                      p: 1.25,
+                      font: 'inherit',
+                      color: 'text.primary',
+                      textAlign: 'left',
+                      cursor: 'pointer',
                       borderRadius: 1.5,
-                      px: 1.5,
-                      py: 1.25,
                       border: '1px solid',
                       borderColor: isDark ? '#4A3B32' : '#E4D9C8',
                       bgcolor: isDark ? '#30231C' : '#F9F8F8',
+                      '&:hover': { borderColor: '#C97A45' },
                     }}
                   >
-                    <Typography sx={{ fontSize: 11, color: 'text.dim' }}>Venta relacionada</Typography>
-                    <Typography sx={{ fontSize: 11, fontWeight: 600, color: 'text.primary' }}>{editingOrden.ventaId}</Typography>
+                    <Box sx={{ width: 44, height: 44, borderRadius: 1, bgcolor: 'action.hover', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16, color: 'text.secondary' }}>
+                      {nombre.charAt(0)}
+                    </Box>
+                    <Typography sx={{ fontSize: 12, lineHeight: 1.3 }}>{nombre}</Typography>
+                  </Box>
+                ))}
+                {productosFiltrados.length === 0 && (
+                  <Box sx={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'center', py: 5, color: 'text.secondary', fontSize: 13 }}>
+                    Sin productos que coincidan
                   </Box>
                 )}
+              </Box>
 
-                <Divider />
-              </>
-            )}
-
-            <Box>
-              <FilterLabel>Producto</FilterLabel>
-              <Input
-                placeholder="Buscar producto…"
-                value={productoBusqueda}
-                onChange={(e) => {
-                  setProductoBusqueda(e.target.value)
-                  setProductoSeleccionado('')
-                }}
-                leftIcon={<IconSearch size={13} />}
-                sx={{ '& .MuiOutlinedInput-root': { bgcolor: isDark ? '#30231C' : '#F0EBE3' } }}
-              />
+              {/* Buscar producto (debajo del catálogo) */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Input
+                    placeholder="Buscar producto…"
+                    value={productoBusqueda}
+                    onChange={(e) => setProductoBusqueda(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        if (productoBusqueda.trim() && productosFiltrados.length > 0) handleAgregarProducto()
+                      }
+                    }}
+                    leftIcon={<IconSearch size={13} />}
+                    sx={{ '& .MuiOutlinedInput-root': { bgcolor: isDark ? '#30231C' : '#F0EBE3' } }}
+                  />
+                </Box>
+              </Box>
             </Box>
-            <Select
-              options={[
-                { value: '', label: productosFiltrados.length ? 'Selecciona un producto' : 'Sin resultados' },
-                ...productosFiltrados.map((p) => ({ value: p, label: p })),
-              ]}
-              value={productoSeleccionado}
-              onChange={(e) => setProductoSeleccionado(e.target.value)}
-              sx={{ bgcolor: isDark ? '#30231C' : '#F0EBE3' }} // 👈 nuevo
-            />
-            <Box>
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={<IconPlus size={13} />}
-                disabled={!productoSeleccionado}
-                onClick={handleAgregarProducto}
-                sx={{
-                  border: '1px solid',
-                  borderColor: isDark ? '#4A3B32' : '#E4D9C8',
-                  backgroundColor: isDark ? '#30231C' : '#F0EBE3',
-                  color: isDark ? '#FFFFFF' : undefined,
-                  fontSize: 12,
-                }}
-              >
-                Agregar
+
+            {/* Resumen (único lugar donde se modifica la cantidad) */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, minWidth: 0 }}>
+              <FilterLabel>Resumen</FilterLabel>
+              <Box sx={{ display: 'flex', flexDirection: 'column', borderRadius: 1.5, overflowY: 'auto', minHeight: 180, maxHeight: 380, flexGrow: 1, border: '1px solid', borderColor: 'divider' }}>
+                {formItems.length === 0 ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4, px: 1.5, textAlign: 'center' }}>
+                    <Typography sx={{ fontSize: 13, color: isDark ? '#E4D9C8' : 'text.dim' }}>Sin productos agregados</Typography>
+                  </Box>
+                ) : (
+                  formItems.map((item, idx) => (
+                    <Box
+                      key={item.nombre}
+                      sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 0.75,
+                        px: 1.5,
+                        py: 1,
+                        bgcolor: isDark ? '#30231C' : '#F9F8F8',
+                        borderTop: idx > 0 ? '1px solid' : 'none',
+                        borderColor: isDark ? '#4A3B32' : '#E4D9C8',
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                        <Typography sx={{ fontSize: 13, color: 'text.primary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {item.nombre}
+                        </Typography>
+                        <IconButton size="small" onClick={() => handleQuitarProducto(item.nombre)} aria-label={`Quitar ${item.nombre}`} sx={{ color: 'text.dim' }}>
+                          <IconX size={14} />
+                        </IconButton>
+                      </Box>
+
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            borderRadius: 1,
+                            overflow: 'hidden',
+                            border: '1px solid',
+                            borderColor: isDark ? '#4A3B32' : '#E4D9C8',
+                          }}
+                        >
+                          <IconButton
+                            size="small"
+                            onClick={() => handleActualizarCantidad(item.nombre, item.cantidad - 1)}
+                            aria-label={`Disminuir cantidad de ${item.nombre}`}
+                            sx={{ height: 24, width: 24, borderRadius: 0, color: 'text.secondary' }}
+                          >
+                            <IconMinus size={12} />
+                          </IconButton>
+                          <Typography sx={{ width: 28, textAlign: 'center', fontSize: 13, color: 'text.primary' }}>{item.cantidad}</Typography>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleActualizarCantidad(item.nombre, item.cantidad + 1)}
+                            aria-label={`Aumentar cantidad de ${item.nombre}`}
+                            sx={{ height: 24, width: 24, borderRadius: 0, color: 'text.secondary' }}
+                          >
+                            <IconPlus size={12} />
+                          </IconButton>
+                        </Box>
+                      </Box>
+                    </Box>
+                  ))
+                )}
+              </Box>
+              <Button variant="primary" size="sm" fullWidth disabled={formItems.length === 0} onClick={handleConfirmarOrden} sx={{ fontSize: 12 }}>
+                Ordenar
               </Button>
             </Box>
           </Box>
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            <FilterLabel>Resumen</FilterLabel>
-            <Box sx={{ display: 'flex', flexDirection: 'column', borderRadius: 1.5, overflow: 'hidden', minHeight: 120, border: '1px solid', borderColor: 'divider' }}>
-              {formItems.length === 0 ? (
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4, px: 1.5, textAlign: 'center' }}>
-                  <Typography sx={{ fontSize: 13, color: isDark ? '#E4D9C8' : 'text.dim' }}>Sin productos agregados</Typography>
-                </Box>
-              ) : (
-                formItems.map((item, idx) => (
-                  <Box
-                    key={item.nombre}
-                    sx={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 0.75,
-                      px: 1.5,
-                      py: 1,
-                      bgcolor: isDark ? '#30231C' : '#F9F8F8',
-                      borderTop: idx > 0 ? '1px solid' : 'none',
-                      borderColor: isDark ? '#4A3B32' : '#E4D9C8',
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
-                      <Typography sx={{ fontSize: 13, color: 'text.primary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {item.nombre}
-                      </Typography>
-                      <IconButton size="small" onClick={() => handleQuitarProducto(item.nombre)} aria-label={`Quitar ${item.nombre}`} sx={{ color: 'text.dim' }}>
-                        <IconX size={14} />
-                      </IconButton>
-                    </Box>
-
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          borderRadius: 1,
-                          overflow: 'hidden',
-                          border: '1px solid',
-                          borderColor: isDark ? '#4A3B32' : '#E4D9C8',
-                        }}
-                      >
-                        <IconButton
-                          size="small"
-                          onClick={() => handleActualizarCantidad(item.nombre, item.cantidad - 1)}
-                          aria-label={`Disminuir cantidad de ${item.nombre}`}
-                          sx={{ height: 24, width: 24, borderRadius: 0, color: 'text.secondary' }}
-                        >
-                          <IconMinus size={12} />
-                        </IconButton>
-                        <Typography sx={{ width: 28, textAlign: 'center', fontSize: 13, color: 'text.primary' }}>{item.cantidad}</Typography>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleActualizarCantidad(item.nombre, item.cantidad + 1)}
-                          aria-label={`Aumentar cantidad de ${item.nombre}`}
-                          sx={{ height: 24, width: 24, borderRadius: 0, color: 'text.secondary' }}
-                        >
-                          <IconPlus size={12} />
-                        </IconButton>
-                      </Box>
-                    </Box>
-                  </Box>
-                ))
-              )}
-            </Box>
-            <Button variant="primary" size="sm" fullWidth disabled={formItems.length === 0} onClick={handleConfirmarOrden} sx={{ fontSize: 12 }}>
-              Ordenar
+          <Stack direction="row" justifyContent="flex-end" spacing={1}>
+            <Button variant="secondary" size="sm" onClick={() => setShowOrderModal(false)} sx={{ fontSize: 12 }}>
+              Cancelar
             </Button>
-          </Box>
+          </Stack>
         </Box>
       </Modal>
 

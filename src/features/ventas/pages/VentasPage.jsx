@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { Box, Stack, Typography, IconButton, Divider, Collapse, Autocomplete, TextField, OutlinedInput, InputAdornment, MenuItem } from '@mui/material'
-import { useTheme, alpha } from '@mui/material/styles'
+import { useTheme } from '@mui/material/styles'
 import {
   IconSearch,
   IconPlus,
@@ -10,7 +10,6 @@ import {
   IconDownload,
   IconUpload,
   IconReceipt,
-  IconTrash,
   IconCircleCheck,
   IconCircleX,
   IconToggleRight,
@@ -34,6 +33,25 @@ import { ImageWithFallback } from '@features/ventas/components/ImageWithFallback
 // ---------- Helpers de presentación ----------
 
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '')
+
+// Métodos de pago: mismos valores que muestra la columna "Método" del listado y el filtro
+const metodoOptions = [
+  { value: 'efectivo', label: 'Efectivo' },
+  { value: 'tarjeta', label: 'Tarjeta' },
+  { value: 'transferencia', label: 'Transferencia' },
+]
+
+// Canales de venta
+const canalOptions = [
+  { value: 'pagina', label: 'Página' },
+  { value: 'encargo', label: 'Encargo' },
+  { value: 'presencial', label: 'Presencial' },
+]
+
+// Pagos permitidos según el canal:
+// - encargo: 2 comprobantes (50% cada uno)
+// - página / presencial: 1 comprobante (100%)
+const pagosPermitidos = (venta) => (venta?.canal === 'encargo' ? 2 : 1)
 
 function FilterLabel({ children }) {
   return (
@@ -151,21 +169,20 @@ export default function VentasPage() {
   const [formHora, setFormHora] = useState('')
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null)
   const [nuevoEstado, setNuevoEstado] = useState('pendiente')
-  const [productoAutocomplete, setProductoAutocomplete] = useState(null)
-  const [cantidadSeleccionada, setCantidadSeleccionada] = useState(1)
+  const [formMetodo, setFormMetodo] = useState('efectivo')
+  const [formCanal, setFormCanal] = useState('presencial')
+  const [busquedaProducto, setBusquedaProducto] = useState('')
 
   const comprobanteRef = useRef(null)
   const transferenciaInputRef = useRef(null)
   const [uploadingVentaId, setUploadingVentaId] = useState(null)
 
+  // Abonos: { id, idVenta, slot (1 | 2), fecha, urlComprobante } — slot 2 solo existe en ventas por encargo
   const [abonos, setAbonos] = useState([])
   const [showAbonoModal, setShowAbonoModal] = useState(false)
   const [ventaAbonoModal, setVentaAbonoModal] = useState(null)
-  const [abonoComprobante, setAbonoComprobante] = useState(null)
-  const [abonoMonto, setAbonoMonto] = useState('')
-  const [abonoMetodo, setAbonoMetodo] = useState('efectivo')
   const abonoInputRef = useRef(null)
-  const [abonoAConfirmarEliminar, setAbonoAConfirmarEliminar] = useState(null)
+  const abonoSlotRef = useRef(null)
 
   const [notificaciones, setNotificaciones] = useState([])
   const timersNotificacionRef = useRef({})
@@ -275,34 +292,46 @@ export default function VentasPage() {
     cerrarModalEstado()
   }
 
-  const nextAbonoId = () => {
-    const maxNum = abonos.reduce((max, a) => Math.max(max, parseInt(a.id.replace('AB-', ''), 10) || 0), 0)
-    return `AB-${String(maxNum + 1).padStart(3, '0')}`
-  }
+  // ---------- Pagos (según canal: 1 comprobante, o 2 si es encargo) ----------
 
   const abrirModalAbono = (venta) => {
     setVentaAbonoModal(venta)
-    setAbonoComprobante(null)
-    setAbonoMonto('')
-    setAbonoMetodo('efectivo')
-    setAbonoAConfirmarEliminar(null)
     setShowAbonoModal(true)
   }
 
   const cerrarModalAbono = () => {
     setShowAbonoModal(false)
     setVentaAbonoModal(null)
-    setAbonoComprobante(null)
-    setAbonoMonto('')
-    setAbonoAConfirmarEliminar(null)
+    abonoSlotRef.current = null
+  }
+
+  // slot: 1 o 2. Sirve tanto para subir como para reemplazar el comprobante.
+  const handleClickSubirComprobante = (slot) => {
+    abonoSlotRef.current = slot
+    abonoInputRef.current?.click()
   }
 
   const handleImagenAbonoSeleccionada = (e) => {
     const file = e.target.files?.[0]
+    const slot = abonoSlotRef.current
     e.target.value = ''
-    if (!file || !file.type.startsWith('image/')) return
+    abonoSlotRef.current = null
+    if (!file || !slot || !ventaAbonoModal || !file.type.startsWith('image/')) return
+
+    const idVenta = ventaAbonoModal.id
     const reader = new FileReader()
-    reader.onload = () => setAbonoComprobante(reader.result)
+    reader.onload = () => {
+      const urlComprobante = reader.result
+      setAbonos((prev) => {
+        const existe = prev.some((a) => a.idVenta === idVenta && a.slot === slot)
+        if (existe) {
+          return prev.map((a) =>
+            a.idVenta === idVenta && a.slot === slot ? { ...a, urlComprobante, fecha: fechaHoyFormateada() } : a
+          )
+        }
+        return [...prev, { id: `AB-${idVenta.replace('#', '')}-${slot}`, idVenta, slot, fecha: fechaHoyFormateada(), urlComprobante }]
+      })
+    }
     reader.readAsDataURL(file)
   }
 
@@ -311,52 +340,13 @@ export default function VentasPage() {
     [abonos, ventaAbonoModal]
   )
 
-  const totalAbonadoVenta = abonosDeVenta.reduce((s, a) => s + a.monto, 0)
+  const comprobanteDeSlot = (slot) => abonosDeVenta.find((a) => a.slot === slot)
+
+  const cantidadPagos = pagosPermitidos(ventaAbonoModal)
+  const slotsPago = Array.from({ length: cantidadPagos }, (_, i) => i + 1)
+  const montoPorPago = ventaAbonoModal ? ventaAbonoModal.total / cantidadPagos : 0
+  const totalAbonadoVenta = abonosDeVenta.filter((a) => a.slot <= cantidadPagos).length * montoPorPago
   const saldoPendienteVenta = ventaAbonoModal ? Math.max(ventaAbonoModal.total - totalAbonadoVenta, 0) : 0
-  const montoAbonoValido = parseFloat(abonoMonto) > 0 && parseFloat(abonoMonto) <= saldoPendienteVenta + 0.001
-
-  const handleCambiarMontoAbono = (valor) => {
-    if (valor === '') {
-      setAbonoMonto('')
-      return
-    }
-    const numero = parseFloat(valor)
-    if (isNaN(numero)) {
-      setAbonoMonto(valor)
-      return
-    }
-    if (numero > saldoPendienteVenta) setAbonoMonto(saldoPendienteVenta.toFixed(2))
-    else setAbonoMonto(valor)
-  }
-
-  const resetNuevoAbono = () => {
-    setAbonoComprobante(null)
-    setAbonoMonto('')
-    setAbonoMetodo('efectivo')
-  }
-
-  const handleRegistrarAbono = () => {
-    if (!ventaAbonoModal || !abonoComprobante || !montoAbonoValido) return
-    const nuevoAbono = {
-      id: nextAbonoId(),
-      idVenta: ventaAbonoModal.id,
-      fecha: fechaHoyFormateada(),
-      monto: parseFloat(abonoMonto),
-      metodoPago: abonoMetodo,
-      urlComprobante: abonoComprobante,
-    }
-    setAbonos((prev) => [nuevoAbono, ...prev])
-    resetNuevoAbono()
-  }
-
-  const handleClickEliminarAbono = (idAbono) => {
-    if (abonoAConfirmarEliminar === idAbono) {
-      setAbonos((prev) => prev.filter((a) => a.id !== idAbono))
-      setAbonoAConfirmarEliminar(null)
-    } else {
-      setAbonoAConfirmarEliminar(idAbono)
-    }
-  }
 
   const filtered = useMemo(() => {
     let data = ventas
@@ -427,8 +417,9 @@ export default function VentasPage() {
     setFormItems([])
     setClienteSeleccionado(null)
     setNuevoEstado('pendiente')
-    setProductoAutocomplete(null)
-    setCantidadSeleccionada(1)
+    setFormMetodo('efectivo')
+    setFormCanal('presencial')
+    setBusquedaProducto('')
     clienteTuvoCaracterEspecialRef.current = false
     productoTuvoCaracterEspecialRef.current = false
   }
@@ -454,23 +445,35 @@ export default function VentasPage() {
     return normalizarTexto(producto.nombre) === 'pan frances'
   }
 
-  const handleAgregarProducto = () => {
-    if (!productoAutocomplete || cantidadSeleccionada <= 0) return
+  // Agrega 1 unidad (la cantidad se modifica solo en el resumen). Devuelve true si se agregó.
+  const agregarProducto = (producto) => {
+    if (!producto) return false
 
-    if (productoSinStock(productoAutocomplete)) {
-      mostrarNotificacion('error', 'Sin stock disponible', `${productoAutocomplete.nombre} no cuenta con stock disponible`)
-      return
+    if (productoSinStock(producto)) {
+      mostrarNotificacion('error', 'Sin stock disponible', `${producto.nombre} no cuenta con stock disponible`)
+      return false
     }
 
     setFormItems((prev) => {
-      const existente = prev.find((i) => i.nombre === productoAutocomplete.nombre)
+      const existente = prev.find((i) => i.nombre === producto.nombre)
       if (existente) {
-        return prev.map((i) => (i.nombre === productoAutocomplete.nombre ? { ...i, cantidad: i.cantidad + cantidadSeleccionada } : i))
+        return prev.map((i) => (i.nombre === producto.nombre ? { ...i, cantidad: i.cantidad + 1 } : i))
       }
-      return [...prev, { nombre: productoAutocomplete.nombre, cantidad: cantidadSeleccionada, precio: productoAutocomplete.precio }]
+      return [...prev, { nombre: producto.nombre, cantidad: 1, precio: producto.precio }]
     })
-    setProductoAutocomplete(null)
-    setCantidadSeleccionada(1)
+    return true
+  }
+
+  // Catálogo filtrado por el buscador (ignora mayúsculas y tildes)
+  const productosFiltrados = useMemo(() => {
+    const q = normalizarTexto(busquedaProducto).trim()
+    if (!q) return catalogoPanaderia
+    return catalogoPanaderia.filter((p) => normalizarTexto(p.nombre).includes(q))
+  }, [busquedaProducto])
+
+  // Agrega el primer producto que coincide con la búsqueda
+  const handleAgregarProducto = () => {
+    if (agregarProducto(productosFiltrados[0])) setBusquedaProducto('')
   }
 
   const handleQuitarProducto = (nombre) => setFormItems((prev) => prev.filter((i) => i.nombre !== nombre))
@@ -496,6 +499,8 @@ export default function VentasPage() {
       productos: formItems.reduce((s, i) => s + i.cantidad, 0),
       total: totalFormulario,
       estado: nuevoEstado,
+      metodo: formMetodo,
+      canal: formCanal,
       fecha: formFecha,
       hora: formHora,
       items: formItems,
@@ -507,7 +512,6 @@ export default function VentasPage() {
 
   const completados = ventas.filter((v) => v.estado === 'completado').length
   const cancelados = ventas.filter((v) => v.estado === 'cancelado').length
-  const abonosCount = (idVenta) => abonos.filter((a) => a.idVenta === idVenta).length
   const puedeVerComprobante = (v) => v.estado === 'completado' || v.estado === 'cancelado'
 
   const columns = [
@@ -515,58 +519,50 @@ export default function VentasPage() {
       key: 'id',
       header: 'ID',
       sortable: true,
-      width: '8%',
+      width: '7%',
       accessor: (r) => <Typography sx={{ fontSize: 12, fontWeight: 600, color: 'text.primary' }}>{r.id}</Typography>,
     },
     {
       key: 'nit',
       header: 'NIT/Cédula',
-      width: '15%',
+      width: '12%',
       accessor: (r) => <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{r.nit || '—'}</Typography>,
     },
     {
       key: 'metodo',
       header: 'Método',
-      width: '12%',
+      width: '11%',
       accessor: (r) => <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{r.metodo ? cap(r.metodo) : '—'}</Typography>,
+    },
+    {
+      key: 'canal',
+      header: 'Canal',
+      width: '10%',
+      accessor: (r) => (
+        <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+          {r.canal ? canalOptions.find((o) => o.value === r.canal)?.label ?? cap(r.canal) : '—'}
+        </Typography>
+      ),
     },
     {
       key: 'total',
       header: 'Total',
       align: 'right',
       sortable: true,
-      width: '10%',
+      width: '9%',
       accessor: (r) => <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary' }}>${r.total.toFixed(2)}</Typography>,
     },
     {
       key: 'estado',
       header: 'Estado',
-      width: '14%',
-      accessor: (r) => (
-        <StatusBadge variant={estadoVariant[r.estado]} dot>
-          {cap(r.estado)}
-        </StatusBadge>
-      ),
-    },
-    {
-      key: 'fecha',
-      header: 'Fecha',
-      width: '13%',
-      accessor: (r) => (
-        <Typography sx={{ color: 'text.secondary', fontSize: 11 }}>
-          {r.fecha} {r.hora}
-        </Typography>
-      ),
-    },
-    {
-      key: 'acciones',
-      header: '',
-      align: 'right',
-      width: '28%',
+      width: '18%',
       accessor: (r) => {
         const bloqueado = r.estado === 'cancelado'
         return (
-          <Stack direction="row" alignItems="center" justifyContent="flex-end" spacing={0.5} sx={{ width: '100%' }}>
+          <Stack direction="row" alignItems="center" spacing={0.75}>
+            <StatusBadge variant={estadoVariant[r.estado]} dot>
+              {cap(r.estado)}
+            </StatusBadge>
             <IconButton
               size="small"
               disabled={bloqueado}
@@ -579,34 +575,54 @@ export default function VentasPage() {
             >
               <IconToggleRight size={16} />
             </IconButton>
-            <Button
-              variant="ghost"
-              size="sm"
-              leftIcon={<IconReceipt size={12} />}
-              onClick={(e) => {
-                e.stopPropagation()
-                abrirModalAbono(r)
-              }}
-              sx={{ fontSize: 11 }}
-            >
-              {abonosCount(r.id) > 0 ? `Abonos (${abonosCount(r.id)})` : 'Abonos'}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={!puedeVerComprobante(r)}
-              onClick={(e) => {
-                e.stopPropagation()
-                setSelected(r)
-                setShowModal(true)
-              }}
-              sx={{ fontSize: 11 }}
-            >
-              Ver comprobante
-            </Button>
           </Stack>
         )
       },
+    },
+    {
+      key: 'fecha',
+      header: 'Fecha',
+      width: '12%',
+      accessor: (r) => (
+        <Typography sx={{ color: 'text.secondary', fontSize: 11 }}>
+          {r.fecha} {r.hora}
+        </Typography>
+      ),
+    },
+    {
+      key: 'acciones',
+      header: '',
+      align: 'right',
+      width: '21%',
+      accessor: (r) => (
+        <Stack direction="row" alignItems="center" justifyContent="flex-end" spacing={0.5} sx={{ width: '100%' }}>
+          <Button
+            variant="ghost"
+            size="sm"
+            leftIcon={<IconReceipt size={12} />}
+            onClick={(e) => {
+              e.stopPropagation()
+              abrirModalAbono(r)
+            }}
+            sx={{ fontSize: 11 }}
+          >
+            Pagos
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={!puedeVerComprobante(r)}
+            onClick={(e) => {
+              e.stopPropagation()
+              setSelected(r)
+              setShowModal(true)
+            }}
+            sx={{ fontSize: 11 }}
+          >
+            Ver comprobante
+          </Button>
+        </Stack>
+      ),
     },
   ]
 
@@ -753,12 +769,7 @@ export default function VentasPage() {
             <Box sx={{ width: 130 }}>
               <FilterLabel>Método</FilterLabel>
               <Select
-                options={[
-                  { value: '', label: 'Todos' },
-                  { value: 'efectivo', label: 'Efectivo' },
-                  { value: 'tarjeta', label: 'Tarjeta' },
-                  { value: 'transferencia', label: 'Transferencia' },
-                ]}
+                options={[{ value: '', label: 'Todos' }, ...metodoOptions]}
                 value={metodoFilter}
                 onChange={(e) => {
                   setMetodoFilter(e.target.value)
@@ -999,19 +1010,25 @@ export default function VentasPage() {
                 Descargar comprobante
               </Button>
             </Box>
+
+            <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ width: '100%' }}>
+              <Button variant="secondary" size="sm" onClick={() => setShowModal(false)}>
+                Cerrar
+              </Button>
+            </Stack>
           </Box>
         )}
       </Modal>
 
-      {/* Modal: Abonos */}
-      <Modal open={showAbonoModal} onClose={cerrarModalAbono} title="Abonos de la venta" size="md">
+      {/* Modal: Pagos (encargo: 2 comprobantes de 50% · página/presencial: 1 comprobante de 100%) */}
+      <Modal open={showAbonoModal} onClose={cerrarModalAbono} title="Pagos de la venta" size="md">
         {ventaAbonoModal && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
             <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
               Venta <b>{ventaAbonoModal.id}</b> · {obtenerNombreCliente(ventaAbonoModal)}
             </Typography>
 
-            {/* Ajuste 1: Recuadro con información resumida con fondo #F9F8F8 */}
+            {/* Resumen: total, pagado y saldo pendiente */}
             <Box
               sx={{
                 display: 'grid',
@@ -1029,7 +1046,7 @@ export default function VentasPage() {
                 <Typography sx={{ fontWeight: 700, fontSize: 14 }}>${ventaAbonoModal.total.toFixed(2)}</Typography>
               </Box>
               <Box>
-                <FilterLabel>Abonado</FilterLabel>
+                <FilterLabel>Pagado</FilterLabel>
                 <Typography sx={{ fontWeight: 700, fontSize: 14 }}>${totalAbonadoVenta.toFixed(2)}</Typography>
               </Box>
               <Box>
@@ -1040,146 +1057,80 @@ export default function VentasPage() {
               </Box>
             </Box>
 
-            <FilterLabel>Historial de abonos {abonosDeVenta.length > 0 ? `(${abonosDeVenta.length})` : ''}</FilterLabel>
+            <FilterLabel>Comprobantes de pago</FilterLabel>
 
-            {abonosDeVenta.length === 0 ? (
-              <Box sx={{ border: '1px dashed', borderColor: 'divider', borderRadius: 1.5, py: 2.5, textAlign: 'center', color: 'text.dim', fontSize: 11.5 }}>
-                Aún no hay abonos registrados para esta venta
-              </Box>
-            ) : (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, maxHeight: 200, overflowY: 'auto' }}>
-                {abonosDeVenta.map((a) => {
-                  const confirmando = abonoAConfirmarEliminar === a.id
-                  return (
-                    <Stack
-                      key={a.id}
-                      direction="row"
-                      alignItems="center"
-                      spacing={1.25}
-                      sx={{
-                        border: '1px solid',
-                        borderColor: confirmando ? 'error.main' : 'divider',
-                        borderRadius: 1.5,
-                        px: 1.25,
-                        py: 0.875,
-                        bgcolor: confirmando ? alpha(theme.palette.error.main, 0.12) : 'transparent',
-                      }}
-                    >
-                      <ImageWithFallback
-                        src={a.urlComprobante}
-                        alt="Comprobante"
-                        onClick={() => window.open(a.urlComprobante, '_blank')}
-                        style={{ width: 38, height: 38, borderRadius: 4, border: `1px solid ${theme.palette.divider}`, objectFit: 'cover', cursor: 'pointer' }}
-                      />
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Stack direction="row" justifyContent="space-between">
-                          <Typography sx={{ fontSize: 12 }}>{a.id}</Typography>
-                          <Typography sx={{ fontSize: 12, color: 'text.dim' }}>{a.fecha}</Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: cantidadPagos === 2 ? '1fr 1fr' : '1fr' }, gap: 2 }}>
+              {slotsPago.map((slot) => {
+                const abono = comprobanteDeSlot(slot)
+                return (
+                  <Box
+                    key={slot}
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 1,
+                      minWidth: 0,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 1.5,
+                      p: 1.25,
+                    }}
+                  >
+                    <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{100 / cantidadPagos}% · ${montoPorPago.toFixed(2)}</Typography>
+
+                    {abono ? (
+                      <>
+                        <ImageWithFallback
+                          src={abono.urlComprobante}
+                          alt={`Comprobante del pago ${slot}`}
+                          onClick={() => window.open(abono.urlComprobante, '_blank')}
+                          style={{ width: '100%', height: 130, borderRadius: 6, border: `1px solid ${theme.palette.divider}`, objectFit: 'cover', cursor: 'pointer' }}
+                        />
+                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                          <Typography sx={{ fontSize: 11, color: 'text.dim' }}>{abono.fecha}</Typography>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            leftIcon={<IconUpload size={12} />}
+                            onClick={() => handleClickSubirComprobante(slot)}
+                          >
+                            Reemplazar
+                          </Button>
                         </Stack>
-                        <Stack direction="row" justifyContent="space-between">
-                          <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{cap(a.metodoPago)}</Typography>
-                          <Typography sx={{ fontWeight: 700, fontSize: 12.5 }}>${a.monto.toFixed(2)}</Typography>
-                        </Stack>
-                      </Box>
-                      <IconButton size="small" color={confirmando ? 'error' : 'default'} onClick={() => handleClickEliminarAbono(a.id)}>
-                        <IconTrash size={13} />
-                      </IconButton>
-                    </Stack>
-                  )
-                })}
-              </Box>
-            )}
-
-            <Divider />
-
-            <FilterLabel>Nuevo abono</FilterLabel>
-
-            {saldoPendienteVenta <= 0 ? (
-              <Box sx={{ border: '1px dashed', borderColor: 'divider', borderRadius: 1.5, py: 2, textAlign: 'center', color: 'success.main', fontSize: 11.5 }}>
-                Esta venta ya está completamente pagada.
-              </Box>
-            ) : !abonoComprobante ? (
-              <Button
-                variant="secondary"
-                onClick={() => abonoInputRef.current?.click()}
-                sx={{ display: 'flex', flexDirection: 'column', gap: 1, py: 3, borderStyle: 'dashed' }}
-              >
-                <IconUpload size={16} />
-                Subir captura del comprobante
-              </Button>
-            ) : (
-              <>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <FilterLabel>Comprobante</FilterLabel>
-                  <Button variant="ghost" size="sm" leftIcon={<IconUpload size={12} />} onClick={() => abonoInputRef.current?.click()}>
-                    Reemplazar
-                  </Button>
-                </Stack>
-                <ImageWithFallback
-                  src={abonoComprobante}
-                  alt="Comprobante"
-                  style={{ width: '100%', borderRadius: 6, border: `1px solid ${theme.palette.divider}`, maxHeight: 190, objectFit: 'contain' }}
-                />
-
-                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                  <Box sx={{ minWidth: 0 }}>
-                    <FilterLabel>Método de pago</FilterLabel>
-                    <Select
-                      options={[
-                        { value: 'efectivo', label: '💵 Efectivo' },
-                        { value: 'tarjeta', label: '💳 Tarjeta' },
-                        { value: 'transferencia', label: '🏦 Transferencia' },
-                      ]}
-                      value={abonoMetodo}
-                      onChange={(e) => setAbonoMetodo(e.target.value)}
-                    />
+                      </>
+                    ) : (
+                      <Button
+                        variant="secondary"
+                        onClick={() => handleClickSubirComprobante(slot)}
+                        sx={{ display: 'flex', flexDirection: 'column', gap: 1, py: 3, borderStyle: 'dashed' }}
+                      >
+                        <IconUpload size={16} />
+                        Subir comprobante
+                      </Button>
+                    )}
                   </Box>
-                  <Box sx={{ minWidth: 0 }}>
-                    <FilterLabel>Monto (máx. ${saldoPendienteVenta.toFixed(2)})</FilterLabel>
-                    <Input type="number" placeholder="$0.00" value={abonoMonto} onChange={(e) => handleCambiarMontoAbono(e.target.value)} />
-                  </Box>
-                </Box>
-              </>
-            )}
+                )
+              })}
+            </Box>
 
-            {/* Ajuste 2: Botón de cerrar ubicado en la esquina inferior derecha con los colores del botón filtrar */}
             <Stack direction="row" justifyContent="flex-end" spacing={1} sx={{ pt: 1 }}>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={cerrarModalAbono}
-                sx={{
-                  border: '1px solid',
-                  backgroundColor: isDark ? '#32251F' : '#F0EBE3',
-                  color: isDark ? '#F2E9DD' : '#4A2E17',
-                  borderColor: isDark ? '#3D2C21' : '#E4D9C8',
-                  '&:hover': {
-                    backgroundColor: isDark ? '#32251F' : '#F0EBE3',
-                    borderColor: isDark ? '#3D2C21' : '#E4D9C8',
-                    opacity: 0.85,
-                  },
-                }}
-              >
+              <Button variant="secondary" size="sm" onClick={cerrarModalAbono}>
                 Cerrar
               </Button>
-              {abonoComprobante && (
-                <Button variant="primary" size="sm" disabled={!montoAbonoValido} onClick={handleRegistrarAbono}>
-                  Registrar abono
-                </Button>
-              )}
             </Stack>
           </Box>
         )}
       </Modal>
 
-      {/* Modal: Nueva venta */}
+      {/* Modal: Nueva venta (master-detail) */}
       <Modal
         open={showVentaModal}
         onClose={() => setShowVentaModal(false)}
         title="Nueva venta"
         size="lg"
         sx={{
-          maxWidth: 720,
+          width: '100%',
+          maxWidth: 1100,
           minHeight: 600,
           ...(isDark && {
             bgcolor: '#2A1D16',
@@ -1188,28 +1139,57 @@ export default function VentasPage() {
           }),
         }}
       >
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', marginTop: '20px' }, gap: 2.5, alignItems: 'start', height: '100%' }}>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, minWidth: 0, width: '100%' }}>
-            <Box sx={{
-              borderRadius: 1.5,
-              px: 1.5,
-              py: 1.25,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 0.4,
-              border: '1px solid',
-              borderColor: isDark ? '#4A3B32' : '#E4D9C8',
-              bgcolor: isDark ? '#30231C' : '#F9F8F8'
-            }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, }}>
-                <span style={{ color: "#B3A79E" }}>ID de venta</span><b>{formId}</b>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                <span style={{ color: "#B3A79E" }}>Fecha</span><span>{formFecha} · {formHora}</span>
-              </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: '20px' }}>
+          {/* Parte superior: NIT/Cédula, Estado, Método de pago y Canal + ID/Fecha */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '0.8fr 1.3fr 1fr 1.5fr 1fr 1fr' },
+              gap: 2,
+              alignItems: 'end',
+            }}
+          >
+            <Box sx={{ minWidth: 0 }}>
+              <FilterLabel>ID de venta</FilterLabel>
+              <TextField
+                fullWidth
+                size="small"
+                value={formId}
+                disabled
+                sx={autocompleteInputSx}
+              />
             </Box>
 
-            <Box>
+            <Box sx={{ minWidth: 0 }}>
+              <FilterLabel>Fecha</FilterLabel>
+              <TextField
+                fullWidth
+                size="small"
+                value={`${formFecha} · ${formHora}`}
+                disabled
+                sx={autocompleteInputSx}
+              />
+            </Box>
+
+            <Box sx={{ minWidth: 0 }}>
+              <FilterLabel>Estado inicial</FilterLabel>
+              <TextField
+                select
+                fullWidth
+                size="small"
+                value={nuevoEstado}
+                onChange={(e) => setNuevoEstado(e.target.value)}
+                sx={autocompleteInputSx}
+              >
+                {estadoOptions.map((opcion) => (
+                  <MenuItem key={opcion.value} value={opcion.value}>
+                    {opcion.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Box>
+
+            <Box sx={{ minWidth: 0 }}>
               <FilterLabel>NIT/Cédula</FilterLabel>
               <Autocomplete
                 size="small"
@@ -1236,17 +1216,17 @@ export default function VentasPage() {
               />
             </Box>
 
-            <Box>
-              <FilterLabel>Estado inicial</FilterLabel>
+            <Box sx={{ minWidth: 0 }}>
+              <FilterLabel>Canal</FilterLabel>
               <TextField
                 select
                 fullWidth
                 size="small"
-                value={nuevoEstado}
-                onChange={(e) => setNuevoEstado(e.target.value)}
+                value={formCanal}
+                onChange={(e) => setFormCanal(e.target.value)}
                 sx={autocompleteInputSx}
               >
-                {estadoOptions.map((opcion) => (
+                {canalOptions.map((opcion) => (
                   <MenuItem key={opcion.value} value={opcion.value}>
                     {opcion.label}
                   </MenuItem>
@@ -1254,31 +1234,115 @@ export default function VentasPage() {
               </TextField>
             </Box>
 
-            <Divider />
-
-            <Box>
-              <FilterLabel>Producto</FilterLabel>
-              <Autocomplete
+            <Box sx={{ minWidth: 0 }}>
+              <FilterLabel>Método de pago</FilterLabel>
+              <TextField
+                select
+                fullWidth
                 size="small"
-                options={catalogoPanaderia}
-                getOptionLabel={(p) => p.nombre}
-                value={productoAutocomplete}
-                onChange={(_, value) => setProductoAutocomplete(value)}
-                onInputChange={(_, value) => validarCaracterEspecial(value, productoTuvoCaracterEspecialRef)}
-                renderOption={(props, p) => (
-                  <li {...props} key={p.nombre}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: 13 }}>
-                      <span>{p.nombre}</span><span>${p.precio.toFixed(2)}</span>
+                value={formMetodo}
+                onChange={(e) => setFormMetodo(e.target.value)}
+                sx={autocompleteInputSx}
+              >
+                {metodoOptions.map((opcion) => (
+                  <MenuItem key={opcion.value} value={opcion.value}>
+                    {opcion.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Box>
+          </Box>
+
+          <Divider />
+
+          {/* Master-detail: catálogo (izquierda) + resumen (derecha) */}
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1.15fr 1fr' }, gap: 2.5, alignItems: 'stretch' }}>
+            {/* Catálogo de productos */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, minWidth: 0 }}>
+              <FilterLabel>Catálogo de productos</FilterLabel>
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+                  gap: 1.25,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1.5,
+                  p: 1.25,
+                  minHeight: 180,
+                  maxHeight: 380,
+                  overflowY: 'auto',
+                }}
+              >
+                {productosFiltrados.map((p) => {
+                  const sinStock = productoSinStock(p)
+                  return (
+                    <Box
+                      key={p.nombre}
+                      component="button"
+                      type="button"
+                      onClick={() => agregarProducto(p)}
+                      sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: 0.75,
+                        p: 1.25,
+                        font: 'inherit',
+                        color: 'text.primary',
+                        textAlign: 'left',
+                        cursor: sinStock ? 'not-allowed' : 'pointer',
+                        opacity: sinStock ? 0.5 : 1,
+                        borderRadius: 1.5,
+                        border: '1px solid',
+                        borderColor: isDark ? '#4A3B32' : '#E4D9C8',
+                        bgcolor: isDark ? '#30231C' : '#F9F8F8',
+                        '&:hover': { borderColor: '#C97A45' },
+                      }}
+                    >
+                      {p.imagen ? (
+                        <ImageWithFallback
+                          src={p.imagen}
+                          alt={p.nombre}
+                          style={{ width: 44, height: 44, borderRadius: 6, objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <Box sx={{ width: 44, height: 44, borderRadius: 1, bgcolor: 'action.hover', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16, color: 'text.secondary' }}>
+                          {p.nombre.charAt(0)}
+                        </Box>
+                      )}
+                      <Typography sx={{ fontSize: 12, lineHeight: 1.3 }}>{p.nombre}</Typography>
+                      <Typography sx={{ fontSize: 12, fontWeight: 700 }}>${p.precio.toFixed(2)}</Typography>
                     </Box>
-                  </li>
+                  )
+                })}
+                {productosFiltrados.length === 0 && (
+                  <Box sx={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'center', py: 5, color: 'text.secondary', fontSize: 13 }}>
+                    Sin productos que coincidan
+                  </Box>
                 )}
-                renderInput={(params) => (
+              </Box>
+
+              {/* Buscar producto (debajo del catálogo) */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
                   <TextField
-                    {...params}
+                    fullWidth
+                    size="small"
                     placeholder="Buscar producto…"
+                    value={busquedaProducto}
+                    onChange={(e) => {
+                      validarCaracterEspecial(e.target.value, productoTuvoCaracterEspecialRef)
+                      setBusquedaProducto(e.target.value)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        if (busquedaProducto.trim() && productosFiltrados.length > 0) handleAgregarProducto()
+                      }
+                    }}
                     sx={autocompleteInputSx}
                     InputProps={{
-                      ...(params.InputProps || {}),
                       startAdornment: (
                         <InputAdornment position="start" sx={{ pl: 1 }}>
                           <IconSearch size={18} color="#A0968C" />
@@ -1286,74 +1350,52 @@ export default function VentasPage() {
                       ),
                     }}
                   />
-                )}
-              />
+                </Box>
+              </Box>
             </Box>
 
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', mt: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', borderRadius: 1, border: '1px solid', borderColor: isDark ? '#4A3B32' : '#E4D9C8', bgcolor: isDark ? '#30231C' : 'transparent' }}>
-                <IconButton size="small" onClick={() => setCantidadSeleccionada((c) => Math.max(1, c - 1))}><IconMinus size={12} /></IconButton>
-                <Typography sx={{ width: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13 }}>{cantidadSeleccionada}</Typography>
-                <IconButton size="small" onClick={() => setCantidadSeleccionada((c) => c + 1)}><IconPlus size={12} /></IconButton>
+            {/* Resumen de la venta (único lugar donde se modifica la cantidad) */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, minWidth: 0, width: '100%' }}>
+              <FilterLabel>Resumen</FilterLabel>
+              <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5, minHeight: 180, maxHeight: 380, overflowY: 'auto', flexGrow: 1 }}>
+                {formItems.length === 0 ? (
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 5, color: 'text.secondary', fontSize: 13 }}>
+                    Sin productos agregados
+                  </Box>
+                ) : (
+                  formItems.map((item, idx) => (
+                    <Box key={item.nombre} sx={{ px: 1.25, py: 0.875, borderTop: idx > 0 ? '1px solid' : 'none', borderColor: 'divider' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: 'action.hover', borderRadius: 0.7, mr: 1, border: '1px solid', borderColor: isDark ? '#4A3B32' : '#E4D9C8' }}>
+                          <IconButton size="small" onClick={() => handleActualizarCantidad(item.nombre, item.cantidad - 1)}><IconMinus size={11} /></IconButton>
+                          <Typography sx={{ width: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>{item.cantidad}</Typography>
+                          <IconButton size="small" onClick={() => handleActualizarCantidad(item.nombre, item.cantidad + 1)}><IconPlus size={11} /></IconButton>
+                        </Box>
+                        <Typography sx={{ fontSize: 12.5, flex: 1 }}>{item.nombre}</Typography>
+                        <Typography sx={{ fontSize: 12.5, color: 'text.secondary', mx: 1 }}>${(item.cantidad * item.precio).toFixed(2)}</Typography>
+                        <IconButton size="small" sx={{ color: 'error.main' }} onClick={() => handleQuitarProducto(item.nombre)}><IconX size={13} /></IconButton>
+                      </Box>
+                    </Box>
+                  ))
+                )}
               </Box>
-              {/* Ajuste 3: Botón de agregar con los colores del botón filtrar */}
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={<IconPlus size={12} />}
-                disabled={!productoAutocomplete}
-                onClick={handleAgregarProducto}
-                sx={{
-                  border: '1px solid',
-                  backgroundColor: isDark ? '#32251F' : '#F0EBE3',
-                  color: isDark ? '#F2E9DD' : '#4A2E17',
-                  borderColor: isDark ? '#3D2C21' : '#E4D9C8',
-                  '&:hover': {
-                    backgroundColor: isDark ? '#32251F' : '#F0EBE3',
-                    borderColor: isDark ? '#3D2C21' : '#E4D9C8',
-                    opacity: 0.85,
-                  },
-                }}
-              >
-                Agregar
+
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', pt: 2, mt: 'auto' }}>
+                <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>Total a pagar</Typography>
+                <Typography sx={{ fontWeight: 700, fontSize: 17 }}>${totalFormulario.toFixed(2)}</Typography>
+              </Box>
+
+              <Button variant="primary" size="sm" fullWidth disabled={formItems.length === 0 || !clienteValido} onClick={handleConfirmarVenta}>
+                Registrar venta
               </Button>
             </Box>
           </Box>
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, minWidth: 0, width: '100%', height: '100%' }}>
-            <FilterLabel>Resumen</FilterLabel>
-            <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5, minHeight: 180, maxHeight: 320, overflowY: 'auto', flexGrow: 1 }}>
-              {formItems.length === 0 ? (
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 5, color: 'text.secondary', fontSize: 13 }}>
-                  Sin productos agregados
-                </Box>
-              ) : (
-                formItems.map((item, idx) => (
-                  <Box key={item.nombre} sx={{ px: 1.25, py: 0.875, borderTop: idx > 0 ? '1px solid' : 'none', borderColor: 'divider' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: 'action.hover', borderRadius: 0.7, mr: 1, border: '1px solid', borderColor: isDark ? '#4A3B32' : '#E4D9C8' }}>
-                        <IconButton size="small" onClick={() => handleActualizarCantidad(item.nombre, item.cantidad - 1)}><IconMinus size={11} /></IconButton>
-                        <Typography sx={{ width: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>{item.cantidad}</Typography>
-                        <IconButton size="small" onClick={() => handleActualizarCantidad(item.nombre, item.cantidad + 1)}><IconPlus size={11} /></IconButton>
-                      </Box>
-                      <Typography sx={{ fontSize: 12.5, flex: 1 }}>{item.nombre}</Typography>
-                      <Typography sx={{ fontSize: 12.5, color: 'text.secondary', mx: 1 }}>${(item.cantidad * item.precio).toFixed(2)}</Typography>
-                      <IconButton size="small" sx={{ color: 'error.main' }} onClick={() => handleQuitarProducto(item.nombre)}><IconX size={13} /></IconButton>
-                    </Box>
-                  </Box>
-                ))
-              )}
-            </Box>
-
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', pt: 2, mt: 'auto' }}>
-              <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>Total a pagar</Typography>
-              <Typography sx={{ fontWeight: 700, fontSize: 17 }}>${totalFormulario.toFixed(2)}</Typography>
-            </Box>
-
-            <Button variant="primary" size="sm" fullWidth disabled={formItems.length === 0 || !clienteValido} onClick={handleConfirmarVenta}>
-              Registrar venta
+          <Stack direction="row" justifyContent="flex-end" spacing={1}>
+            <Button variant="secondary" size="sm" onClick={() => setShowVentaModal(false)}>
+              Cancelar
             </Button>
-          </Box>
+          </Stack>
         </Box>
       </Modal>
 
