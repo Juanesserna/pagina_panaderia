@@ -13,19 +13,21 @@ const PLACEHOLDER_COMPROBANTE =
     </svg>`
   );
 
+// Canal de la venta: "pagina" | "encargo" | "presencial"
+// pagoUnico: true = un solo pago del 100% · false = dos abonos del 50% (solo aplica a "encargo")
 export const initialVentas = [
-  { id: "#2851", usuario: "María López", origen: "pagina", nit: "1085822412", productos: 5, total: 285.0, estado: "completado", fecha: "20/06/2026", hora: "09:42", metodo: "tarjeta", imagenTransferencia: PLACEHOLDER_COMPROBANTE },
-  { id: "#2850", usuario: "Carlos Ruiz", origen: "pagina", nit: "1014942603", productos: 1, total: 520.0, estado: "en proceso", fecha: "20/06/2026", hora: "09:35", metodo: "efectivo" },
-  { id: "#2849", usuario: "Ana García", origen: "pagina", nit: "1003356886", productos: 4, total: 160.0, estado: "completado", fecha: "20/06/2026", hora: "09:18", metodo: "tarjeta" },
-  { id: "#2848", usuario: "José Martínez", origen: "pagina", nit: "1099529223", productos: 8, total: 340.0, estado: "pendiente", fecha: "20/06/2026", hora: "09:05", metodo: "transferencia", imagenTransferencia: PLACEHOLDER_COMPROBANTE },
-  { id: "#2847", usuario: "Laura Sánchez", origen: "pagina", nit: "1036913810", productos: 2, total: 185.0, estado: "completado", fecha: "20/06/2026", hora: "08:52", metodo: "efectivo" },
-  { id: "#2846", usuario: "Pedro Flores", origen: "pagina", nit: "1032868828", productos: 12, total: 210.0, estado: "cancelado", fecha: "20/06/2026", hora: "08:40", metodo: "tarjeta" },
-  { id: "#2845", usuario: "Sofía Torres", origen: "pagina", nit: "1029958838", productos: 3, total: 430.0, estado: "completado", fecha: "19/06/2026", hora: "17:22", metodo: "tarjeta" },
-  { id: "#2844", usuario: "Diego Romero", origen: "pagina", nit: "1018728463", productos: 6, total: 780.0, estado: "completado", fecha: "19/06/2026", hora: "16:55", metodo: "efectivo" },
-  { id: "#2843", usuario: "Valentina Cruz", origen: "pagina", nit: "1098847493", productos: 2, total: 95.0, estado: "completado", fecha: "19/06/2026", hora: "16:12", metodo: "transferencia", imagenTransferencia: PLACEHOLDER_COMPROBANTE },
-  { id: "#2842", usuario: "Rodrigo Vega", origen: "pagina", nit: "1013756669", productos: 4, total: 620.0, estado: "en proceso", fecha: "19/06/2026", hora: "15:44", metodo: "tarjeta" },
-  { id: "#2841", usuario: "Isabella Mora", origen: "pagina", nit: "1090825067", productos: 7, total: 355.0, estado: "completado", fecha: "19/06/2026", hora: "14:30", metodo: "efectivo" },
-  { id: "#2840", usuario: "Mateo Silva", origen: "pagina", nit: "1099410741", productos: 1, total: 890.0, estado: "pendiente", fecha: "19/06/2026", hora: "13:20", metodo: "transferencia" },
+  { id: "#2851", usuario: "María López", origen: "pagina", canal: "pagina", pagoUnico: true, nit: "1085822412", productos: 5, total: 285.0, estado: "completado", fecha: "20/06/2026", hora: "09:42", metodo: "tarjeta", imagenTransferencia: PLACEHOLDER_COMPROBANTE },
+  { id: "#2850", usuario: "Carlos Ruiz", origen: "pagina", canal: "presencial", pagoUnico: true, nit: "1014942603", productos: 1, total: 520.0, estado: "en proceso", fecha: "20/06/2026", hora: "09:35", metodo: "efectivo" },
+  { id: "#2849", usuario: "Ana García", origen: "pagina", canal: "pagina", pagoUnico: true, nit: "1003356886", productos: 4, total: 160.0, estado: "completado", fecha: "20/06/2026", hora: "09:18", metodo: "tarjeta" },
+  { id: "#2848", usuario: "José Martínez", origen: "pagina", canal: "encargo", pagoUnico: false, nit: "1099529223", productos: 8, total: 340.0, estado: "pendiente", fecha: "20/06/2026", hora: "09:05", metodo: "transferencia", imagenTransferencia: PLACEHOLDER_COMPROBANTE },
+  { id: "#2847", usuario: "Laura Sánchez", origen: "pagina", canal: "presencial", pagoUnico: true, nit: "1036913810", productos: 2, total: 185.0, estado: "completado", fecha: "20/06/2026", hora: "08:52", metodo: "efectivo" },
+  { id: "#2846", usuario: "Pedro Flores", origen: "pagina", canal: "pagina", pagoUnico: true, nit: "1032868828", productos: 12, total: 210.0, estado: "cancelado", fecha: "20/06/2026", hora: "08:40", metodo: "tarjeta" },
+  { id: "#2845", usuario: "Sofía Torres", origen: "pagina", canal: "encargo", pagoUnico: true, nit: "1029958838", productos: 3, total: 430.0, estado: "completado", fecha: "19/06/2026", hora: "17:22", metodo: "tarjeta" },
+  { id: "#2844", usuario: "Diego Romero", origen: "pagina", canal: "presencial", pagoUnico: true, nit: "1018728463", productos: 6, total: 780.0, estado: "completado", fecha: "19/06/2026", hora: "16:55", metodo: "efectivo" },
+  { id: "#2843", usuario: "Valentina Cruz", origen: "pagina", canal: "pagina", pagoUnico: true, nit: "1098847493", productos: 2, total: 95.0, estado: "completado", fecha: "19/06/2026", hora: "16:12", metodo: "transferencia", imagenTransferencia: PLACEHOLDER_COMPROBANTE },
+  { id: "#2842", usuario: "Rodrigo Vega", origen: "pagina", canal: "encargo", pagoUnico: false, nit: "1013756669", productos: 4, total: 620.0, estado: "en proceso", fecha: "19/06/2026", hora: "15:44", metodo: "tarjeta" },
+  { id: "#2841", usuario: "Isabella Mora", origen: "pagina", canal: "presencial", pagoUnico: true, nit: "1090825067", productos: 7, total: 355.0, estado: "completado", fecha: "19/06/2026", hora: "14:30", metodo: "efectivo" },
+  { id: "#2840", usuario: "Mateo Silva", origen: "pagina", canal: "pagina", pagoUnico: true, nit: "1099410741", productos: 1, total: 890.0, estado: "pendiente", fecha: "19/06/2026", hora: "13:20", metodo: "transferencia" },
 ];
 
 // Mapea el estado a un color de MUI (usado en <Chip color="...">)
