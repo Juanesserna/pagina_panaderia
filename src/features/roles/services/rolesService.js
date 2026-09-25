@@ -19,6 +19,8 @@ export const MODULOS = [
   'Compras',
   'Producción',
   'Ventas',
+  'Roles',
+  'Categoria',
 ]
 
 let roles = [
