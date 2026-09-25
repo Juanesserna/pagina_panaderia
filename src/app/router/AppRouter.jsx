@@ -10,6 +10,7 @@ const LandingPage = lazy(() => import('@features/landing/pages/LandingPage'))
 const CatalogoPage = lazy(() => import('@features/landing/pages/CatalogoPage'))
 const CheckoutPage = lazy(() => import('@features/landing/pages/CheckoutPage'))
 const LoginPage = lazy(() => import('@features/auth/pages/LoginPage'))
+const MiPerfilPage = lazy(() => import('@features/usuarios/pages/MiPerfilPage'))
 
 // Rutas protegidas
 const DashboardPage = lazy(() => import('@features/dashboard/pages/DashboardPage'))
@@ -45,6 +46,7 @@ export default function AppRouter() {
             <Route element={<MainLayout />}>
               <Route path={ROUTES.MIS_PEDIDOS} element={<MisPedidosPage />} />
               <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
+              <Route path={ROUTES.PERFIL} element={<MiPerfilPage />} />
               <Route path={ROUTES.CATEGORIAS} element={<CategoriasPage />} />
               <Route path={ROUTES.COMPRAS} element={<ComprasPage />} />
               <Route path={ROUTES.INSUMOS} element={<InsumosPage />} />

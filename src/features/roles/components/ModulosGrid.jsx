@@ -7,13 +7,13 @@ import { BRAND } from '@shared/utils/colors'
 import { MODULOS } from '../services/rolesService'
 
 export default function ModulosGrid({ value = [], onChange }) {
-  const theme = useTheme() // ✅ Sabemos si es modo claro u oscuro
+  const theme = useTheme() //  Sabemos si es modo claro u oscuro
   const esModoOscuro = theme.palette.mode === 'dark'
 
-  // 🎨 Colores según el tema activo
+  //  Colores según el tema activo
   const colores = {
     claro: {
-      selectedBg: BRAND.orangeSoftBg,   // ✅ El que ya tenías antes — se ve bien en claro
+      selectedBg: BRAND.orangeSoftBg,   //  El que ya tenías antes — se ve bien en claro
       unselectedBg: 'action.hover',
       border: BRAND.orange,
       textSelected: BRAND.orangeDark,
@@ -21,7 +21,7 @@ export default function ModulosGrid({ value = [], onChange }) {
       checkIcon: BRAND.orange,
     },
     oscuro: {
-      selectedBg: '#543928',      // ✅ El que ajustamos — se ve bien en oscuro
+      selectedBg: '#543928',      //  El que ajustamos — se ve bien en oscuro
       unselectedBg: '#2b241f',
       border: '#7a5a42',
       textSelected: '#f8e9da',

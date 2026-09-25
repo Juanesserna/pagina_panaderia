@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "@app/router/routes";
 import {
   AppBar, Toolbar, Typography, IconButton, Badge, Menu, MenuItem, Box, Avatar, Divider, Button,
 } from "@mui/material";
@@ -14,10 +16,12 @@ const PAGE_TITLES = {
   dashboard: "Dashboard", ventas: "Ventas", produccion: "Producción", compras: "Compras",
   proveedores: "Proveedores", insumos: "Insumos", productos: "Productos",
   usuarios: "Usuarios", categorias: "Categorías", roles: "Roles",
+  perfil: "Mi perfil",
 };
 
 export function Header({ page }) {
   const theme = useTheme();
+  const navigate = useNavigate();
   const { mode, toggleMode } = useColorMode();
   const isDark = mode === "dark";
 
@@ -141,7 +145,12 @@ export function Header({ page }) {
             <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Ana Martínez</Typography>
             <Typography sx={{ fontSize: 12, color: theme.palette.text.secondary }}>ana@alhorno.mx</Typography>
           </Box>
-          <MenuItem sx={{ gap: 1.5 }}><User size={13} /> Mi perfil</MenuItem>
+           <MenuItem
+            sx={{ gap: 1.5 }}
+            onClick={() => { setUserAnchor(null); navigate(ROUTES.PERFIL); }}
+          >
+            <User size={13} /> Mi perfil
+          </MenuItem>
           <Divider />
           <MenuItem sx={{ gap: 1.5, color: theme.palette.error.main, "&:hover": { bgcolor: theme.palette.error.dim } }}>
             <LogOut size={13} /> Cerrar sesión

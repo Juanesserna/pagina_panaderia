@@ -131,6 +131,18 @@ export async function fetchUsuarios() {
   return usuarios.map((u) => ({ ...u }))
 }
 
+
+// TODO: reemplazar por el usuario real cuando exista autenticación de verdad
+// (AuthContext / token / lo que se decida). Por ahora, como no hay sesión
+// real en el proyecto, devolvemos el mismo usuario que Header.jsx ya
+// muestra como "logueado" (Ana Martínez), para no inventar una persona
+// nueva ni datos que no existan en el mock.
+export async function getUsuarioActual() {
+  await delay(300)
+  const usuario = usuarios.find((u) => u.id === 1)
+  return { ...usuario }
+}
+
 export async function createUsuario(data) {
   await delay(600)
   const nuevo = { id: nextId++, extraModulos: [], ...data }
@@ -161,3 +173,14 @@ export async function toggleEstadoUsuario(id) {
   return usuarios.find((u) => u.id === id)
 }
 
+
+// CU.09.06 — Simulado: como en este proyecto no existe todavía un
+// PasswordHash real ni backend conectado, no hay contra qué comparar
+// "actual". Por eso no la validamos de verdad; solo simulamos el delay y
+// devolvemos éxito, dejando la puerta abierta a que el día que haya API
+// real, esta sea la única función que haya que reemplazar (el diálogo y
+// MiPerfilPage no cambian).
+export async function cambiarPassword(id, { actual, nueva }) {
+  await delay(600)
+  return { ok: true }
+}
