@@ -23,6 +23,7 @@ const ProveedoresPage = lazy(() => import('@features/proveedores/pages/Proveedor
 const RolesPage = lazy(() => import('@features/roles/pages/RolesPage'))
 const UsuariosPage = lazy(() => import('@features/usuarios/pages/UsuariosPage'))
 const VentasPage = lazy(() => import('@features/ventas/pages/VentasPage'))
+const MisPedidosPage = lazy(() => import('@features/mis_pedidos/pages/MisPedidosPage'))
 
 export default function AppRouter() {
   return (
@@ -42,6 +43,7 @@ export default function AppRouter() {
           {/* Rutas protegidas, envueltas en el layout con sidebar/header */}
           <Route element={<ProtectedRoute />}>
             <Route element={<MainLayout />}>
+              <Route path={ROUTES.MIS_PEDIDOS} element={<MisPedidosPage />} />
               <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
               <Route path={ROUTES.CATEGORIAS} element={<CategoriasPage />} />
               <Route path={ROUTES.COMPRAS} element={<ComprasPage />} />

@@ -15,4 +15,5 @@ export const ROUTES = {
   VENTAS: '/ventas',
   CATALOGO: '/catalogo',
   CHECKOUT: '/checkout',
+  MIS_PEDIDOS: '/mis-pedidos',
 }

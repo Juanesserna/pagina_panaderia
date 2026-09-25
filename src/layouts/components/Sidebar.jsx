@@ -6,7 +6,7 @@ import {
 import { useTheme } from "@mui/material/styles";
 import {
   LayoutDashboard, TrendingUp, Factory, ShoppingCart, Truck,
-  Package, Layers, Users, Tag, Shield, ChevronLeft, ChevronRight, ChevronDown,
+  Package, Layers, Users, Tag, Shield, ClipboardList, ChevronLeft, ChevronRight, ChevronDown,
 } from "lucide-react";
 import { useColorMode } from "@app/providers/ThemeProvider";
 import logoOscuro from "@assets/img/logo_oscuro.png";
@@ -16,6 +16,10 @@ const NAV_GROUPS = [
   {
     key: "general", label: "Dashboard", icon: <LayoutDashboard size={18} />,
     items: [{ id: "dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> }]
+  },
+  {
+    key: "mis-pedidos", label: "Mis pedidos", icon: <ClipboardList size={18} />,
+    items: [{ id: "mis-pedidos", label: "Mis pedidos", icon: <ClipboardList size={18} /> }]
   },
   {
     key: "ventas", label: "Ventas", icon: <TrendingUp size={18} />,

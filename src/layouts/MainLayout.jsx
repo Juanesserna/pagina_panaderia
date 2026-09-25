@@ -6,6 +6,7 @@ import { ROUTES } from "@app/router/routes";
 
 const PATH_TO_PAGE = {
   [ROUTES.DASHBOARD]: "dashboard",
+  [ROUTES.MIS_PEDIDOS]: "mis-pedidos",
   [ROUTES.VENTAS]: "ventas",
   [ROUTES.PRODUCCION]: "produccion",
   [ROUTES.COMPRAS]: "compras",
