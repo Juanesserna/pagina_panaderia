@@ -18,10 +18,6 @@ const NAV_GROUPS = [
     items: [{ id: "dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> }]
   },
   {
-    key: "mis-pedidos", label: "Mis pedidos", icon: <ClipboardList size={18} />,
-    items: [{ id: "mis-pedidos", label: "Mis pedidos", icon: <ClipboardList size={18} /> }]
-  },
-  {
     key: "ventas", label: "Ventas", icon: <TrendingUp size={18} />,
     items: [{ id: "ventas", label: "Ventas", icon: <TrendingUp size={18} /> }]
   },
