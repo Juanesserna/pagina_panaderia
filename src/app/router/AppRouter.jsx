@@ -24,7 +24,7 @@ const ProveedoresPage = lazy(() => import('@features/proveedores/pages/Proveedor
 const RolesPage = lazy(() => import('@features/roles/pages/RolesPage'))
 const UsuariosPage = lazy(() => import('@features/usuarios/pages/UsuariosPage'))
 const VentasPage = lazy(() => import('@features/ventas/pages/VentasPage'))
-const MisPedidosPage = lazy(() => import('@features/mis_pedidos/pages/MisPedidosPage'))
+const MisPedidosPage = lazy(() => import('@features/perfil/pages/MisPedidosPage'))
 
 export default function AppRouter() {
   return (
@@ -36,6 +36,7 @@ export default function AppRouter() {
             <Route path={ROUTES.LANDING} element={<LandingPage />} />
             <Route path={ROUTES.CATALOGO} element={<CatalogoPage />} />
             <Route path={ROUTES.CHECKOUT} element={<CheckoutPage />} />
+            <Route path={ROUTES.MIS_PEDIDOS} element={<MisPedidosPage />} />
           </Route>
 
           {/* Login sin layout */}
@@ -44,7 +45,6 @@ export default function AppRouter() {
           {/* Rutas protegidas, envueltas en el layout con sidebar/header */}
           <Route element={<ProtectedRoute />}>
             <Route element={<MainLayout />}>
-              <Route path={ROUTES.MIS_PEDIDOS} element={<MisPedidosPage />} />
               <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
               <Route path={ROUTES.PERFIL} element={<MiPerfilPage />} />
               <Route path={ROUTES.CATEGORIAS} element={<CategoriasPage />} />
