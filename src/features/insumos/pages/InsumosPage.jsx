@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { Box, Stack, Typography, Badge } from '@mui/material'
 import { IconSearch, IconPlus, IconFilter } from '@tabler/icons-react'
-import { Input, Button, Pagination } from '@shared/components'
-
-import { useInsumos } from '../hooks/useInsumos'
+import { Input, Pagination, Button } from '@shared/components'
 import { InsumosKpis } from '../components/InsumosKpis'
+import { useInsumos } from '../hooks/useInsumos'
 import { InsumosTable } from '../components/InsumosTable'
 import { FiltrosInsumosPanel } from '../components/FiltrosInsumosPanel'
 import { FormularioInsumo } from '../components/FormularioInsumo'

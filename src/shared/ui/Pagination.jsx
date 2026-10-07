@@ -4,8 +4,9 @@ import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
 /**
  * Paginación del panel administrativo.
  * page: página actual (1-indexed) | total: total de registros | pageSize: registros por página
+ * compact: texto "Mostrando X–Y de Z" más pequeño (11.5px) y en color secundario.
  */
-export function Pagination({ page, total, pageSize, onPageChange }) {
+export function Pagination({ page, total, pageSize, onPageChange, compact = false }) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1
   const to = Math.min(page * pageSize, total)
@@ -14,7 +15,7 @@ export function Pagination({ page, total, pageSize, onPageChange }) {
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2, flexWrap: 'wrap', gap: 1.5 }}>
-      <Typography sx={{ fontSize: 13, color: 'text.dim' }}>
+      <Typography sx={{ fontSize: compact ? 11.5 : 13, color: compact ? 'text.secondary' : 'text.dim' }}>
         Mostrando {from}–{to} de {total} registros
       </Typography>
 

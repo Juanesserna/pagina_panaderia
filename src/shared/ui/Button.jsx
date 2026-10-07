@@ -1,8 +1,11 @@
 import { Button as MuiButton } from '@mui/material'
 
 /**
- * Botón del panel administrativo. variant: 'primary' | 'secondary' | 'ghost' | 'danger'
+ * Botón del panel administrativo.
+ * variant: 'primary' | 'secondary' | 'ghost' | 'danger'
  * size: 'sm' | 'md'
+ * fullWidth: ocupa todo el ancho disponible.
+ * sx: estilos opcionales para sobrescribir en una instancia puntual.
  */
 export function Button({
   variant = 'primary',

@@ -19,6 +19,7 @@ const variantBg = {
 /**
  * Tarjeta de KPI para la parte superior de cada módulo del panel
  * (ej: "Órdenes completadas", "Retrasadas", "Ventas del día", etc).
+ * variant: 'accent' | 'success' | 'warning' | 'danger' | 'info'
  */
 export function KPICard({ title, value, icon, variant = 'accent' }) {
   return (
@@ -29,13 +30,13 @@ export function KPICard({ title, value, icon, variant = 'accent' }) {
         borderColor: 'divider',
         borderRadius: 2.0,
         p: 2.2,
-        paddingTop:0.5,
+        paddingTop: 0.5,
         display: 'flex',
         flexDirection: 'column',
         gap: 2,
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',height: 50, }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 50 }}>
         <Typography
           sx={{
             fontSize: 11,

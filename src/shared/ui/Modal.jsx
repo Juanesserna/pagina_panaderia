@@ -6,9 +6,10 @@ const maxWidthBySize = { sm: 'xs', md: 'sm', lg: 'md' }
 /**
  * Modal genérico del panel administrativo.
  * size: 'sm' | 'md' | 'lg'
- * sx: estilos opcionales para el Paper del diálogo (ancho/alto propios de una instancia puntual)
+ * showDivider: muestra una línea entre el título y el contenido (por defecto no).
+ * sx: estilos opcionales para el Paper del diálogo (ancho/alto propios de una instancia puntual).
  */
-export function Modal({ open, onClose, title, size = 'md', children, sx }) {
+export function Modal({ open, onClose, title, size = 'md', children, sx, showDivider = false }) {
   return (
     <Dialog
       open={open}
@@ -25,7 +26,7 @@ export function Modal({ open, onClose, title, size = 'md', children, sx }) {
           <IconX size={18} />
         </IconButton>
       </DialogTitle>
-      <Divider />
+      {showDivider && <Divider />}
       <DialogContent sx={{ pb: 3 }}>{children}</DialogContent>
     </Dialog>
   )
