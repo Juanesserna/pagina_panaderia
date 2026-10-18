@@ -9,8 +9,10 @@ function buildTheme(mode) {
       mode,
       primary: { main: c.accent, contrastText: c.buttonText },
       secondary: { main: c.brand, contrastText: c.buttonText },
-      background: { default: c.bg, paper: c.surface },
-      text: { primary: c.text, secondary: c.textMuted, disabled: c.textDim },
+      // background.alt = fondo "beige" (campos, hover de filas, botón secundario)
+      background: { default: c.bg, paper: c.surface, alt: c.surface2 },
+      // text.dim = texto atenuado (contadores, "Mostrando X de Y", mensajes vacíos)
+      text: { primary: c.text, secondary: c.textMuted, disabled: c.textDim, dim: c.textDim },
       success: { main: c.success },
       warning: { main: c.warning },
       error: { main: c.danger, dim: c.dangerDim },
@@ -31,15 +33,28 @@ function buildTheme(mode) {
     typography: {
       fontFamily: fonts.sans,
       fontSize: 13,
+      fontWeightSemiBold: 600,
       h1: { fontFamily: fonts.serif, fontWeight: 300 },
       h2: { fontFamily: fonts.serif, fontWeight: 300 },
       h3: { fontFamily: fonts.serif, fontWeight: 400 },
       h4: { fontFamily: fonts.serif, fontWeight: 400, fontSize: '1.75rem' },
-      h5: { fontSize: '1.15rem' },
-      h6: { fontSize: '1rem' },
-      body1: { fontSize: '0.8125rem' },
-      body2: { fontSize: '0.8125rem' },
-      caption: { fontSize: '0.6875rem' },
+      // ── Escala del panel (ver src/app/theme/README.md) ──
+      h5: { fontSize: '1.125rem', fontWeight: 600 }, // título de sección
+      h6: { fontSize: '1rem', fontWeight: 700 }, // título de modal / panel
+      body1: { fontSize: '0.8125rem' }, // texto principal
+      body2: { fontSize: '0.75rem', color: c.textMuted }, // texto secundario
+      caption: { fontSize: '0.6875rem', color: c.textMuted }, // texto pequeño / ayudas
+      overline: {
+        // etiquetas, encabezados de tabla, títulos de KPI
+        fontSize: '0.6875rem',
+        fontWeight: 600,
+        letterSpacing: '0.06em',
+        lineHeight: 1.5,
+        textTransform: 'uppercase',
+        color: c.textMuted,
+      },
+      metric: { fontSize: '1.375rem', fontWeight: 700, lineHeight: 1 }, // cifra grande de un KPI
+      mono: { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', fontSize: '0.75rem' }, // códigos, ids
       button: { textTransform: 'none', fontWeight: 600, fontSize: '0.8125rem' },
     },
     // NOTA: antes existían dos claves `components` separadas en este mismo
@@ -62,7 +77,7 @@ function buildTheme(mode) {
           root: {
             borderRadius: 8,
             overflow: 'hidden',
-            backgroundColor: '#F0EBE3',
+            backgroundColor: c.surface2,
             fontSize: '0.8125rem',
           },
           input: {
@@ -84,7 +99,7 @@ function buildTheme(mode) {
         styleOverrides: {
           root: {
             borderRadius: 8,
-            backgroundColor: '#F0EBE3',
+            backgroundColor: c.surface2,
           },
           select: {
             borderRadius: 8,
@@ -114,7 +129,7 @@ function buildTheme(mode) {
           sizeSmall: { padding: 5 },
         },
       },
-MuiChip: {
+      MuiChip: {
         styleOverrides: {
           root: { borderRadius: 999, fontWeight: 600 },
           sizeSmall: { height: 22, fontSize: '0.6875rem' },
@@ -125,7 +140,7 @@ MuiChip: {
           root: { borderRadius: 14 },
         },
       },
-MuiPaper: {
+      MuiPaper: {
         styleOverrides: {
           root: { borderRadius: 14 },
         },

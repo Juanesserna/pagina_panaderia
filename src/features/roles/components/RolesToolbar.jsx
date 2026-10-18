@@ -45,7 +45,7 @@ export default function RolesToolbar({ search, onSearchChange, onNuevoRol }) {
         onClick={onNuevoRol}
         sx={{ bgcolor: BRAND.orange, '&:hover': { bgcolor: BRAND.orangeDark } }}
       >
-        Nuevo rol
+        Crear rol
       </Button>
     </Box>
   )

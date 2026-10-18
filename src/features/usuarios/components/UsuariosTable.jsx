@@ -14,8 +14,6 @@ import UserAvatar from '@shared/components/UserAvatar'
 import { AVATAR_PALETTE, colorFromName } from '@shared/utils/colors'
 import StatusChip from './StatusChip'
 
-
-// Mismo criterio que en Roles: colores fijos para los roles de fábrica
 const ROLE_TEXT_COLORS = {
   Gerente: AVATAR_PALETTE[0].color,
   Panadero: AVATAR_PALETTE[2].color,
@@ -75,14 +73,34 @@ export default function UsuariosTable({ usuarios, loading, onVer, onEditar, onIn
                 </Box>
               </Box>
             </TableCell>
+
             <TableCell>
               <Typography sx={{ fontWeight: 700, fontSize: 13.5, color: colorForRole(usuario.rol) }}>
                 {usuario.rol}
               </Typography>
             </TableCell>
+
+            {/* ✅ ESTADO + INTERRUPTOR JUNTOS */}
             <TableCell>
-              <StatusChip estado={usuario.estado} />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <StatusChip estado={usuario.estado} />
+                <Tooltip title={usuario.estado === 'Activo' ? 'Inhabilitar' : 'Reactivar'}>
+                  <IconButton
+                    size="small"
+                    onClick={() => onInhabilitar(usuario)}
+                    sx={{ color: 'text.secondary' }}
+                  >
+                    {usuario.estado === 'Activo' ? (
+                      <ToggleRight size={18} />
+                    ) : (
+                      <ToggleLeft size={18} />
+                    )}
+                  </IconButton>
+                </Tooltip>
+              </Box>
             </TableCell>
+
+            {/* ✅ Solo Ver y Editar quedan en Acciones */}
             <TableCell align="right">
               <Tooltip title="Ver detalle">
                 <IconButton
@@ -101,19 +119,6 @@ export default function UsuariosTable({ usuarios, loading, onVer, onEditar, onIn
                 >
                   <Pencil size={18} />
                 </IconButton>
-              </Tooltip>
-              <Tooltip title={usuario.estado === 'Activo' ? 'Inhabilitar' : 'Reactivar'}>
-              <IconButton
-                size="small"
-                onClick={() => onInhabilitar(usuario)}
-                sx={{ color: 'text.secondary' }}
-              >
-                {usuario.estado === 'Activo' ? (
-                  <ToggleRight size={18} />
-                ) : (
-                  <ToggleLeft size={18} />
-                )}
-              </IconButton>
               </Tooltip>
             </TableCell>
           </TableRow>

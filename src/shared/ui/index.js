@@ -1,0 +1,13 @@
+// Componentes base del panel administrativo.
+// Importar siempre desde aquí:  import { Button, Modal } from '@shared/ui'
+export { Button } from './Button'
+export { DataTable } from './DataTable'
+export { ImageWithFallback } from './ImageWithFallback'
+export { Input } from './Input'
+export { KPICard } from './KPICard'
+export { KPIGrid } from './KPIGrid'
+export { Modal } from './Modal'
+export { Pagination } from './Pagination'
+export { SearchInput } from './SearchInput'
+export { Select } from './Select'
+export { StatusBadge } from './StatusBadge'

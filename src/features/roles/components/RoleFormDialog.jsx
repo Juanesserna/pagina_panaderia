@@ -170,7 +170,7 @@ export default function RoleFormDialog({ open, mode, initialData, onClose, onSub
           startIcon={isCreate ? <AddIcon /> : <EditIcon />}
           sx={{ bgcolor: BRAND.orange, '&:hover': { bgcolor: BRAND.orangeDark } }}
         >
-          {submitting ? 'Guardando...' : isCreate ? 'Crear rol' : 'Guardar cambios'}
+          {submitting ? 'Guardando...' : isCreate ? 'Guardar rol' : 'Guardar cambios'}
         </Button>
       </DialogActions>
     </Dialog>

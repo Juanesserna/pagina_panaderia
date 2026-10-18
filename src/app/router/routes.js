@@ -2,6 +2,7 @@ export const ROUTES = {
   LANDING: '/',
   LOGIN: '/login',
   DASHBOARD: '/dashboard',
+  PERFIL: '/perfil',
   CATEGORIAS: '/categorias',
   COMPRAS: '/compras',
   INSUMOS: '/insumos',
@@ -13,4 +14,7 @@ export const ROUTES = {
   ROLES: '/roles',
   USUARIOS: '/usuarios',
   VENTAS: '/ventas',
+  CATALOGO: '/catalogo',
+  CHECKOUT: '/checkout',
+  MIS_PEDIDOS: '/mis-pedidos',
 }

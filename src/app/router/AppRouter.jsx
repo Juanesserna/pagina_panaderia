@@ -3,10 +3,14 @@ import { lazy, Suspense } from 'react'
 import { ROUTES } from './routes'
 import ProtectedRoute from './ProtectedRoute'
 import MainLayout from '@layouts/MainLayout'
+import PublicLayout from '@layouts/PublicLayout'
 
 // Rutas públicas
 const LandingPage = lazy(() => import('@features/landing/pages/LandingPage'))
+const CatalogoPage = lazy(() => import('@features/landing/pages/CatalogoPage'))
+const CheckoutPage = lazy(() => import('@features/landing/pages/CheckoutPage'))
 const LoginPage = lazy(() => import('@features/auth/pages/LoginPage'))
+const MiPerfilPage = lazy(() => import('@features/usuarios/pages/MiPerfilPage'))
 
 // Rutas protegidas
 const DashboardPage = lazy(() => import('@features/dashboard/pages/DashboardPage'))
@@ -20,26 +24,35 @@ const ProveedoresPage = lazy(() => import('@features/proveedores/pages/Proveedor
 const RolesPage = lazy(() => import('@features/roles/pages/RolesPage'))
 const UsuariosPage = lazy(() => import('@features/usuarios/pages/UsuariosPage'))
 const VentasPage = lazy(() => import('@features/ventas/pages/VentasPage'))
+const MisPedidosPage = lazy(() => import('@features/perfil/pages/MisPedidosPage'))
 
 export default function AppRouter() {
   return (
     <BrowserRouter>
       <Suspense fallback={<div>Cargando...</div>}>
         <Routes>
-          {/* Rutas públicas */}
-          <Route path={ROUTES.LANDING} element={<LandingPage />} />
+          {/* Rutas públicas con header, carrito y footer */}
+          <Route element={<PublicLayout />}>
+            <Route path={ROUTES.LANDING} element={<LandingPage />} />
+            <Route path={ROUTES.CATALOGO} element={<CatalogoPage />} />
+            <Route path={ROUTES.CHECKOUT} element={<CheckoutPage />} />
+            <Route path={ROUTES.MIS_PEDIDOS} element={<MisPedidosPage />} />
+          </Route>
+
+          {/* Login sin layout */}
           <Route path={ROUTES.LOGIN} element={<LoginPage />} />
 
           {/* Rutas protegidas, envueltas en el layout con sidebar/header */}
           <Route element={<ProtectedRoute />}>
             <Route element={<MainLayout />}>
               <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
+              <Route path={ROUTES.PERFIL} element={<MiPerfilPage />} />
               <Route path={ROUTES.CATEGORIAS} element={<CategoriasPage />} />
               <Route path={ROUTES.COMPRAS} element={<ComprasPage />} />
               <Route path={ROUTES.INSUMOS} element={<InsumosPage />} />
               <Route path={ROUTES.PRODUCCION} element={<ProduccionPage />} />
-               <Route path={ROUTES.PRODUCTOS} element={<ProductosPage />} />
-               <Route path={ROUTES.AGREGAR_RECETA} element={<AgregarRecetaPage />} />
+              <Route path={ROUTES.PRODUCTOS} element={<ProductosPage />} />
+              <Route path={ROUTES.AGREGAR_RECETA} element={<AgregarRecetaPage />} />
               <Route path={ROUTES.PROVEEDORES} element={<ProveedoresPage />} />
               <Route path={ROUTES.ROLES} element={<RolesPage />} />
               <Route path={ROUTES.USUARIOS} element={<UsuariosPage />} />

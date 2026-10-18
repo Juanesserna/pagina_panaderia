@@ -6,7 +6,7 @@ import {
 import { useTheme } from "@mui/material/styles";
 import {
   LayoutDashboard, TrendingUp, Factory, ShoppingCart, Truck,
-  Package, Layers, Users, Tag, Shield, ChevronLeft, ChevronRight, ChevronDown,
+  Package, Layers, Users, Tag, Shield, ClipboardList, ChevronLeft, ChevronRight, ChevronDown,
 } from "lucide-react";
 import { useColorMode } from "@app/providers/ThemeProvider";
 import logoOscuro from "@assets/img/logo_oscuro.png";

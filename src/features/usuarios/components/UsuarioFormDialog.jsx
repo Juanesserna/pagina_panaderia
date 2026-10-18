@@ -329,7 +329,7 @@ export default function UsuarioFormDialog({ open, mode, initialData, onClose, on
           startIcon={isCreate ? <AddIcon /> :  <Pencil size={18} />}
           sx={{ bgcolor: BRAND.orange, '&:hover': { bgcolor: BRAND.orangeDark } }}
         >
-          {submitting ? 'Guardando...' : isCreate ? 'Crear usuario' : 'Guardar cambios'}
+          {submitting ? 'Guardando...' : isCreate ? 'Guardar usuario' : 'Guardar cambios'}
         </Button>
       </DialogActions>
     </Dialog>

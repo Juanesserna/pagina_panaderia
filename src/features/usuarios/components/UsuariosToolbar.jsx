@@ -66,7 +66,7 @@ export default function UsuariosToolbar({
             onClick={onNuevoUsuario}
             sx={{ bgcolor: BRAND.orange, '&:hover': { bgcolor: BRAND.orangeDark } }}
           >
-            Nuevo usuario
+            Crear usuario
           </Button>
           <Button
             variant="outlined"
