@@ -7,7 +7,6 @@ import { Categories } from '../components/Categories'
 import { Products } from '../components/Products'
 import { CartDrawer } from '../components/CartDrawer'
 import { Nosotros } from '../components/Nosotros'
-import { Testimonios } from '../components/Testimonios'
 import { Proceso } from '../components/Proceso'
 import { CTAEspecial } from '../components/CTAEspecial'
 import { Footer } from '../components/Footer'
@@ -67,7 +66,6 @@ export default function LandingPage() {
       <Categories isDark={isDark} />
       <Products isDark={isDark} onAddToCart={addToCart} />
       <Nosotros isDark={isDark} />
-      <Testimonios />
       <Proceso isDark={isDark} />
       <CTAEspecial />
       <Footer />

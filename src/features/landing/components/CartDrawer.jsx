@@ -38,7 +38,7 @@ export function CartDrawer({ isOpen, onClose, items, onRemove, onUpdateQty, isDa
               Tu carrito está vacío
             </Typography>
             <Typography sx={{ fontFamily: fonts.sans, fontSize: 13, color: isDark ? 'rgba(243,233,220,0.5)' : 'rgba(46,24,16,0.5)', textAlign: 'center' }}>
-              Agrega productos de nuestra carta para comenzar tu pedido.
+              Agrega productos de nuestro catálogo para comenzar tu pedido.
             </Typography>
           </Box>
         ) : (
