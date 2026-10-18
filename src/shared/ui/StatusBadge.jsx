@@ -1,26 +1,8 @@
 import { Box } from '@mui/material'
-import { useTheme } from '@mui/material/styles'
+import { alpha, useTheme } from '@mui/material/styles'
 
-/* Paleta por defecto: colores del tema (respeta modo claro/oscuro). */
-const themeColor = {
-  success: 'success.main',
-  danger: 'error.main',
-  warning: 'warning.main',
-  accent: 'primary.main',
-  info: 'info.main',
-  process: 'primary.main',
-}
-
-const themeBg = {
-  success: 'rgba(110,139,61,0.12)',
-  danger: 'rgba(192,57,43,0.12)',
-  warning: 'rgba(242,169,60,0.12)',
-  accent: 'rgba(192,133,82,0.12)',
-  info: 'rgba(46,125,140,0.12)',
-  process: 'rgba(192,133,82,0.12)',
-}
-
-/* Paleta fija (la que usaba el módulo de Ventas), con su variante oscura. */
+/* LEGADO: paleta fija que usaba Ventas (con variante oscura). Son colores escritos a mano:
+   se eliminan cuando diseño decida usar los colores del tema en todos los módulos. */
 const fixedColor = {
   success: '#658237',
   process: '#F53926',
@@ -62,7 +44,7 @@ const fixedBgDark = {
  * variant: 'success' | 'accent' | 'warning' | 'danger' | 'info' | 'process'
  * dot: si true, muestra el puntito de color a la izquierda.
  * size: 'sm' (11px, por defecto) | 'md' (12px)
- * colors: 'theme' (por defecto, usa la paleta del tema) | 'fixed' (paleta fija con modo oscuro, usada por Ventas)
+ * colors: 'theme' (por defecto, usa la paleta del tema) | 'fixed' (LEGADO: paleta fija de Ventas)
  */
 export function StatusBadge({ variant = 'accent', dot = false, size = 'sm', colors = 'theme', children }) {
   const theme = useTheme()
@@ -74,8 +56,18 @@ export function StatusBadge({ variant = 'accent', dot = false, size = 'sm', colo
     color = (isDark ? fixedColorDark : fixedColor)[variant] ?? fixedColor.accent
     bg = (isDark ? fixedBgDark : fixedBg)[variant] ?? fixedBg.accent
   } else {
-    color = themeColor[variant] ?? themeColor.accent
-    bg = themeBg[variant] ?? themeBg.accent
+    // Colores del tema: el fondo es el mismo color al 12% de opacidad
+    const { palette } = theme
+    const byVariant = {
+      success: palette.success.main,
+      danger: palette.error.main,
+      warning: palette.warning.main,
+      accent: palette.primary.main,
+      info: palette.info.main,
+      process: palette.primary.main,
+    }
+    color = byVariant[variant] ?? byVariant.accent
+    bg = alpha(color, 0.12)
   }
 
   const isMd = size === 'md'
@@ -91,9 +83,9 @@ export function StatusBadge({ variant = 'accent', dot = false, size = 'sm', colo
         py: 0.4,
         borderRadius: 5,
         bgcolor: bg,
+        typography: isMd ? 'body2' : 'caption',
+        fontWeight: 'fontWeightSemiBold',
         color,
-        fontSize: isMd ? 12 : 11,
-        fontWeight: 600,
       }}
     >
       {dot && (

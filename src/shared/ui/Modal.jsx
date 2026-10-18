@@ -19,7 +19,7 @@ export function Modal({ open, onClose, title, size = 'md', children, sx, showDiv
       PaperProps={{ sx: { borderRadius: 2.5, bgcolor: 'background.paper', ...sx } }}
     >
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1.5 }}>
-        <Box component="span" sx={{ fontSize: 16, fontWeight: 700, color: 'text.primary' }}>
+        <Box component="span" sx={{ typography: 'h6', color: 'text.primary' }}>
           {title}
         </Box>
         <IconButton onClick={onClose} size="small" sx={{ color: 'text.secondary' }}>

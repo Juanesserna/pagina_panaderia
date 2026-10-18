@@ -1,14 +1,15 @@
 import { TextField, InputAdornment } from '@mui/material'
-import { useTheme } from '@mui/material/styles'
+import { CONTROL_HEIGHT } from './tokens'
 
 /**
  * Input de texto/número/fecha del panel administrativo.
+ * Los colores salen del tema (fondo: background.alt, borde: divider, foco: primary.main).
+ * No pases colores por `sx`: si falta uno, se agrega al tema (app/theme/colors.js).
  *
  * leftIcon / rightIcon: ícono opcional a la izquierda / derecha (ej: lupa de búsqueda).
  * disabled: deshabilita el campo.
- * size: 'md' (por defecto, 14px) | 'sm' (alto 35px, 12px; el tamaño del buscador de las tablas).
- * tone: 'default' (fondo del tema) | 'beige' (fondo beige, como el buscador de Ventas/Producción).
- * sx: estilos opcionales para sobrescribir en una instancia puntual.
+ * size: 'md' (por defecto, texto principal) | 'sm' (alto estándar de barra de herramientas, texto secundario; ver tokens.js).
+ * sx: estilos opcionales (tamaños/espaciados) para una instancia puntual.
  */
 export function Input({
   placeholder,
@@ -21,18 +22,9 @@ export function Input({
   fullWidth = true,
   disabled,
   size = 'md',
-  tone = 'default',
   sx,
 }) {
-  const isDark = useTheme().palette.mode === 'dark'
   const isSm = size === 'sm'
-
-  const beigeSx = {
-    bgcolor: isDark ? '#32251F' : '#F4EFEA',
-    '& fieldset': { borderColor: isDark ? 'transparent' : '#E5DCD3' },
-    '&:hover fieldset': { borderColor: '#C97A45' },
-    '&.Mui-focused fieldset': { borderColor: '#C97A45' },
-  }
 
   return (
     <TextField
@@ -58,12 +50,12 @@ export function Input({
       }}
       sx={{
         '& .MuiOutlinedInput-root': {
-          bgcolor: 'background.paper',
+          bgcolor: 'background.alt',
           borderRadius: isSm ? 1 : 1.5,
-          fontSize: isSm ? 12 : 14,
-          ...(isSm ? { height: 35 } : {}),
+          ...(isSm ? { height: CONTROL_HEIGHT, fontSize: '0.75rem' } : {}),
           '& fieldset': { borderColor: 'divider' },
-          ...(tone === 'beige' ? beigeSx : {}),
+          '&:hover fieldset': { borderColor: 'primary.main' },
+          '&.Mui-focused fieldset': { borderColor: 'primary.main' },
         },
         ...sx,
       }}

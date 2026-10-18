@@ -1,19 +1,13 @@
 import { Box, Typography } from '@mui/material'
+import { alpha } from '@mui/material/styles'
 
-const variantColor = {
-  success: 'success.main',
-  danger: 'error.main',
-  warning: 'warning.main',
-  accent: 'primary.main',
-  info: 'info.main',
-}
-
-const variantBg = {
-  success: 'rgba(110,139,61,0.12)',
-  danger: 'rgba(192,57,43,0.12)',
-  warning: 'rgba(242,169,60,0.12)',
-  accent: 'rgba(192,133,82,0.12)',
-  info: 'rgba(46,125,140,0.12)',
+// variante → clave de la paleta del tema
+const paletteKey = {
+  success: 'success',
+  danger: 'error',
+  warning: 'warning',
+  accent: 'primary',
+  info: 'info',
 }
 
 /**
@@ -22,6 +16,7 @@ const variantBg = {
  * variant: 'accent' | 'success' | 'warning' | 'danger' | 'info'
  */
 export function KPICard({ title, value, icon, variant = 'accent' }) {
+  const key = paletteKey[variant] ?? paletteKey.accent
   return (
     <Box
       sx={{
@@ -37,17 +32,7 @@ export function KPICard({ title, value, icon, variant = 'accent' }) {
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 50 }}>
-        <Typography
-          sx={{
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            color: 'text.secondary',
-          }}
-        >
-          {title}
-        </Typography>
+        <Typography variant="overline">{title}</Typography>
         {icon && (
           <Box
             sx={{
@@ -57,15 +42,17 @@ export function KPICard({ title, value, icon, variant = 'accent' }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              bgcolor: variantBg[variant],
-              color: variantColor[variant],
+              bgcolor: (t) => alpha(t.palette[key].main, 0.12),
+              color: `${key}.main`,
             }}
           >
             {icon}
           </Box>
         )}
       </Box>
-      <Typography sx={{ fontSize: 22, fontWeight: 700, color: 'text.primary', lineHeight: 1 }}>{value}</Typography>
+      <Typography variant="metric" component="div" sx={{ color: 'text.primary' }}>
+        {value}
+      </Typography>
     </Box>
   )
 }

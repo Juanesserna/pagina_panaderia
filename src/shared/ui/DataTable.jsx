@@ -18,11 +18,7 @@ export function DataTable({ columns, data, keyExtractor, emptyMessage = 'Sin res
                 key={col.key}
                 align={col.align || 'left'}
                 sx={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  letterSpacing: '0.06em',
-                  textTransform: 'uppercase',
-                  color: 'text.secondary',
+                  typography: 'overline',
                   borderBottom: '1px solid',
                   borderColor: 'divider',
                   px: 2.5,
@@ -47,7 +43,7 @@ export function DataTable({ columns, data, keyExtractor, emptyMessage = 'Sin res
         <TableBody>
           {data.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={columns.length} align="center" sx={{ py: 5, color: 'text.dim', border: 'none' }}>
+              <TableCell colSpan={columns.length} align="center" sx={{ py: 5, typography: 'body1', color: 'text.dim', border: 'none' }}>
                 {emptyMessage}
               </TableCell>
             </TableRow>
@@ -58,7 +54,7 @@ export function DataTable({ columns, data, keyExtractor, emptyMessage = 'Sin res
                   <TableCell
                     key={col.key}
                     align={col.align || 'left'}
-                    sx={{ fontSize: 14, borderBottom: '1px solid', borderColor: 'divider', px: 2.5, py: 1.5 }}
+                    sx={{ typography: 'body1', borderBottom: '1px solid', borderColor: 'divider', px: 2.5, py: 1.5 }}
                   >
                     {col.accessor(row)}
                   </TableCell>

@@ -13,9 +13,8 @@ export function Select({ options, value, onChange, fullWidth = true, sx }) {
       onChange={onChange}
       fullWidth={fullWidth}
       sx={{
-        bgcolor: 'background.paper',
+        bgcolor: 'background.alt',
         borderRadius: 1.5,
-        fontSize: 14,
         '& fieldset': { borderColor: 'divider' },
         ...sx,
       }}
