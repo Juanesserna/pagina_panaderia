@@ -1,0 +1,144 @@
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Divider,
+  Box,
+  IconButton,
+  Typography,
+  Button,
+  useTheme,
+} from '@mui/material'
+import { IconX } from '@tabler/icons-react'
+import { fonts } from '@app/theme/colors'
+
+export default function EliminarCategoriaDialog({
+  open,
+  onClose,
+  onConfirm,
+  nombreCategoria,
+}) {
+  const theme = useTheme()
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      sx={{
+        '& .MuiDialog-paper': {
+          borderRadius: 3,
+          padding: 0,
+          overflow: 'hidden',
+        },
+      }}
+    >
+      <DialogTitle
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          px: 3,
+          py: 2,
+          backgroundColor: 'background.paper',
+        }}
+      >
+        <Typography
+          variant="h6"
+          sx={{
+            fontFamily: fonts.sans,
+            fontSize: 18,
+            fontWeight: 700,
+            color: theme.palette.text.primary,
+          }}
+        >
+          Eliminar categoría
+        </Typography>
+        <IconButton
+          size="small"
+          onClick={onClose}
+          sx={{
+            color: theme.palette.text.secondary,
+            '&:hover': { bgcolor: theme.palette.action.hover },
+          }}
+          aria-label="Cerrar"
+        >
+          <IconX size={20} />
+        </IconButton>
+      </DialogTitle>
+
+      <DialogContent sx={{ p: 0 }}>
+        <Box sx={{ px: 3, pt: 1.5, pb: 0 }}>
+          <Typography
+            sx={{
+              fontFamily: fonts.sans,
+              fontSize: 14,
+              color: theme.palette.text.primary,
+              lineHeight: 1.5,
+            }}
+          >
+            ¿Seguro que deseas eliminar "{nombreCategoria}"? Esta acción no se puede deshacer.
+          </Typography>
+        </Box>
+        <Divider sx={{ width: '100%', mt: 1.5, mb: 0 }} />
+      </DialogContent>
+
+      <DialogActions
+        sx={{
+          px: 3,
+          pt: 1.5,
+          pb: 2,
+          backgroundColor: 'background.paper',
+          justifyContent: 'flex-end',
+          gap: 1.5,
+        }}
+      >
+        <Button
+          type="button"
+          variant="text"
+          onClick={onClose}
+          sx={{
+            textTransform: 'none',
+            fontSize: 13,
+            fontWeight: 500,
+            px: 2.5,
+            py: 1,
+            color: theme.palette.text.secondary,
+            '&:hover': {
+              bgcolor: theme.palette.action.hover,
+            },
+          }}
+        >
+          Cancelar
+        </Button>
+        <Button
+          type="button"
+          variant="contained"
+          color="error"
+          onClick={onConfirm}
+          sx={{
+            color: '#FFFFFF',
+            textTransform: 'none',
+            fontSize: 13,
+            fontWeight: 500,
+            px: 2.5,
+            py: 1,
+            '&:hover': {
+              color: '#FFFFFF',
+            },
+            '&.Mui-focusVisible': {
+              color: '#FFFFFF',
+            },
+            '&.Mui-disabled': {
+              color: '#FFFFFF',
+            },
+          }}
+        >
+          Eliminar
+        </Button>
+      </DialogActions>
+    </Dialog>
+  )
+}
