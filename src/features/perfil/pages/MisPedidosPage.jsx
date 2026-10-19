@@ -21,12 +21,7 @@ import {
     usuarioAutenticado,
     obtenerProductosVenta, obtenerNombreCliente, parseFechaVenta, fechaHoyFormateada, PAGE_SIZE,
 } from '@features/ventas/data/ventasMockData'
-import { StatusBadge } from '@features/ventas/components/StatusBadge'
-import { Button } from '@features/ventas/components/Button'
-import { Input } from '@features/ventas/components/Input'
-import { Pagination } from '@features/ventas/components/Pagination'
-import { Modal } from '@features/ventas/components/Modal'
-import { ImageWithFallback } from '@features/ventas/components/ImageWithFallback'
+import { Button, ImageWithFallback, Input, Modal, Pagination, StatusBadge } from '@shared/ui'
 import { ROUTES } from '@app/router/routes' // ← ajusta esta ruta
 
 // ---------- Pedidos de muestra (borrar cuando haya datos reales) ----------
@@ -184,7 +179,7 @@ export default function MisPedidosPage() {
       <!DOCTYPE html><html><head><meta charset="utf-8" /><title>Comprobante ${selected.id}</title>
       <style>body{margin:0;padding:24px;display:flex;justify-content:center;background:#fff;font-family:monospace;}@media print{body{padding:0;}}</style>
       </head><body>${comprobanteRef.current.outerHTML}
-      <script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};}<\/script>
+      <script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};}<\u002Fscript>
       </body></html>
     `)
         ventana.document.close()
@@ -441,6 +436,8 @@ export default function MisPedidosPage() {
                                     <StatusBadge
                                         variant={estadoVariant[r.estado]}
                                         dot
+                                        colors="fixed"
+                                        size="md"
                                         sx={{
                                             height: 16,
                                             minHeight: 16,
@@ -572,7 +569,7 @@ export default function MisPedidosPage() {
             </Box>
 
             {/* Modal: Comprobante */}
-            <Modal open={showModal} onClose={() => setShowModal(false)} title="Comprobante de pedido" size="md">
+            <Modal open={showModal} onClose={() => setShowModal(false)} title="Comprobante de pedido" size="md" showDivider>
                 {selected && (
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2.5 }}>
                         <Box
@@ -616,7 +613,7 @@ export default function MisPedidosPage() {
                             </Box>
 
                             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, px: 2.5, py: 1.75 }}>
-                                <StatusBadge variant={estadoVariant[selected.estado]} dot>{estadoLabel(selected.estado)}</StatusBadge>
+                                <StatusBadge variant={estadoVariant[selected.estado]} dot colors="fixed" size="md">{estadoLabel(selected.estado)}</StatusBadge>
                                 <Typography sx={{ fontSize: 11, color: 'text.dim' }}>¡Gracias por su compra!</Typography>
                             </Box>
                         </Box>
@@ -640,7 +637,7 @@ export default function MisPedidosPage() {
             </Modal>
 
             {/* Modal: Pago (1 solo comprobante) */}
-            <Modal open={showAbonoModal} onClose={cerrarModalAbono} title="Pago del pedido" size="sm">
+            <Modal open={showAbonoModal} onClose={cerrarModalAbono} title="Pago del pedido" size="sm" showDivider>
                 {ventaAbonoModal && (
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
                         <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
