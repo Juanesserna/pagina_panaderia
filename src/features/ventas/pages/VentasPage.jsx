@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Box, Stack, Typography, IconButton, Divider, Collapse, Autocomplete, TextField, OutlinedInput, InputAdornment, MenuItem, FormControlLabel, Checkbox } from '@mui/material'
-import { useTheme } from '@mui/material/styles'
+import { Box, Stack, Typography, IconButton, Divider, Collapse, Autocomplete, TextField, InputAdornment, FormControlLabel, Checkbox } from '@mui/material'
+import { alpha } from '@mui/material/styles'
 import {
   IconSearch,
   IconPlus,
@@ -14,65 +14,56 @@ import {
   IconCircleX,
   IconToggleRight,
 } from '@tabler/icons-react'
+import { Button, DataTable, ImageWithFallback, Input, KPICard, KPIGrid, Modal, Pagination, SearchInput, Select, StatusBadge } from '@shared/ui'
+import { PAGE_SIZE, estadoVariant, estadoOptions, estadoDotColor, metodoOptions, canalOptions } from '@features/ventas/constants/ventas.constants'
 import {
-  initialVentas, estadoVariant, estadoOptions, estadoDotColor,
-  esTransicionValida, opcionesEstadoParaFila, usuarioAutenticado,
-  catalogoClientes, catalogoPanaderia, obtenerProductosVenta,
-  obtenerNombreCliente, parseFechaVenta, fechaHoyFormateada, PAGE_SIZE,
-} from '@features/ventas/data/ventasMockData'
-import { Input, Button, StatusBadge, KPICard, Select, DataTable, Pagination, Modal ,ImageWithFallback } from '@shared/ui'
+  cap, normalizarTexto, contieneCaracterEspecial, pagosPermitidos, esTransicionValida, opcionesEstadoParaFila,
+  obtenerNombreCliente, siguienteIdVenta, parseFechaVenta, fechaHoyFormateada, horaActualFormateada,
+} from '@features/ventas/utils/ventasHelpers'
+// TEMPORAL: datos de ejemplo. En el paso de hooks/services esto deja de importarse desde la página.
+import { initialVentas, usuarioAutenticado, catalogoClientes, catalogoPanaderia, obtenerProductosVenta } from '@features/ventas/mocks/ventasMockData'
 
-// ---------- Helpers de presentación ----------
-
-const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '')
-
-// Métodos de pago: mismos valores que muestra la columna "Método" del listado y el filtro
-const metodoOptions = [
-  { value: 'efectivo', label: 'Efectivo' },
-  { value: 'tarjeta', label: 'Tarjeta' },
-  { value: 'transferencia', label: 'Transferencia' },
-]
-
-// Canales de venta
-const canalOptions = [
-  { value: 'pagina', label: 'Página' },
-  { value: 'encargo', label: 'Encargo' },
-  { value: 'presencial', label: 'Presencial' },
-]
-
-// Comprobantes permitidos según pago_unico:
-// - pago_unico = true  → 1 comprobante (url_comprobante_1, 100%)
-// - pago_unico = false → 2 comprobantes (url_comprobante_1 y url_comprobante_2, 50% c/u)
-const pagosPermitidos = (venta) => (venta?.pagoUnico === false ? 2 : 1)
+// ---------- Presentación ----------
 
 function FilterLabel({ children }) {
   return (
-    <Typography sx={{ fontSize: 10, fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 0.5 }}>
+    <Typography variant="overline" component="div" sx={{ mb: 0.5 }}>
       {children}
     </Typography>
   )
 }
 
-// ---------- Sistema de notificaciones (toasts) ----------
-
-const notificacionEstilos = {
-  exito: { bg: '#DCE6D0', dot: '#5B7F44', titulo: '#2F3B22', texto: '#586B45' },
-  advertencia: { bg: '#F5DFB3', dot: '#C97A45', titulo: '#4A2E17', texto: '#7A5230' },
-  error: { bg: '#F2D4D4', dot: '#C0392B', titulo: '#6B1E1E', texto: '#8A3D3D' },
+// Estilo de los campos de MUI que no son de @shared/ui (Autocomplete): mismos tokens que <Input>.
+const autocompleteSx = {
+  '& .MuiOutlinedInput-root': {
+    bgcolor: 'background.alt',
+    '& fieldset': { borderColor: 'divider' },
+    '&:hover fieldset': { borderColor: 'primary.main' },
+    '&.Mui-focused fieldset': { borderColor: 'primary.main' },
+  },
 }
 
+// ---------- Sistema de notificaciones (toasts) ----------
+// TODO: mover a shared/ (no tiene nada de ventas y otros módulos lo van a usar).
+
+const notificacionColor = { exito: 'success.main', advertencia: 'warning.main', error: 'error.main' }
+
 function Notificacion({ tipo, titulo, mensaje }) {
-  const s = notificacionEstilos[tipo] || notificacionEstilos.exito
+  const color = notificacionColor[tipo] || notificacionColor.exito
   return (
     <Box
       sx={{
-        bgcolor: s.bg,
+        bgcolor: 'background.paper',
+        border: '1px solid',
+        borderColor: 'divider',
+        borderLeft: '4px solid',
+        borderLeftColor: color,
         borderRadius: 2,
         px: 2.25,
         py: 1.5,
         minWidth: 270,
         maxWidth: 340,
-        boxShadow: '0 8px 24px rgba(0,0,0,0.14)',
+        boxShadow: 6,
         animation: 'ah-notif-in 0.25s ease-out',
         '@keyframes ah-notif-in': {
           from: { opacity: 0, transform: 'translateX(24px)' },
@@ -80,9 +71,10 @@ function Notificacion({ tipo, titulo, mensaje }) {
         },
       }}
     >
-      <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: s.dot, mb: 0.75 }} />
-      <Typography sx={{ fontWeight: 700, fontSize: 13.5, color: s.titulo, lineHeight: 1.3 }}>{titulo}</Typography>
-      <Typography sx={{ fontSize: 12.5, color: s.texto, mt: 0.25 }}>{mensaje}</Typography>
+      <Typography variant="subtitle1">{titulo}</Typography>
+      <Typography variant="body2" sx={{ mt: 0.25 }}>
+        {mensaje}
+      </Typography>
     </Box>
   )
 }
@@ -111,27 +103,7 @@ function NotificacionesContainer({ notificaciones }) {
   )
 }
 
-const contieneCaracterEspecial = (texto) => /[^a-zA-Z0-9À-ÿ\s]/.test(texto || '')
-
-const normalizarTexto = (s) =>
-  (s || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-
 export default function VentasPage() {
-  const theme = useTheme()
-  const isDark = theme.palette.mode === 'dark'
-
-  const autocompleteInputSx = {
-    '& .MuiOutlinedInput-root': {
-      bgcolor: isDark ? '#30231C' : theme.palette.ahSurface2,
-      '& fieldset': { borderColor: 'transparent' },
-      '&:hover fieldset': { borderColor: theme.palette.divider },
-      '&.Mui-focused fieldset': { borderColor: theme.palette.primary.main },
-    },
-  }
-
   const [ventas, setVentas] = useState(initialVentas)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -165,8 +137,6 @@ export default function VentasPage() {
   const [busquedaProducto, setBusquedaProducto] = useState('')
 
   const comprobanteRef = useRef(null)
-  const transferenciaInputRef = useRef(null)
-  const [uploadingVentaId, setUploadingVentaId] = useState(null)
 
   // Abonos: { id, idVenta, slot (1 | 2), fecha, urlComprobante } — slot 2 solo existe en ventas por encargo
   const [abonos, setAbonos] = useState([])
@@ -208,27 +178,6 @@ export default function VentasPage() {
     ref.current = tieneEspecial
   }
 
-  const handleClickCargarTransferencia = (id) => {
-    setUploadingVentaId(id)
-    transferenciaInputRef.current?.click()
-  }
-
-  const handleImagenTransferenciaSeleccionada = (e) => {
-    const file = e.target.files?.[0]
-    const targetId = uploadingVentaId
-    e.target.value = ''
-    if (!file || !targetId || !file.type.startsWith('image/')) return
-
-    const reader = new FileReader()
-    reader.onload = () => {
-      const dataUrl = reader.result
-      setVentas((prev) => prev.map((v) => (v.id === targetId ? { ...v, imagenTransferencia: dataUrl } : v)))
-      setSelected((prev) => (prev && prev.id === targetId ? { ...prev, imagenTransferencia: dataUrl } : prev))
-    }
-    reader.readAsDataURL(file)
-    setUploadingVentaId(null)
-  }
-
   const handleDescargarComprobante = () => {
     if (!selected) return
     const ventana = window.open('', '_blank', 'width=480,height=700')
@@ -237,7 +186,7 @@ export default function VentasPage() {
       <!DOCTYPE html><html><head><meta charset="utf-8" /><title>Comprobante ${selected.id}</title>
       <style>body{margin:0;padding:24px;display:flex;justify-content:center;background:#fff;font-family:monospace;}@media print{body{padding:0;}}</style>
       </head><body>${comprobanteRef.current.outerHTML}
-      <script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};}<\/script>
+      <script>window.onload=function(){window.print();window.onafterprint=function(){window.close();};}<\u002Fscript>
       </body></html>
     `)
     ventana.document.close()
@@ -424,18 +373,11 @@ export default function VentasPage() {
     productoTuvoCaracterEspecialRef.current = false
   }
 
-  const nextId = () => {
-    const maxNum = ventas.reduce((max, v) => Math.max(max, parseInt(v.id.replace('#', ''), 10) || 0), 0)
-    return `#${maxNum + 1}`
-  }
-
   const handleNuevaVenta = () => {
     resetFormularioVenta()
-    setFormId(nextId())
+    setFormId(siguienteIdVenta(ventas))
     setFormFecha(fechaHoyFormateada())
-    const ahora = new Date()
-    const pad = (n) => String(n).padStart(2, '0')
-    setFormHora(`${pad(ahora.getHours())}:${pad(ahora.getMinutes())}`)
+    setFormHora(horaActualFormateada())
     setShowVentaModal(true)
   }
 
@@ -520,27 +462,23 @@ export default function VentasPage() {
       key: 'id',
       header: 'ID',
       sortable: true,
-      width: '7%',
-      accessor: (r) => <Typography sx={{ fontSize: 12, fontWeight: 600, color: 'text.primary' }}>{r.id}</Typography>,
+      accessor: (r) => <Typography variant="subtitle2">{r.id}</Typography>,
     },
     {
       key: 'nit',
       header: 'NIT/Cédula',
-      width: '12%',
-      accessor: (r) => <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{r.nit || '—'}</Typography>,
+      accessor: (r) => <Typography variant="body2">{r.nit || '—'}</Typography>,
     },
     {
       key: 'metodo',
       header: 'Método',
-      width: '11%',
-      accessor: (r) => <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{r.metodo ? cap(r.metodo) : '—'}</Typography>,
+      accessor: (r) => <Typography variant="body2">{r.metodo ? cap(r.metodo) : '—'}</Typography>,
     },
     {
       key: 'canal',
       header: 'Canal',
-      width: '10%',
       accessor: (r) => (
-        <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+        <Typography variant="body2">
           {r.canal ? canalOptions.find((o) => o.value === r.canal)?.label ?? cap(r.canal) : '—'}
         </Typography>
       ),
@@ -550,13 +488,11 @@ export default function VentasPage() {
       header: 'Total',
       align: 'right',
       sortable: true,
-      width: '9%',
-      accessor: (r) => <Typography sx={{ fontSize: 12, fontWeight: 700, color: 'text.primary' }}>${r.total.toFixed(2)}</Typography>,
+      accessor: (r) => <Typography variant="subtitle2">${r.total.toFixed(2)}</Typography>,
     },
     {
       key: 'estado',
       header: 'Estado',
-      width: '18%',
       accessor: (r) => {
         const bloqueado = r.estado === 'cancelado'
         return (
@@ -583,9 +519,8 @@ export default function VentasPage() {
     {
       key: 'fecha',
       header: 'Fecha',
-      width: '12%',
       accessor: (r) => (
-        <Typography sx={{ color: 'text.secondary', fontSize: 11 }}>
+        <Typography variant="caption">
           {r.fecha} {r.hora}
         </Typography>
       ),
@@ -594,7 +529,6 @@ export default function VentasPage() {
       key: 'acciones',
       header: '',
       align: 'right',
-      width: '21%',
       accessor: (r) => (
         <Stack direction="row" alignItems="center" justifyContent="flex-end" spacing={0.5} sx={{ width: '100%' }}>
           <Button
@@ -605,7 +539,6 @@ export default function VentasPage() {
               e.stopPropagation()
               abrirModalAbono(r)
             }}
-            sx={{ fontSize: 11 }}
           >
             Pagos
           </Button>
@@ -618,7 +551,6 @@ export default function VentasPage() {
               setSelected(r)
               setShowModal(true)
             }}
-            sx={{ fontSize: 11 }}
           >
             Ver comprobante
           </Button>
@@ -631,89 +563,35 @@ export default function VentasPage() {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <NotificacionesContainer notificaciones={notificaciones} />
 
-      <input ref={transferenciaInputRef} type="file" accept="image/*" hidden onChange={handleImagenTransferenciaSeleccionada} />
       <input ref={abonoInputRef} type="file" accept="image/*" hidden onChange={handleImagenAbonoSeleccionada} />
 
-      <Box sx={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 2,
-        '& > *': isDark ? { backgroundColor: '#2A1D16', backgroundImage: 'none' } : {}
-      }}>
+      <KPIGrid>
         <KPICard title="Completados" value={completados} icon={<IconCircleCheck size={16} />} variant="success" />
         <KPICard title="Cancelados" value={cancelados} icon={<IconCircleX size={16} />} variant="danger" />
-      </Box>
+      </KPIGrid>
 
-      <Box sx={{ borderRadius: 2.5, overflow: 'hidden', bgcolor: isDark ? '#2A1D16' : 'background.paper', border: '1px solid', borderColor: 'divider', backgroundImage: 'none' }}>
-        <Stack direction="row" flexWrap="wrap" alignItems="center" sx={{ px: 2.5, py: 2, alignItems: 'center', }}>
-          <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: 'text.primary', mr: 'auto' }}>Registro de ventas</Typography>
+      <Box sx={{ borderRadius: 2.5, overflow: 'hidden', bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
+        <Stack direction="row" flexWrap="wrap" alignItems="center" sx={{ px: 2.5, py: 2 }}>
+          <Typography variant="h6" sx={{ mr: 'auto' }}>
+            Registro de ventas
+          </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1.25 }}>
-            <OutlinedInput
+            <SearchInput
               placeholder="Buscar pedido o cliente…"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)
                 setPage(1)
               }}
-              startAdornment={
-                <InputAdornment position="start">
-                  <IconSearch size={18} color="#A0968C" />
-                </InputAdornment>
-              }
-              sx={{
-                width: 250,
-                bgcolor: isDark ? '#32251F' : '#F4EFEA',
-                height: 35,
-                borderRadius: 1,
-                fontSize: 12,
-                '& fieldset': {
-                  borderColor: isDark ? 'transparent' : '#E5DCD3'
-                },
-                '&:hover fieldset': {
-                  borderColor: '#C97A45'
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#C97A45'
-                }
-              }}
             />
-            <Button
-              variant="primary"
-              size="sm"
-              leftIcon={<IconPlus size={13} />}
-              onClick={handleNuevaVenta}
-              sx={{
-                height: 28,
-                borderRadius: 1,
-                fontSize: 12,
-                ...(isDark && {
-                  backgroundColor: '#A85D33',
-                  color: '#000000',
-                  '&:hover': { backgroundColor: '#8A4A28' }
-                })
-              }}
-            >
+            <Button size="toolbar" leftIcon={<IconPlus size={13} />} onClick={handleNuevaVenta}>
               Nueva venta
             </Button>
             <Button
               variant={filtrosActivos ? 'primary' : 'secondary'}
-              size="sm"
+              size="toolbar"
               leftIcon={<IconFilter size={13} />}
               onClick={() => setShowFiltros((v) => !v)}
-              sx={{
-                height: 28,
-                borderRadius: 1,
-                fontSize: 12,
-                border: '1px solid',
-                backgroundColor: isDark ? '#32251F' : '#F0EBE3',
-                color: isDark ? '#F2E9DD' : '#4A2E17',
-                borderColor: isDark ? '#3D2C21' : '#E4D9C8',
-                '&:hover': {
-                  backgroundColor: isDark ? '#32251F' : '#F0EBE3',
-                  borderColor: isDark ? '#3D2C21' : '#E4D9C8',
-                  opacity: 0.85,
-                },
-              }}
             >
               Filtrar
               {filtrosActivos && (
@@ -727,9 +605,8 @@ export default function VentasPage() {
                     height: 16,
                     width: 16,
                     borderRadius: '50%',
-                    fontSize: 9,
-                    fontWeight: 700,
-                    bgcolor: 'rgba(255,255,255,0.3)',
+                    typography: 'overline',
+                    bgcolor: (t) => alpha(t.palette.common.white, 0.3),
                     color: 'inherit',
                   }}
                 >
@@ -747,14 +624,7 @@ export default function VentasPage() {
             direction="row"
             flexWrap="wrap"
             alignItems="flex-end"
-            sx={{
-              gap: 2.5,
-              px: 2.5,
-              py: 2,
-              borderBottom: '1px solid',
-              borderColor: 'divider',
-              bgcolor: isDark ? '#2C1F18' : '#FAF8F6',
-            }}
+            sx={{ gap: 2.5, px: 2.5, py: 2, borderBottom: '1px solid', borderColor: 'divider', bgcolor: 'action.hover' }}
           >
             <Box sx={{ width: 130 }}>
               <FilterLabel>Estado</FilterLabel>
@@ -866,31 +736,20 @@ export default function VentasPage() {
           emptyMessage="Sin ventas encontradas"
         />
 
-        <Box
-          sx={{
-            px: 2.5,
-            borderTop: '1px solid',
-            borderColor: 'divider',
-            '& p, & span, & .MuiTypography-root': {
-              fontSize: '11px !important',
-              color: `${theme.palette.text.secondary} !important`,
-            },
-          }}
-        >
+        <Box sx={{ px: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
           <Pagination page={page} total={filtered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
         </Box>
       </Box>
 
       {/* Modal: Cambiar estado */}
-      <Modal open={showEstadoModal} onClose={cerrarModalEstado} title="Cambiar estado" size="sm">
+      <Modal open={showEstadoModal} onClose={cerrarModalEstado} title="Cambiar estado" size="sm" showDivider>
         {ventaEstadoModal && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+            <Typography variant="body2">
               Venta <b>{ventaEstadoModal.id}</b> · {obtenerNombreCliente(ventaEstadoModal)}
             </Typography>
             {opcionesEstadoParaFila(ventaEstadoModal.estado).map((o) => {
               const activo = estadoSeleccionadoModal === o.value
-              const color = estadoDotColor[o.value]
               return (
                 <Box
                   key={o.value}
@@ -908,8 +767,10 @@ export default function VentasPage() {
                     bgcolor: activo ? 'action.selected' : 'transparent',
                   }}
                 >
-                  <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: color }} />
-                  <Typography variant="body2" sx={{ flex: 1 }}>{o.label}</Typography>
+                  <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: estadoDotColor[o.value] }} />
+                  <Typography variant="body1" sx={{ flex: 1 }}>
+                    {o.label}
+                  </Typography>
                 </Box>
               )
             })}
@@ -932,7 +793,7 @@ export default function VentasPage() {
       </Modal>
 
       {/* Modal: Comprobante */}
-      <Modal open={showModal} onClose={() => setShowModal(false)} title="Comprobante de venta" size="md">
+      <Modal open={showModal} onClose={() => setShowModal(false)} title="Comprobante de venta" size="md" showDivider>
         {selected && (
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2.5 }}>
             <Box
@@ -940,8 +801,7 @@ export default function VentasPage() {
               sx={{
                 width: '100%',
                 maxWidth: 340,
-                fontFamily: 'monospace',
-                fontSize: 12,
+                typography: 'mono',
                 border: '2px dashed',
                 borderColor: 'divider',
                 borderRadius: 2,
@@ -949,9 +809,15 @@ export default function VentasPage() {
               }}
             >
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5, px: 2.5, pt: 2, pb: 1.75, borderBottom: '1px dashed', borderColor: 'divider' }}>
-                <Typography sx={{ fontWeight: 700, letterSpacing: 2.5, fontSize: 13 }}>PANADERÍA</Typography>
-                <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Comprobante de venta</Typography>
-                <Typography sx={{ fontSize: 12, mt: 1 }}>{selected.id}</Typography>
+                <Typography variant="mono" component="div">
+                  <b>PANADERÍA</b>
+                </Typography>
+                <Typography variant="mono" component="div" sx={{ color: 'text.secondary' }}>
+                  Comprobante de venta
+                </Typography>
+                <Typography variant="mono" component="div" sx={{ mt: 1 }}>
+                  {selected.id}
+                </Typography>
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6, px: 2.5, py: 1.25, borderBottom: '1px dashed', borderColor: 'divider' }}>
@@ -978,8 +844,12 @@ export default function VentasPage() {
                   <span>Artículos</span><span>{selected.productos}</span>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', pt: 0.75 }}>
-                  <Typography sx={{ fontWeight: 700, fontSize: 13 }}>TOTAL</Typography>
-                  <Typography sx={{ fontWeight: 700, fontSize: 16 }}>${selected.total.toFixed(2)}</Typography>
+                  <Typography variant="mono" component="div">
+                    <b>TOTAL</b>
+                  </Typography>
+                  <Typography variant="h6" component="div">
+                    ${selected.total.toFixed(2)}
+                  </Typography>
                 </Box>
               </Box>
 
@@ -987,27 +857,12 @@ export default function VentasPage() {
                 <StatusBadge variant={estadoVariant[selected.estado]} dot>
                   {cap(selected.estado)}
                 </StatusBadge>
-                <Typography sx={{ fontSize: 11, color: 'text.dim' }}>¡Gracias por su compra!</Typography>
+                <Typography variant="caption" sx={{ color: 'text.dim' }}>¡Gracias por su compra!</Typography>
               </Box>
             </Box>
 
             <Box sx={{ width: '100%', maxWidth: 340, display: 'flex', justifyContent: 'flex-end' }}>
-              <Button
-                size="sm"
-                leftIcon={<IconDownload size={12} />}
-                onClick={handleDescargarComprobante}
-                sx={{
-                  border: '1px solid',
-                  backgroundColor: isDark ? '#32251F' : '#F0EBE3',
-                  color: isDark ? '#F2E9DD' : '#4A2E17',
-                  borderColor: isDark ? '#3D2C21' : '#E4D9C8',
-                  '&:hover': {
-                    backgroundColor: isDark ? '#32251F' : '#F0EBE3',
-                    borderColor: isDark ? '#3D2C21' : '#E4D9C8',
-                    opacity: 0.85,
-                  },
-                }}
-              >
+              <Button variant="secondary" size="sm" leftIcon={<IconDownload size={12} />} onClick={handleDescargarComprobante}>
                 Descargar comprobante
               </Button>
             </Box>
@@ -1022,10 +877,10 @@ export default function VentasPage() {
       </Modal>
 
       {/* Modal: Pagos (encargo: 2 comprobantes de 50% · página/presencial: 1 comprobante de 100%) */}
-      <Modal open={showAbonoModal} onClose={cerrarModalAbono} title="Pagos de la venta" size="md">
+      <Modal open={showAbonoModal} onClose={cerrarModalAbono} title="Pagos de la venta" size="md" showDivider>
         {ventaAbonoModal && (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
-            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+            <Typography variant="body2">
               Venta <b>{ventaAbonoModal.id}</b> · {obtenerNombreCliente(ventaAbonoModal)}
             </Typography>
 
@@ -1036,23 +891,23 @@ export default function VentasPage() {
                 gridTemplateColumns: 'repeat(3, 1fr)',
                 gap: 2,
                 border: '1px solid',
-                borderColor: isDark ? '#4A3B32' : '#E4D9C8',
+                borderColor: 'divider',
                 borderRadius: 1.5,
                 p: 1.75,
-                bgcolor: isDark ? '#30231C' : '#F9F8F8',
+                bgcolor: 'background.alt',
               }}
             >
               <Box>
                 <FilterLabel>Total venta</FilterLabel>
-                <Typography sx={{ fontWeight: 700, fontSize: 14 }}>${ventaAbonoModal.total.toFixed(2)}</Typography>
+                <Typography variant="subtitle1">${ventaAbonoModal.total.toFixed(2)}</Typography>
               </Box>
               <Box>
                 <FilterLabel>Pagado</FilterLabel>
-                <Typography sx={{ fontWeight: 700, fontSize: 14 }}>${totalAbonadoVenta.toFixed(2)}</Typography>
+                <Typography variant="subtitle1">${totalAbonadoVenta.toFixed(2)}</Typography>
               </Box>
               <Box>
                 <FilterLabel>Saldo pendiente</FilterLabel>
-                <Typography sx={{ fontWeight: 700, fontSize: 14, color: saldoPendienteVenta <= 0 ? 'success.main' : 'text.primary' }}>
+                <Typography variant="subtitle1" sx={{ color: saldoPendienteVenta <= 0 ? 'success.main' : 'text.primary' }}>
                   ${saldoPendienteVenta.toFixed(2)}
                 </Typography>
               </Box>
@@ -1077,18 +932,22 @@ export default function VentasPage() {
                       p: 1.25,
                     }}
                   >
-                    <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{100 / cantidadPagos}% · ${montoPorPago.toFixed(2)}</Typography>
+                    <Typography variant="body2">{100 / cantidadPagos}% · ${montoPorPago.toFixed(2)}</Typography>
 
                     {abono ? (
                       <>
-                        <ImageWithFallback
-                          src={abono.urlComprobante}
-                          alt={`Comprobante del pago ${slot}`}
+                        <Box
                           onClick={() => window.open(abono.urlComprobante, '_blank')}
-                          style={{ width: '100%', height: 130, borderRadius: 6, border: `1px solid ${theme.palette.divider}`, objectFit: 'cover', cursor: 'pointer' }}
-                        />
+                          sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5, overflow: 'hidden', cursor: 'pointer' }}
+                        >
+                          <ImageWithFallback
+                            src={abono.urlComprobante}
+                            alt={`Comprobante del pago ${slot}`}
+                            style={{ width: '100%', height: 130, objectFit: 'cover', display: 'block' }}
+                          />
+                        </Box>
                         <Stack direction="row" justifyContent="space-between" alignItems="center">
-                          <Typography sx={{ fontSize: 11, color: 'text.dim' }}>{abono.fecha}</Typography>
+                          <Typography variant="caption" sx={{ color: 'text.dim' }}>{abono.fecha}</Typography>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -1102,10 +961,10 @@ export default function VentasPage() {
                     ) : (
                       <Button
                         variant="secondary"
+                        fullWidth
+                        leftIcon={<IconUpload size={16} />}
                         onClick={() => handleClickSubirComprobante(slot)}
-                        sx={{ display: 'flex', flexDirection: 'column', gap: 1, py: 3, borderStyle: 'dashed' }}
                       >
-                        <IconUpload size={16} />
                         Subir comprobante
                       </Button>
                     )}
@@ -1129,19 +988,11 @@ export default function VentasPage() {
         onClose={() => setShowVentaModal(false)}
         title="Nueva venta"
         size="lg"
-        sx={{
-          width: '100%',
-          maxWidth: 1100,
-          minHeight: 600,
-          ...(isDark && {
-            bgcolor: '#2A1D16',
-            backgroundImage: 'none !important',
-            '--Paper-overlay': 'none',
-          }),
-        }}
+        showDivider
+        sx={{ width: '100%', maxWidth: 1100, minHeight: 600 }}
       >
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: '20px' }}>
-          {/* Parte superior: NIT/Cédula, Estado, Método de pago y Canal + ID/Fecha */}
+          {/* Parte superior: ID, fecha, NIT/Cédula, método de pago y pago dividido */}
           <Box
             sx={{
               display: 'grid',
@@ -1152,24 +1003,12 @@ export default function VentasPage() {
           >
             <Box sx={{ minWidth: 0 }}>
               <FilterLabel>ID de venta</FilterLabel>
-              <TextField
-                fullWidth
-                size="small"
-                value={formId}
-                disabled
-                sx={autocompleteInputSx}
-              />
+              <Input value={formId} onChange={() => {}} disabled />
             </Box>
 
             <Box sx={{ minWidth: 0 }}>
               <FilterLabel>Fecha</FilterLabel>
-              <TextField
-                fullWidth
-                size="small"
-                value={`${formFecha} · ${formHora}`}
-                disabled
-                sx={autocompleteInputSx}
-              />
+              <Input value={`${formFecha} · ${formHora}`} onChange={() => {}} disabled />
             </Box>
 
             <Box sx={{ minWidth: 0 }}>
@@ -1185,12 +1024,12 @@ export default function VentasPage() {
                   <TextField
                     {...params}
                     placeholder="Buscar por NIT o nombre…"
-                    sx={autocompleteInputSx}
+                    sx={autocompleteSx}
                     InputProps={{
                       ...(params.InputProps || {}),
                       startAdornment: (
-                        <InputAdornment position="start" sx={{ pl: 1 }}>
-                          <IconSearch size={18} color="#A0968C" />
+                        <InputAdornment position="start" sx={{ pl: 1, color: 'text.secondary' }}>
+                          <IconSearch size={18} />
                         </InputAdornment>
                       ),
                     }}
@@ -1201,20 +1040,7 @@ export default function VentasPage() {
 
             <Box sx={{ minWidth: 0 }}>
               <FilterLabel>Método de pago</FilterLabel>
-              <TextField
-                select
-                fullWidth
-                size="small"
-                value={formMetodo}
-                onChange={(e) => setFormMetodo(e.target.value)}
-                sx={autocompleteInputSx}
-              >
-                {metodoOptions.map((opcion) => (
-                  <MenuItem key={opcion.value} value={opcion.value}>
-                    {opcion.label}
-                  </MenuItem>
-                ))}
-              </TextField>
+              <Select options={metodoOptions} value={formMetodo} onChange={(e) => setFormMetodo(e.target.value)} />
             </Box>
 
             <Box sx={{ minWidth: 0 }}>
@@ -1226,8 +1052,8 @@ export default function VentasPage() {
                     onChange={(e) => setFormPagoDividido(e.target.checked)}
                   />
                 }
-                label="Pago dividido (dos pagos del 50%)"
-                sx={{ m: 0, '& .MuiFormControlLabel-label': { fontSize: 12 } }}
+                label={<Typography variant="body2" sx={{ color: 'text.primary' }}>Pago dividido (dos pagos del 50%)</Typography>}
+                sx={{ m: 0 }}
               />
             </Box>
           </Box>
@@ -1274,9 +1100,9 @@ export default function VentasPage() {
                         opacity: sinStock ? 0.5 : 1,
                         borderRadius: 1.5,
                         border: '1px solid',
-                        borderColor: isDark ? '#4A3B32' : '#E4D9C8',
-                        bgcolor: isDark ? '#30231C' : '#F9F8F8',
-                        '&:hover': { borderColor: '#C97A45' },
+                        borderColor: 'divider',
+                        bgcolor: 'background.alt',
+                        '&:hover': { borderColor: 'primary.main' },
                       }}
                     >
                       {p.imagen ? (
@@ -1286,67 +1112,54 @@ export default function VentasPage() {
                           style={{ width: 44, height: 44, borderRadius: 6, objectFit: 'cover' }}
                         />
                       ) : (
-                        <Box sx={{ width: 44, height: 44, borderRadius: 1, bgcolor: 'action.hover', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 16, color: 'text.secondary' }}>
-                          {p.nombre.charAt(0)}
+                        <Box sx={{ width: 44, height: 44, borderRadius: 1, bgcolor: 'action.hover', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Typography variant="h6" sx={{ color: 'text.secondary' }}>
+                            {p.nombre.charAt(0)}
+                          </Typography>
                         </Box>
                       )}
-                      <Typography sx={{ fontSize: 12, lineHeight: 1.3 }}>{p.nombre}</Typography>
-                      <Typography sx={{ fontSize: 12, fontWeight: 700 }}>${p.precio.toFixed(2)}</Typography>
+                      <Typography variant="body1">{p.nombre}</Typography>
+                      <Typography variant="subtitle2">${p.precio.toFixed(2)}</Typography>
                     </Box>
                   )
                 })}
                 {productosFiltrados.length === 0 && (
-                  <Box sx={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'center', py: 5, color: 'text.secondary', fontSize: 13 }}>
-                    Sin productos que coincidan
+                  <Box sx={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'center', py: 5 }}>
+                    <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+                      Sin productos que coincidan
+                    </Typography>
                   </Box>
                 )}
               </Box>
 
               {/* Buscar producto (debajo del catálogo) */}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <TextField
-                    fullWidth
-                    size="small"
+                <Box
+                  sx={{ flex: 1, minWidth: 0 }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      if (busquedaProducto.trim() && productosFiltrados.length > 0) handleAgregarProducto()
+                    }
+                  }}
+                >
+                  <Input
+                    size="sm"
                     placeholder="Buscar producto…"
                     value={busquedaProducto}
                     onChange={(e) => {
                       validarCaracterEspecial(e.target.value, productoTuvoCaracterEspecialRef)
                       setBusquedaProducto(e.target.value)
                     }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        if (busquedaProducto.trim() && productosFiltrados.length > 0) handleAgregarProducto()
-                      }
-                    }}
-                    sx={autocompleteInputSx}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start" sx={{ pl: 1 }}>
-                          <IconSearch size={18} color="#A0968C" />
-                        </InputAdornment>
-                      ),
-                    }}
+                    leftIcon={<IconSearch size={18} />}
                   />
                 </Box>
                 <Button
                   variant="secondary"
-                  size="sm"
+                  size="toolbar"
                   leftIcon={<IconPlus size={12} />}
                   disabled={!busquedaProducto.trim() || productosFiltrados.length === 0}
                   onClick={handleAgregarProducto}
-                  sx={{
-                    border: '1px solid',
-                    backgroundColor: isDark ? '#32251F' : '#F0EBE3',
-                    color: isDark ? '#F2E9DD' : '#4A2E17',
-                    borderColor: isDark ? '#3D2C21' : '#E4D9C8',
-                    '&:hover': {
-                      backgroundColor: isDark ? '#32251F' : '#F0EBE3',
-                      borderColor: isDark ? '#3D2C21' : '#E4D9C8',
-                      opacity: 0.85,
-                    },
-                  }}
                 >
                   Agregar
                 </Button>
@@ -1358,20 +1171,22 @@ export default function VentasPage() {
               <FilterLabel>Resumen</FilterLabel>
               <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5, minHeight: 180, maxHeight: 380, overflowY: 'auto', flexGrow: 1 }}>
                 {formItems.length === 0 ? (
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 5, color: 'text.secondary', fontSize: 13 }}>
-                    Sin productos agregados
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 5 }}>
+                    <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+                      Sin productos agregados
+                    </Typography>
                   </Box>
                 ) : (
                   formItems.map((item, idx) => (
                     <Box key={item.nombre} sx={{ px: 1.25, py: 0.875, borderTop: idx > 0 ? '1px solid' : 'none', borderColor: 'divider' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: 'action.hover', borderRadius: 0.7, mr: 1, border: '1px solid', borderColor: isDark ? '#4A3B32' : '#E4D9C8' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: 'action.hover', borderRadius: 0.7, mr: 1, border: '1px solid', borderColor: 'divider' }}>
                           <IconButton size="small" onClick={() => handleActualizarCantidad(item.nombre, item.cantidad - 1)}><IconMinus size={11} /></IconButton>
-                          <Typography sx={{ width: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>{item.cantidad}</Typography>
+                          <Typography variant="body1" sx={{ width: 22, textAlign: 'center' }}>{item.cantidad}</Typography>
                           <IconButton size="small" onClick={() => handleActualizarCantidad(item.nombre, item.cantidad + 1)}><IconPlus size={11} /></IconButton>
                         </Box>
-                        <Typography sx={{ fontSize: 12.5, flex: 1 }}>{item.nombre}</Typography>
-                        <Typography sx={{ fontSize: 12.5, color: 'text.secondary', mx: 1 }}>${(item.cantidad * item.precio).toFixed(2)}</Typography>
+                        <Typography variant="body1" sx={{ flex: 1 }}>{item.nombre}</Typography>
+                        <Typography variant="body2" sx={{ mx: 1 }}>${(item.cantidad * item.precio).toFixed(2)}</Typography>
                         <IconButton size="small" sx={{ color: 'error.main' }} onClick={() => handleQuitarProducto(item.nombre)}><IconX size={13} /></IconButton>
                       </Box>
                     </Box>
@@ -1380,8 +1195,8 @@ export default function VentasPage() {
               </Box>
 
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', pt: 2, mt: 'auto' }}>
-                <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>Total a pagar</Typography>
-                <Typography sx={{ fontWeight: 700, fontSize: 17 }}>${totalFormulario.toFixed(2)}</Typography>
+                <Typography variant="body1" sx={{ color: 'text.secondary' }}>Total a pagar</Typography>
+                <Typography variant="h6">${totalFormulario.toFixed(2)}</Typography>
               </Box>
 
               <Button variant="primary" size="sm" fullWidth disabled={formItems.length === 0 || !clienteValido} onClick={handleConfirmarVenta}>
@@ -1398,9 +1213,13 @@ export default function VentasPage() {
         </Box>
       </Modal>
 
-      <Box component="footer" sx={{ pt: 2, pb: 2, borderTop: '1px solid', borderColor: 'divider', textAlign: 'center', fontSize: 11.5, color: 'text.dim' }}>
+      <Typography
+        variant="caption"
+        component="footer"
+        sx={{ display: 'block', pt: 2, pb: 2, borderTop: '1px solid', borderColor: 'divider', textAlign: 'center', color: 'text.dim' }}
+      >
         © 2026 Al Horno. Todos los derechos reservados a la institución educativa SENA
-      </Box>
+      </Typography>
     </Box>
   )
 }
