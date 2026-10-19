@@ -15,20 +15,12 @@ import {
   IconToggleRight,
 } from '@tabler/icons-react'
 import {
-  initialVentas, estadoVariant, estadoOptions, estadoDotColor, // 👈 agregar
+  initialVentas, estadoVariant, estadoOptions, estadoDotColor,
   esTransicionValida, opcionesEstadoParaFila, usuarioAutenticado,
   catalogoClientes, catalogoPanaderia, obtenerProductosVenta,
   obtenerNombreCliente, parseFechaVenta, fechaHoyFormateada, PAGE_SIZE,
 } from '@features/ventas/data/ventasMockData'
-import { KPICard } from '@features/ventas/components/KPICard'
-import { StatusBadge } from '@features/ventas/components/StatusBadge'
-import { Button } from '@features/ventas/components/Button'
-import { Input } from '@features/ventas/components/Input'
-import { Select } from '@features/ventas/components/Select'
-import { DataTable } from '@features/ventas/components/DataTable'
-import { Pagination } from '@features/ventas/components/Pagination'
-import { Modal } from '@features/ventas/components/Modal'
-import { ImageWithFallback } from '@features/ventas/components/ImageWithFallback'
+import { Input, Button, StatusBadge, KPICard, Select, DataTable, Pagination, Modal ,ImageWithFallback } from '@shared/ui'
 
 // ---------- Helpers de presentación ----------
 

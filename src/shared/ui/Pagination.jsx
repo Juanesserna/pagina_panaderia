@@ -14,7 +14,7 @@ export function Pagination({ page, total, pageSize, onPageChange }) {
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 2, flexWrap: 'wrap', gap: 1.5 }}>
-      <Typography sx={{ fontSize: 13, color: 'text.dim' }}>
+      <Typography variant="body2">
         Mostrando {from}–{to} de {total} registros
       </Typography>
 
@@ -37,9 +37,7 @@ export function Pagination({ page, total, pageSize, onPageChange }) {
               width: 32,
               height: 32,
               borderRadius: 1.5,
-              fontSize: 13,
-              fontWeight: 600,
-              textTransform: 'none',
+              typography: 'button',
               bgcolor: p === page ? 'primary.main' : 'transparent',
               color: p === page ? 'primary.contrastText' : 'text.secondary',
               '&:hover': { bgcolor: p === page ? 'primary.dark' : 'action.hover' },

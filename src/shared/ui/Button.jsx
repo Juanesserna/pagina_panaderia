@@ -1,8 +1,19 @@
 import { Button as MuiButton } from '@mui/material'
+import { CONTROL_HEIGHT } from './tokens'
+
+// Tamaños permitidos. 'toolbar' = botones junto al buscador (mismo alto que Input size="sm").
+const sizeStyles = {
+  sm: { fontSize: '0.75rem', px: 1.75, py: 0.7 },
+  md: { fontSize: '0.8125rem', px: 2.5, py: 1 },
+  toolbar: { fontSize: '0.75rem', px: 1.5, py: 0, height: CONTROL_HEIGHT, borderRadius: 1 },
+}
 
 /**
- * Botón del panel administrativo. variant: 'primary' | 'secondary' | 'ghost' | 'danger'
- * size: 'sm' | 'md'
+ * Botón del panel administrativo.
+ * variant: 'primary' | 'secondary' | 'ghost' | 'danger'
+ * size: 'sm' | 'md' | 'toolbar'  (toolbar: botones de la barra con buscador; alto estándar)
+ * fullWidth: ocupa todo el ancho disponible.
+ * sx: estilos opcionales para sobrescribir en una instancia puntual.
  */
 export function Button({
   variant = 'primary',
@@ -38,7 +49,7 @@ export function Button({
     },
     danger: {
       bgcolor: 'error.main',
-      color: '#fff',
+      color: 'common.white',
       border: 'none',
       '&:hover': { bgcolor: 'error.dark' },
     },
@@ -55,14 +66,12 @@ export function Button({
       sx={{
         ...sxByVariant[variant],
         textTransform: 'none',
-        fontWeight: 600,
+        fontWeight: 'fontWeightSemiBold',
         borderRadius: 1.5,
-        fontSize: size === 'sm' ? 13 : 14,
-        px: size === 'sm' ? 1.75 : 2.5,
-        py: size === 'sm' ? 0.7 : 1,
         minWidth: 'auto',
         boxShadow: 'none',
         '&:disabled': { opacity: 0.4, color: 'inherit' },
+        ...(sizeStyles[size] ?? sizeStyles.md),
         ...sx,
       }}
     >

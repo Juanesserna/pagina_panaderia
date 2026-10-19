@@ -16,14 +16,8 @@ import {
   IconAlertTriangle,
   IconToggleRight,
 } from '@tabler/icons-react'
-import { KPICard } from '@features/produccion/components/KPICard'
-import { StatusBadge } from '@features/produccion/components/StatusBadge'
-import { Button } from '@features/produccion/components/Button'
-import { Input } from '@features/produccion/components/Input'
-import { Select } from '@features/produccion/components/Select'
-import { DataTable } from '@features/produccion/components/DataTable'
-import { Pagination } from '@features/produccion/components/Pagination'
-import { Modal } from '@features/produccion/components/Modal'
+import { Input, Button, StatusBadge, KPICard, Select, DataTable, Pagination, Modal ,ImageWithFallback } from '@shared/ui'
+
 
 // Receta de insumos por producto: cuánto de cada insumo se necesita por unidad producida.
 // En una integración real esto vendría de la base de datos de formulaciones.
