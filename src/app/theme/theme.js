@@ -41,6 +41,8 @@ function buildTheme(mode) {
       // ── Escala del panel (ver src/app/theme/README.md) ──
       h5: { fontSize: '1.125rem', fontWeight: 600 }, // título de sección
       h6: { fontSize: '1rem', fontWeight: 700 }, // título de modal / panel
+      subtitle1: { fontSize: '0.8125rem', fontWeight: 600 }, // texto principal destacado (nombres, valores)
+      subtitle2: { fontSize: '0.75rem', fontWeight: 600 }, // texto secundario destacado (ids, totales en tabla)
       body1: { fontSize: '0.8125rem' }, // texto principal
       body2: { fontSize: '0.75rem', color: c.textMuted }, // texto secundario
       caption: { fontSize: '0.6875rem', color: c.textMuted }, // texto pequeño / ayudas
