@@ -1,15 +1,9 @@
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
-import TextField from '@mui/material/TextField'
-import Button from '@mui/material/Button'
-import InputAdornment from '@mui/material/InputAdornment'
-import MenuItem from '@mui/material/MenuItem'
 import Link from '@mui/material/Link'
-import { Search } from 'lucide-react';
+import { Filter, X } from 'lucide-react'
 import AddIcon from '@mui/icons-material/Add'
-import CloseIcon from '@mui/icons-material/Close'
-import { Filter } from 'lucide-react'
-import { BRAND } from '@shared/utils/colors'
+import { Button, SearchInput, Select } from '@shared/ui'
 import { ROLES, ESTADOS } from '../services/usuariosService'
 
 export default function UsuariosToolbar({
@@ -25,6 +19,16 @@ export default function UsuariosToolbar({
   hayFiltrosActivos,
   onLimpiarFiltros,
 }) {
+  const opcionesRol = [
+    { value: 'Todos', label: 'Todos los roles' },
+    ...ROLES.map((rol) => ({ value: rol, label: rol })),
+  ]
+
+  const opcionesEstado = [
+    { value: 'Todos', label: 'Todos' },
+    ...ESTADOS.map((estado) => ({ value: estado, label: estado })),
+  ]
+
   return (
     <Box>
       <Box
@@ -37,59 +41,40 @@ export default function UsuariosToolbar({
           p: 2.5,
         }}
       >
-        <Typography sx={{ fontWeight: 700, fontSize: 18, color: 'text.primary' }}>
+        <Typography variant="h5" color="text.primary">
           Gestión de usuarios
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <TextField
-            size="small"
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+          <SearchInput
             placeholder="Buscar nombre o email..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            sx={{
-              width: 260,
-              '& .MuiOutlinedInput-root': { bgcolor: 'action.hover', borderRadius: 2 },
-            }}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start" sx={{ color: 'text.secondary' }}>
-                    <Search size={18} />
-                  </InputAdornment>
-                ),
-              },
-            }}
           />
+
           <Button
-            variant="contained"
-            startIcon={<AddIcon />}
+            size="toolbar"
+            leftIcon={<AddIcon />}
             onClick={onNuevoUsuario}
-            sx={{ bgcolor: BRAND.orange, '&:hover': { bgcolor: BRAND.orangeDark } }}
           >
             Crear usuario
           </Button>
+
           <Button
-            variant="outlined"
-            startIcon={<Filter size={16} />}
+            size="toolbar"
+            variant="secondary"
+            leftIcon={<Filter size={16} />}
             onClick={onToggleFilters}
-            sx={{
-              borderColor: 'divider',       //  Borde neutro
-              color: 'text.secondary',      //  Gris neutro — igual que la referencia
-              '&:hover': {
-                borderColor: 'text.disabled',
-                color: 'text.primary',     // Se aclara sutil al pasar el cursor
-                bgcolor: 'action.hover',
-              },
-            }}
           >
             Filtrar
           </Button>
         </Box>
       </Box>
+
       {filtersOpen && (
         <Box
           sx={{
-            bgcolor: 'action.hover',
+            bgcolor: 'background.alt',
             px: 2.5,
             py: 2,
             display: 'flex',
@@ -98,44 +83,30 @@ export default function UsuariosToolbar({
             flexWrap: 'wrap',
           }}
         >
-          <Box>
-            <Typography sx={{ fontSize: 12, fontWeight: 600, color: 'text.secondary', mb: 0.5 }}>
+          <Box sx={{ width: 180 }}>
+            <Typography variant="overline" component="label">
               ROL
             </Typography>
-            <TextField
-              select
-              size="small"
+            <Select
+              fullWidth
               value={rolFiltro}
               onChange={(e) => onRolFiltroChange(e.target.value)}
-              sx={{ width: 180, bgcolor: 'background.paper', borderRadius: 2 }}
-            >
-              <MenuItem value="Todos">Todos los roles</MenuItem>
-              {ROLES.map((rol) => (
-                <MenuItem key={rol} value={rol}>
-                  {rol}
-                </MenuItem>
-              ))}
-            </TextField>
+              options={opcionesRol}
+            />
           </Box>
-          <Box>
-            <Typography sx={{ fontSize: 12, fontWeight: 600, color: 'text.secondary', mb: 0.5 }}>
+
+          <Box sx={{ width: 150 }}>
+            <Typography variant="overline" component="label">
               ESTADO
             </Typography>
-            <TextField
-              select
-              size="small"
+            <Select
+              fullWidth
               value={estadoFiltro}
               onChange={(e) => onEstadoFiltroChange(e.target.value)}
-              sx={{ width: 150, bgcolor: 'background.paper', borderRadius: 2 }}
-            >
-              <MenuItem value="Todos">Todos</MenuItem>
-              {ESTADOS.map((estado) => (
-                <MenuItem key={estado} value={estado}>
-                  {estado}
-                </MenuItem>
-              ))}
-            </TextField>
+              options={opcionesEstado}
+            />
           </Box>
+
           {hayFiltrosActivos && (
             <Link
               component="button"
@@ -146,12 +117,12 @@ export default function UsuariosToolbar({
                 display: 'flex',
                 alignItems: 'center',
                 gap: 0.5,
-                fontSize: 13,
                 color: 'text.secondary',
                 mb: 1,
               }}
             >
-              <CloseIcon sx={{ fontSize: 16 }} /> Limpiar filtros
+              <X size={16} />
+              Limpiar filtros
             </Link>
           )}
         </Box>
