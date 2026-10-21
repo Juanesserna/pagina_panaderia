@@ -2,15 +2,16 @@ import { useState } from 'react'
 import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom'
 import {
   Box,
-  Button,
   Card,
   CardContent,
   Link,
   Typography,
   useTheme,
 } from '@mui/material'
-import { IconCirclePlus } from '@tabler/icons-react'
+import { IconCheck } from '@tabler/icons-react'
 import { fonts } from '@app/theme/colors'
+// Botón estándar del panel
+import { Button } from '@shared/ui'
 import { ROUTES } from '@app/router/routes'
 import RecetaTabla from '../components/RecetaTabla'
 
@@ -208,46 +209,10 @@ export default function AgregarRecetaPage() {
             mt: 3,
           }}
         >
-          <Button
-            variant="outlined"
-            onClick={handleOmitir}
-            sx={{
-              width: 'auto',
-              minWidth: 'auto',
-              flexShrink: 0,
-              textTransform: 'none',
-              fontSize: 13,
-              fontWeight: 500,
-              borderRadius: 2,
-              px: 3,
-              py: 1,
-              borderColor: theme.palette.divider,
-              color: theme.palette.text.secondary,
-              '&:hover': {
-                borderColor: theme.palette.text.secondary,
-                bgcolor: theme.palette.action.hover,
-              },
-            }}
-          >
+          <Button variant="secondary" onClick={handleOmitir}>
             Omitir por ahora
           </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleGuardar}
-            startIcon={<IconCirclePlus size={16} />}
-            sx={{
-              width: 'auto',
-              minWidth: 'auto',
-              flexShrink: 0,
-              textTransform: 'none',
-              fontSize: 13,
-              fontWeight: 500,
-              borderRadius: 2,
-              px: 3,
-              py: 1,
-            }}
-          >
+          <Button leftIcon={<IconCheck size={16} />} onClick={handleGuardar}>
             Guardar Receta y Finalizar
           </Button>
         </Box>
