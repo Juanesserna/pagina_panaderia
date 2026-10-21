@@ -1,10 +1,11 @@
 // Mock temporal — reemplazar cuando exista la API de categorías.
+import { COLORES_CATEGORIA } from '../constants/coloresCategoria'
 
 export const categorias = [
   {
     id: 1,
     nombre: 'Panadería',
-    color: '#8B5E3C', // café
+    color: COLORES_CATEGORIA.cafe,
     tipo: 'Ambos',
     productosCount: 12,
     insumosCount: 8,
@@ -14,7 +15,7 @@ export const categorias = [
   {
     id: 2,
     nombre: 'Repostería',
-    color: '#4A7C59', // verde
+    color: COLORES_CATEGORIA.verde,
     tipo: 'Producto',
     productosCount: 8,
     insumosCount: 0,
@@ -24,7 +25,7 @@ export const categorias = [
   {
     id: 3,
     nombre: 'Snacks',
-    color: '#E8A838', // naranja
+    color: COLORES_CATEGORIA.naranja,
     tipo: 'Producto',
     productosCount: 6,
     insumosCount: 0,
@@ -34,7 +35,7 @@ export const categorias = [
   {
     id: 4,
     nombre: 'Café y bebidas',
-    color: '#3B82F6', // azul
+    color: COLORES_CATEGORIA.azul,
     tipo: 'Insumo',
     productosCount: 0,
     insumosCount: 15,
@@ -44,7 +45,7 @@ export const categorias = [
   {
     id: 5,
     nombre: 'Combos',
-    color: '#9B59B6', // morado
+    color: COLORES_CATEGORIA.morado,
     tipo: 'Ambos',
     productosCount: 4,
     insumosCount: 2,
@@ -54,7 +55,7 @@ export const categorias = [
   {
     id: 6,
     nombre: 'Temporada',
-    color: '#E91E63', // rosado
+    color: COLORES_CATEGORIA.rosado,
     tipo: 'Producto',
     productosCount: 3,
     insumosCount: 0,
@@ -64,7 +65,7 @@ export const categorias = [
   {
     id: 7,
     nombre: 'Sin gluten',
-    color: '#9E9E9E', // gris
+    color: COLORES_CATEGORIA.gris,
     tipo: 'Producto',
     productosCount: 2,
     insumosCount: 0,
@@ -74,7 +75,7 @@ export const categorias = [
   {
     id: 8,
     nombre: 'Empaques e insumos',
-    color: '#00BCD4', // celeste
+    color: COLORES_CATEGORIA.celeste,
     tipo: 'Insumo',
     productosCount: 0,
     insumosCount: 20,
@@ -93,21 +94,6 @@ export const categoriasService = {
     categorias[index] = { ...categorias[index], ...datosActualizados }
     return categorias[index]
   },
-}
-
-export const resumenStats = {
-  total: categorias.length,
-  activas: categorias.filter((c) => c.estado === 'Activa').length,
-  inactivas: categorias.filter((c) => c.estado === 'Inactiva').length,
-  tipos: {
-    ambos: categorias.filter((c) => c.tipo === 'Ambos').length,
-    producto: categorias.filter((c) => c.tipo === 'Producto').length,
-    insumo: categorias.filter((c) => c.tipo === 'Insumo').length,
-  },
-}
-
-export function formatDate(value) {
-  return value
 }
 
 export default categoriasService

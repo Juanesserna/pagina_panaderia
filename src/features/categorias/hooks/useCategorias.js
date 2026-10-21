@@ -1,11 +1,13 @@
 import { useState, useCallback, useMemo } from 'react'
 import { categorias as categoriasIniciales } from '../services/categorias.service'
+import { FILTRO_TODOS_TIPOS, FILTRO_TODAS_ESTADOS } from '../components/comunes/opcionesCategoria'
+import { COLOR_CATEGORIA_NUEVA } from '../constants/coloresCategoria'
 
 let categoriaIdCounter = 0
 
 const filtrosIniciales = {
-  tipo: 'Todos los tipos',
-  estado: 'Todas',
+  tipo: FILTRO_TODOS_TIPOS,
+  estado: FILTRO_TODAS_ESTADOS,
 }
 
 const crearId = () => {
@@ -75,7 +77,7 @@ export function useCategorias() {
   const crear = useCallback((nuevaCategoria) => {
     const categoria = {
       id: crearId(),
-      color: '#C97A45',
+      color: COLOR_CATEGORIA_NUEVA,
       productosCount: 0,
       insumosCount: 0,
       ...nuevaCategoria,
@@ -99,19 +101,6 @@ export function useCategorias() {
     setCategorias((prev) => prev.filter((categoria) => categoria.id !== id))
   }, [])
 
-  const cambiarEstado = useCallback((id) => {
-    setCategorias((prev) =>
-      prev.map((categoria) =>
-        categoria.id === id
-          ? {
-              ...categoria,
-              estado: categoria.estado === 'Activa' ? 'Inactiva' : 'Activa',
-            }
-          : categoria
-      )
-    )
-  }, [])
-
   return {
     categorias: paginatedCategorias,
     allCategorias: categorias,
@@ -128,6 +117,5 @@ export function useCategorias() {
     crear,
     editar,
     eliminar,
-    cambiarEstado,
   }
 }
