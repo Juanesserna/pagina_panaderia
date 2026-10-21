@@ -1,12 +1,14 @@
 import { Switch, Stack, Typography } from '@mui/material'
 import { styled, alpha } from '@mui/material/styles'
-import { StatusBadge } from '@shared/components'
+import { StatusBadge } from '@shared/ui'
 
 // Interruptor tipo "píldora": verde cuando el insumo está activo, gris
 // tostado cuando está inactivo. La perilla se desliza con una transición suave.
+// Todos los colores salen del tema (claro y oscuro), no hay hex.
 const PillSwitch = styled((props) => <Switch disableRipple {...props} />)(({ theme }) => {
   const on = theme.palette.success.main
-  const off = theme.palette.mode === 'dark' ? '#5B534B' : '#CFC4B7'
+  const off = alpha(theme.palette.text.secondary, 0.35)
+  const thumb = theme.palette.common.white
 
   return {
     width: 42,
@@ -14,10 +16,10 @@ const PillSwitch = styled((props) => <Switch disableRipple {...props} />)(({ the
     padding: 0,
     '& .MuiSwitch-switchBase': {
       padding: 2,
-      color: '#fff',
+      color: thumb,
       transitionDuration: '250ms',
       '&.Mui-checked': {
-        color: '#fff',
+        color: thumb,
         transform: 'translateX(18px)',
         '& + .MuiSwitch-track': { backgroundColor: on, opacity: 1, border: 0 },
       },
@@ -29,7 +31,7 @@ const PillSwitch = styled((props) => <Switch disableRipple {...props} />)(({ the
       boxSizing: 'border-box',
       width: 20,
       height: 20,
-      boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+      boxShadow: `0 1px 3px ${alpha(theme.palette.common.black, 0.3)}`,
     },
     '& .MuiSwitch-track': {
       borderRadius: 12,
@@ -55,14 +57,7 @@ export function EstadoSwitch({ activo, stockBajo = false, onChange, nombre }) {
         onChange={onChange}
         inputProps={{ 'aria-label': `Cambiar estado de ${nombre}` }}
       />
-      <Typography
-        sx={{
-          fontSize: 12.5,
-          fontWeight: 500,
-          minWidth: 52,
-          color: activo ? 'success.main' : 'text.secondary',
-        }}
-      >
+      <Typography variant="subtitle2" sx={{ minWidth: 52, color: activo ? 'success.main' : 'text.secondary' }}>
         {activo ? 'Activo' : 'Inactivo'}
       </Typography>
       {activo && stockBajo && <StatusBadge variant="warning">Stock bajo</StatusBadge>}

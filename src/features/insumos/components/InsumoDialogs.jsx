@@ -1,76 +1,78 @@
-import {
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    Button,
-    Box,
-    Typography,
-    Stack,
-    Avatar,
-} from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
-import { StatusBadge } from "@shared/components";
-import { formatoCodigo, estadoVisualVariant } from "../utils/insumosHelpers";
+import { Box, Stack, Typography } from '@mui/material'
+import { alpha } from '@mui/material/styles'
+import { IconTrash } from '@tabler/icons-react'
+import { Button, Modal, StatusBadge } from '@shared/ui'
+import { estadoVisualVariant } from '../constants/insumos.constants'
+import { formatoCodigo } from '../utils/insumosHelpers'
 
 export function EliminarInsumoDialog({ open, insumo, onClose, onConfirmar }) {
-    return (
-        <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-            <DialogTitle>Eliminar Insumo</DialogTitle>
-            <DialogContent>
-                {insumo && (
-                    <Box sx={{ textAlign: "center", py: 1 }}>
-                        <Avatar sx={{ bgcolor: "error.50", color: "error.main", width: 56, height: 56, mx: "auto", mb: 2 }}>
-                            <DeleteIcon />
-                        </Avatar>
-                        <Typography fontWeight={600}>¿Está seguro de eliminar este insumo?</Typography>
-                        <Typography variant="caption" color="text.secondary" display="block">
-                            Esta acción no se puede deshacer.
-                        </Typography>
-                        <Typography variant="body2" color="primary.main" fontWeight={600} sx={{ mt: 1 }}>
-                            {insumo.nombre} ({formatoCodigo(insumo.id)})
-                        </Typography>
-                    </Box>
-                )}
-            </DialogContent>
-            <DialogActions sx={{ px: 3, pb: 2 }}>
-                <Button variant="outlined" onClick={onClose}>
-                    Cancelar
-                </Button>
-                <Button variant="contained" color="error" onClick={onConfirmar}>
-                    Confirmar Eliminación
-                </Button>
-            </DialogActions>
-        </Dialog>
-    );
+  return (
+    <Modal open={open} onClose={onClose} title="Eliminar insumo" size="sm" showDivider>
+      {insumo && (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 0.5, py: 1 }}>
+            <Box
+              sx={{
+                width: 56,
+                height: 56,
+                mb: 1.5,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                bgcolor: (t) => alpha(t.palette.error.main, 0.12),
+                color: 'error.main',
+              }}
+            >
+              <IconTrash size={26} />
+            </Box>
+            <Typography variant="subtitle1">¿Está seguro de eliminar este insumo?</Typography>
+            <Typography variant="caption">Esta acción no se puede deshacer.</Typography>
+            <Typography variant="subtitle1" sx={{ mt: 1, color: 'primary.main' }}>
+              {insumo.nombre} ({formatoCodigo(insumo.id)})
+            </Typography>
+          </Box>
+
+          <Stack direction="row" justifyContent="flex-end" spacing={1}>
+            <Button variant="secondary" size="sm" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button variant="danger" size="sm" onClick={onConfirmar}>
+              Confirmar eliminación
+            </Button>
+          </Stack>
+        </Box>
+      )}
+    </Modal>
+  )
 }
 
 export function CambiarEstadoInsumoDialog({ open, insumo, onClose, onCambiar }) {
-    if (!insumo) return null;
-    const actual = insumo.estado ? "Activo" : "Inactivo";
-    const nuevo = insumo.estado ? "Inactivo" : "Activo";
+  if (!insumo) return null
+  const actual = insumo.estado ? 'Activo' : 'Inactivo'
+  const nuevo = insumo.estado ? 'Inactivo' : 'Activo'
 
-    return (
-        <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-            <DialogTitle>Cambiar Estado</DialogTitle>
-            <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <Typography variant="body2">
-                    Está a punto de cambiar el estado de <strong>{insumo.nombre}</strong> de {actual} a {nuevo}. ¿Desea continuar?
-                </Typography>
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ bgcolor: "action.hover", p: 1.5, borderRadius: 2 }}>
-                    <StatusBadge variant={estadoVisualVariant[actual]}>{actual}</StatusBadge>
-                    <Typography variant="caption" color="text.secondary">→</Typography>
-                    <StatusBadge variant={estadoVisualVariant[nuevo]}>{nuevo}</StatusBadge>
-                </Stack>
-            </DialogContent>
-            <DialogActions sx={{ px: 3, pb: 2 }}>
-                <Button variant="outlined" onClick={onClose}>
-                    Cancelar
-                </Button>
-                <Button variant="contained" onClick={() => onCambiar(!insumo.estado)}>
-                    Aceptar
-                </Button>
-            </DialogActions>
-        </Dialog>
-    );
+  return (
+    <Modal open={open} onClose={onClose} title="Cambiar estado" size="sm" showDivider>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Typography variant="body1">
+          Está a punto de cambiar el estado de <b>{insumo.nombre}</b> de {actual} a {nuevo}. ¿Desea continuar?
+        </Typography>
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ bgcolor: 'action.hover', p: 1.5, borderRadius: 2 }}>
+          <StatusBadge variant={estadoVisualVariant[actual]}>{actual}</StatusBadge>
+          <Typography variant="caption">→</Typography>
+          <StatusBadge variant={estadoVisualVariant[nuevo]}>{nuevo}</StatusBadge>
+        </Stack>
+
+        <Stack direction="row" justifyContent="flex-end" spacing={1}>
+          <Button variant="secondary" size="sm" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button variant="primary" size="sm" onClick={() => onCambiar(!insumo.estado)}>
+            Aceptar
+          </Button>
+        </Stack>
+      </Box>
+    </Modal>
+  )
 }

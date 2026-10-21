@@ -1,37 +1,24 @@
 import { useState } from 'react'
-import { Box, Typography } from '@mui/material'
-import { Input, Select, Button, Modal, ModalFooter, FormField } from '@shared/components'
+import { Box, Stack, Typography } from '@mui/material'
+import { Button, Input, Modal, Select } from '@shared/ui'
+import { estadoOptions, formVacio } from '../constants/insumos.constants'
 import { getCategorias, getUnidadesMedida } from '../services/insumosService'
 import { formatoCodigo, formatoMoneda, unidadAbrev } from '../utils/insumosHelpers'
+import { Campo } from './Campo'
 
-const formVacio = {
-  nombre: '',
-  idCategoria: '',
-  idUnidadMedida: '',
-  stockMinimo: '',
-  estado: true,
-}
-
-const seccionTituloSx = { fontSize: 14, fontWeight: 700, color: 'text.primary' }
 const gridSx = { display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }
 const anchoCompletoSx = { gridColumn: { sm: '1 / -1' } }
-
-// El theme global fija el fondo de MuiOutlinedInput/MuiSelect en un hex
-// claro fijo (#F0EBE3), que no cambia en modo oscuro. Se sobreescribe acá
-// con el token que sí varía por modo (alhorno.surface2), sin tocar el
-// theme para no afectar otros módulos.
-const campoSx = { bgcolor: (theme) => theme.alhorno.surface2 }
 
 function CuerpoFormulario({ modo, insumo, onGuardar, onCancelar }) {
   const [form, setForm] = useState(
     insumo
       ? {
-        nombre: insumo.nombre,
-        idCategoria: insumo.idCategoria,
-        idUnidadMedida: insumo.idUnidadMedida,
-        stockMinimo: String(insumo.stockMinimo),
-        estado: insumo.estado,
-      }
+          nombre: insumo.nombre,
+          idCategoria: insumo.idCategoria,
+          idUnidadMedida: insumo.idUnidadMedida,
+          stockMinimo: String(insumo.stockMinimo),
+          estado: insumo.estado,
+        }
       : formVacio
   )
 
@@ -40,52 +27,34 @@ function CuerpoFormulario({ modo, insumo, onGuardar, onCancelar }) {
   const set = (campo, valor) => setForm((p) => ({ ...p, [campo]: valor }))
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <Typography sx={{ fontSize: 12, color: 'text.dim', mt: -1 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 1 }}>
+      <Typography variant="body2" sx={{ color: 'text.dim', mt: -1 }}>
         {modo === 'editar' ? `Modificando: ${insumo?.nombre}` : 'Registrar nuevo insumo en el sistema'}
       </Typography>
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Typography sx={seccionTituloSx}>Información general</Typography>
+        <Typography variant="subtitle1">Información general</Typography>
         <Box sx={gridSx}>
-          <FormField label="Código">
+          <Campo label="Código">
             <Input
               disabled
               value={modo === 'editar' && insumo ? formatoCodigo(insumo.id) : 'Se asigna al guardar'}
-              onChange={() => { }}
-              sx={{
-                bgcolor: 'transparent',
-                '&.Mui-disabled': { bgcolor: 'transparent' },
-                '& .MuiOutlinedInput-notchedOutline': { borderStyle: 'dashed' },
-                '& .MuiOutlinedInput-input.Mui-disabled': {
-                  WebkitTextFillColor: 'currentColor',
-                  color: 'text.dim',
-                },
-              }}
+              onChange={() => {}}
             />
-          </FormField>
-          <FormField label="Estado">
+          </Campo>
+          <Campo label="Estado">
             <Select
-              options={[
-                { value: 'true', label: 'Activo' },
-                { value: 'false', label: 'Inactivo' },
-              ]}
+              options={estadoOptions}
               value={form.estado ? 'true' : 'false'}
               onChange={(e) => set('estado', e.target.value === 'true')}
-              sx={campoSx}
             />
-          </FormField>
+          </Campo>
 
-          <FormField label="Nombre del insumo" required sx={anchoCompletoSx}>
-            <Input
-              placeholder="Ej: Harina de trigo fortificada"
-              value={form.nombre}
-              onChange={(e) => set('nombre', e.target.value)}
-              sx={campoSx}
-            />
-          </FormField>
+          <Campo label="Nombre del insumo" required sx={anchoCompletoSx}>
+            <Input placeholder="Ej: Harina de trigo fortificada" value={form.nombre} onChange={(e) => set('nombre', e.target.value)} />
+          </Campo>
 
-          <FormField label="Categoría" required sx={anchoCompletoSx}>
+          <Campo label="Categoría" required sx={anchoCompletoSx}>
             <Select
               options={[
                 { value: '', label: 'Seleccionar categoría…' },
@@ -93,16 +62,15 @@ function CuerpoFormulario({ modo, insumo, onGuardar, onCancelar }) {
               ]}
               value={form.idCategoria}
               onChange={(e) => set('idCategoria', e.target.value ? Number(e.target.value) : '')}
-              sx={campoSx}
             />
-          </FormField>
+          </Campo>
         </Box>
       </Box>
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Typography sx={seccionTituloSx}>Inventario</Typography>
+        <Typography variant="subtitle1">Inventario</Typography>
         <Box sx={gridSx}>
-          <FormField label="Unidad de medida" required>
+          <Campo label="Unidad de medida" required>
             <Select
               options={[
                 { value: '', label: 'Seleccionar unidad…' },
@@ -110,24 +78,22 @@ function CuerpoFormulario({ modo, insumo, onGuardar, onCancelar }) {
               ]}
               value={form.idUnidadMedida}
               onChange={(e) => set('idUnidadMedida', e.target.value ? Number(e.target.value) : '')}
-              sx={campoSx}
             />
-          </FormField>
-          <FormField label="Stock mínimo" required>
-            <Input type="number" min={0} value={form.stockMinimo} onChange={(e) => set('stockMinimo', e.target.value)} sx={campoSx} />
-          </FormField>
+          </Campo>
+          <Campo label="Stock mínimo" required>
+            <Input type="number" min={0} value={form.stockMinimo} onChange={(e) => set('stockMinimo', e.target.value)} />
+          </Campo>
         </Box>
 
         {modo === 'editar' && insumo && (
-          <Typography sx={{ fontSize: 12, color: 'text.dim' }}>
-            Stock actual: <strong>{insumo.stockActual} {unidadAbrev(insumo.idUnidadMedida)}</strong> y costo promedio{' '}
-            <strong>{formatoMoneda(insumo.costoPromedio)}</strong> — ambos los recalcula la BD al recibir compras, no se
-            editan aquí.
+          <Typography variant="body2" sx={{ color: 'text.dim' }}>
+            Stock actual: <b>{insumo.stockActual} {unidadAbrev(insumo.idUnidadMedida)}</b> y costo promedio{' '}
+            <b>{formatoMoneda(insumo.costoPromedio)}</b> — ambos los recalcula la BD al recibir compras, no se editan aquí.
           </Typography>
         )}
       </Box>
 
-      <ModalFooter>
+      <Stack direction="row" justifyContent="flex-end" spacing={1}>
         <Button variant="ghost" size="sm" onClick={onCancelar}>
           Cancelar
         </Button>
@@ -137,19 +103,25 @@ function CuerpoFormulario({ modo, insumo, onGuardar, onCancelar }) {
         <Button variant="primary" size="sm" onClick={() => onGuardar(form)}>
           {modo === 'editar' ? 'Actualizar insumo' : 'Guardar insumo'}
         </Button>
-      </ModalFooter>
+      </Stack>
     </Box>
   )
 }
 
 /**
  * Formulario de insumo como modal flotante sobre la lista.
- * `open` controla la visibilidad; el estado interno se reinicia cada vez que se cierra.
+ * `open` controla la visibilidad; el estado interno se reinicia con la `key`.
  */
 export function FormularioInsumo({ open, modo, insumo, onGuardar, onCancelar }) {
   return (
-    <Modal open={open} onClose={onCancelar} title={modo === 'editar' ? 'Editar insumo' : 'Nuevo insumo'} size="lg">
-      <CuerpoFormulario key={`${modo}-${insumo?.id ?? 'nuevo'}`} modo={modo} insumo={insumo} onGuardar={onGuardar} onCancelar={onCancelar} />
+    <Modal open={open} onClose={onCancelar} title={modo === 'editar' ? 'Editar insumo' : 'Nuevo insumo'} size="lg" showDivider>
+      <CuerpoFormulario
+        key={`${modo}-${insumo?.id ?? 'nuevo'}`}
+        modo={modo}
+        insumo={insumo}
+        onGuardar={onGuardar}
+        onCancelar={onCancelar}
+      />
     </Modal>
   )
 }

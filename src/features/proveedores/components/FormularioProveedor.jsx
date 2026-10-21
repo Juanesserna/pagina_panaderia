@@ -1,109 +1,81 @@
 import { useState } from 'react'
-import { Box, Typography } from '@mui/material'
-import { Input, Select, Button, Modal, ModalFooter, FormField } from '@shared/components'
+import { Box, Stack, Typography } from '@mui/material'
+import { Button, Input, Modal, Select } from '@shared/ui'
+import { estadoOptions, formVacio } from '../constants/proveedores.constants'
 import { formatoCodigo } from '../utils/proveedoresHelpers'
+import { Campo } from './Campo'
 
-const formVacio = {
-  nombre: '',
-  nit: '',
-  nombreContacto: '',
-  telefono: '',
-  email: '',
-  direccion: '',
-  estado: true,
-}
-
-const seccionTituloSx = { fontSize: 14, fontWeight: 700, color: 'text.primary' }
 const gridSx = { display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }
-
-// El theme global fija el fondo de MuiOutlinedInput/MuiSelect en un hex
-// claro fijo (#F0EBE3), que no cambia en modo oscuro. Se sobreescribe acá
-// con el token que sí varía por modo (alhorno.surface2), sin tocar el
-// theme para no afectar otros módulos.
-const campoSx = { bgcolor: (theme) => theme.alhorno.surface2 }
 
 function CuerpoFormulario({ modo, proveedor, onGuardar, onCancelar }) {
   const [form, setForm] = useState(
     proveedor
       ? {
-        nombre: proveedor.nombre ?? '',
-        nit: proveedor.nit ?? '',
-        nombreContacto: proveedor.nombreContacto ?? '',
-        telefono: proveedor.telefono ?? '',
-        email: proveedor.email ?? '',
-        direccion: proveedor.direccion ?? '',
-        estado: proveedor.estado ?? true,
-      }
+          nombre: proveedor.nombre ?? '',
+          nit: proveedor.nit ?? '',
+          nombreContacto: proveedor.nombreContacto ?? '',
+          telefono: proveedor.telefono ?? '',
+          email: proveedor.email ?? '',
+          direccion: proveedor.direccion ?? '',
+          estado: proveedor.estado ?? true,
+        }
       : formVacio
   )
 
   const set = (campo, valor) => setForm((p) => ({ ...p, [campo]: valor }))
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <Typography sx={{ fontSize: 12, color: 'text.dim', mt: -1 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 1 }}>
+      <Typography variant="body2" sx={{ color: 'text.dim', mt: -1 }}>
         {modo === 'editar' ? `Modificando: ${proveedor?.nombre}` : 'Registrar nuevo proveedor en el sistema'}
       </Typography>
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Typography sx={seccionTituloSx}>Información general</Typography>
+        <Typography variant="subtitle1">Información general</Typography>
         <Box sx={gridSx}>
-          <FormField label="Código">
+          <Campo label="Código">
             <Input
               disabled
               value={modo === 'editar' && proveedor ? formatoCodigo(proveedor.id) : 'Se asigna al guardar'}
-              onChange={() => { }}
-              sx={{
-                bgcolor: 'transparent',
-                '&.Mui-disabled': { bgcolor: 'transparent' },
-                '& .MuiOutlinedInput-notchedOutline': { borderStyle: 'dashed' },
-                '& .MuiOutlinedInput-input.Mui-disabled': {
-                  WebkitTextFillColor: 'currentColor',
-                  color: 'text.dim',
-                },
-              }}
+              onChange={() => {}}
             />
-          </FormField>
-          <FormField label="Estado">
+          </Campo>
+          <Campo label="Estado">
             <Select
-              options={[
-                { value: 'true', label: 'Activo' },
-                { value: 'false', label: 'Inactivo' },
-              ]}
+              options={estadoOptions}
               value={form.estado ? 'true' : 'false'}
               onChange={(e) => set('estado', e.target.value === 'true')}
-              sx={campoSx}
             />
-          </FormField>
+          </Campo>
 
-          <FormField label="Nombre empresa" required>
-            <Input placeholder="Ej: Molinos El Trigal S.A." value={form.nombre} onChange={(e) => set('nombre', e.target.value)} sx={campoSx} />
-          </FormField>
-          <FormField label="NIT" required>
-            <Input placeholder="900.123.456-7" value={form.nit} onChange={(e) => set('nit', e.target.value)} sx={campoSx} />
-          </FormField>
+          <Campo label="Nombre empresa" required>
+            <Input placeholder="Ej: Molinos El Trigal S.A." value={form.nombre} onChange={(e) => set('nombre', e.target.value)} />
+          </Campo>
+          <Campo label="NIT" required>
+            <Input placeholder="900.123.456-7" value={form.nit} onChange={(e) => set('nit', e.target.value)} />
+          </Campo>
         </Box>
       </Box>
 
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <Typography sx={seccionTituloSx}>Contacto</Typography>
+        <Typography variant="subtitle1">Contacto</Typography>
         <Box sx={gridSx}>
-          <FormField label="Nombre contacto" required>
-            <Input value={form.nombreContacto} onChange={(e) => set('nombreContacto', e.target.value)} sx={campoSx} />
-          </FormField>
-          <FormField label="Teléfono" required>
-            <Input placeholder="+57 300 000 0000" value={form.telefono} onChange={(e) => set('telefono', e.target.value)} sx={campoSx} />
-          </FormField>
-          <FormField label="Correo electrónico" required>
-            <Input type="email" placeholder="correo@empresa.com" value={form.email} onChange={(e) => set('email', e.target.value)} sx={campoSx} />
-          </FormField>
-          <FormField label="Dirección" required>
-            <Input value={form.direccion} onChange={(e) => set('direccion', e.target.value)} sx={campoSx} />
-          </FormField>
+          <Campo label="Nombre contacto" required>
+            <Input value={form.nombreContacto} onChange={(e) => set('nombreContacto', e.target.value)} />
+          </Campo>
+          <Campo label="Teléfono" required>
+            <Input placeholder="+57 300 000 0000" value={form.telefono} onChange={(e) => set('telefono', e.target.value)} />
+          </Campo>
+          <Campo label="Correo electrónico" required>
+            <Input type="email" placeholder="correo@empresa.com" value={form.email} onChange={(e) => set('email', e.target.value)} />
+          </Campo>
+          <Campo label="Dirección" required>
+            <Input value={form.direccion} onChange={(e) => set('direccion', e.target.value)} />
+          </Campo>
         </Box>
       </Box>
 
-      <ModalFooter>
+      <Stack direction="row" justifyContent="flex-end" spacing={1}>
         <Button variant="ghost" size="sm" onClick={onCancelar}>
           Cancelar
         </Button>
@@ -113,19 +85,25 @@ function CuerpoFormulario({ modo, proveedor, onGuardar, onCancelar }) {
         <Button variant="primary" size="sm" onClick={() => onGuardar(form)}>
           {modo === 'editar' ? 'Actualizar proveedor' : 'Guardar proveedor'}
         </Button>
-      </ModalFooter>
+      </Stack>
     </Box>
   )
 }
 
 /**
  * Formulario de proveedor como modal flotante sobre la lista.
- * `open` controla la visibilidad; el estado interno se reinicia cada vez que se cierra.
+ * `open` controla la visibilidad; el estado interno se reinicia con la `key`.
  */
 export function FormularioProveedor({ open, modo, proveedor, onGuardar, onCancelar }) {
   return (
-    <Modal open={open} onClose={onCancelar} title={modo === 'editar' ? 'Editar proveedor' : 'Nuevo proveedor'} size="lg">
-      <CuerpoFormulario key={`${modo}-${proveedor?.id ?? 'nuevo'}`} modo={modo} proveedor={proveedor} onGuardar={onGuardar} onCancelar={onCancelar} />
+    <Modal open={open} onClose={onCancelar} title={modo === 'editar' ? 'Editar proveedor' : 'Nuevo proveedor'} size="lg" showDivider>
+      <CuerpoFormulario
+        key={`${modo}-${proveedor?.id ?? 'nuevo'}`}
+        modo={modo}
+        proveedor={proveedor}
+        onGuardar={onGuardar}
+        onCancelar={onCancelar}
+      />
     </Modal>
   )
 }

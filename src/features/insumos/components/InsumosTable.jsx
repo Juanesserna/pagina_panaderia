@@ -1,145 +1,99 @@
-import {
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  TableSortLabel,
-  IconButton,
-  Stack,
-  Typography,
-  Box,
-} from "@mui/material";
-import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
-import {
-  tableSx,
-  tableHeadCellSx,
-  tableBodyCellSx,
-  codigoCellSx,
-  nombreCellSx,
-  accionIconSx,
-} from "@shared/components";
-import {
-  formatoCodigo,
-  formatoMoneda,
-  nombreCategoria,
-  unidadAbrev,
-  getEstadoVisual,
-} from "../utils/insumosHelpers";
-import { EstadoSwitch } from "./EstadoSwitch";
+import { IconButton, Stack, Typography } from '@mui/material'
+import { IconEye, IconPencil, IconTrash } from '@tabler/icons-react'
+import { DataTable } from '@shared/ui'
+import { formatoCodigo, formatoMoneda, nombreCategoria, unidadAbrev, getEstadoVisual } from '../utils/insumosHelpers'
+import { EstadoSwitch } from './EstadoSwitch'
 
-const COLUMNS = [
-  { key: "id", label: "Código", sortable: true },
-  { key: "nombre", label: "Nombre", sortable: true },
-  { key: "categoria", label: "Categoría" },
-  { key: "unidad", label: "Unidad", align: "center" },
-  { key: "stockActual", label: "Stock Act.", align: "right", sortable: true },
-  { key: "stockMinimo", label: "Stock Mín.", align: "right" },
-  { key: "costoPromedio", label: "Costo Prom.", align: "right" },
-  { key: "estado", label: "Estado" },
-  { key: "acciones", label: "", align: "right" },
-];
+const accionSx = { color: 'text.secondary', '&:hover': { color: 'primary.main' } }
+const accionEliminarSx = { color: 'text.secondary', '&:hover': { color: 'error.main' } }
 
-// Jerarquía de texto igual a la de Producción: el dato principal
-// (código, nombre, stock actual) va oscuro/negrita; los datos secundarios
-// (categoría, unidad, stock mínimo, costo promedio) van en gris y en el
-// mismo tamaño de letra entre sí, para que ninguna columna se vea "distinta"
-// por accidente.
-const secundariaCellSx = { ...tableBodyCellSx, fontSize: 12.5, color: "text.secondary" };
-
-// Tabla más compacta (menos alto por fila) que la del resto de módulos,
-// pedido puntual para Insumos -- se sobreescribe solo aquí, sin tocar
-// tableHeadCellSx/tableBodyCellSx de shared.
-const compactoHeadSx = { ...tableHeadCellSx, py: 0.9, px: 2 };
-const compactoPy = { py: 1, px: 2 };
-
+// Jerarquía de texto: el dato principal (código, nombre, stock actual) va en
+// negrita; los datos secundarios (categoría, unidad, stock mínimo, costo) en body2.
 export function InsumosTable({ rows, sortKey, sortDir, onSort, onVer, onEditar, onCambiarEstado, onEliminar }) {
-  if (rows.length === 0) {
-    return (
-      <Box sx={{ py: 8, textAlign: "center" }}>
-        <Typography color="text.secondary" variant="body2">
-          Sin insumos encontrados
-        </Typography>
-      </Box>
-    );
-  }
+  const columns = [
+    {
+      key: 'id',
+      header: 'Código',
+      sortable: true,
+      accessor: (r) => <Typography variant="mono">{formatoCodigo(r.id)}</Typography>,
+    },
+    {
+      key: 'nombre',
+      header: 'Nombre',
+      sortable: true,
+      accessor: (r) => <Typography variant="subtitle1">{r.nombre}</Typography>,
+    },
+    {
+      key: 'categoria',
+      header: 'Categoría',
+      accessor: (r) => <Typography variant="body2">{nombreCategoria(r.idCategoria)}</Typography>,
+    },
+    {
+      key: 'unidad',
+      header: 'Unidad',
+      align: 'center',
+      accessor: (r) => <Typography variant="body2">{unidadAbrev(r.idUnidadMedida)}</Typography>,
+    },
+    {
+      key: 'stockActual',
+      header: 'Stock act.',
+      align: 'right',
+      sortable: true,
+      accessor: (r) => <Typography variant="subtitle1">{r.stockActual}</Typography>,
+    },
+    {
+      key: 'stockMinimo',
+      header: 'Stock mín.',
+      align: 'right',
+      accessor: (r) => <Typography variant="body2">{r.stockMinimo}</Typography>,
+    },
+    {
+      key: 'costoPromedio',
+      header: 'Costo prom.',
+      align: 'right',
+      accessor: (r) => <Typography variant="body2">{formatoMoneda(r.costoPromedio)}</Typography>,
+    },
+    {
+      key: 'estado',
+      header: 'Estado',
+      accessor: (r) => (
+        <EstadoSwitch
+          activo={r.estado}
+          stockBajo={getEstadoVisual(r) === 'Stock Bajo'}
+          nombre={r.nombre}
+          onChange={() => onCambiarEstado(r)}
+        />
+      ),
+    },
+    {
+      key: 'acciones',
+      header: '',
+      align: 'right',
+      accessor: (r) => (
+        <Stack direction="row" spacing={0.25} justifyContent="flex-end">
+          <IconButton size="small" title="Ver detalle" sx={accionSx} onClick={() => onVer(r)}>
+            <IconEye size={18} />
+          </IconButton>
+          <IconButton size="small" title="Editar" sx={accionSx} onClick={() => onEditar(r)}>
+            <IconPencil size={18} />
+          </IconButton>
+          <IconButton size="small" title="Eliminar" sx={accionEliminarSx} onClick={() => onEliminar(r)}>
+            <IconTrash size={18} />
+          </IconButton>
+        </Stack>
+      ),
+    },
+  ]
 
   return (
-    <Box sx={{ overflowX: "auto" }}>
-      <Table size="small" sx={tableSx}>
-        <TableHead>
-          <TableRow>
-            {COLUMNS.map((col) => (
-              <TableCell key={col.key} align={col.align ?? "left"} sx={compactoHeadSx}>
-                {col.sortable ? (
-                  <TableSortLabel
-                    active={sortKey === col.key}
-                    direction={sortKey === col.key ? sortDir : "asc"}
-                    onClick={() => onSort(col.key)}
-                  >
-                    {col.label}
-                  </TableSortLabel>
-                ) : (
-                  col.label
-                )}
-              </TableCell>
-            ))}
-          </TableRow>
-        </TableHead>
-
-        <TableBody>
-          {rows.map((r) => {
-            const ev = getEstadoVisual(r);
-            return (
-              <TableRow key={r.id} hover>
-                <TableCell sx={{ ...codigoCellSx, ...compactoPy }}>{formatoCodigo(r.id)}</TableCell>
-                <TableCell sx={{ ...nombreCellSx, ...compactoPy }}>{r.nombre}</TableCell>
-                <TableCell sx={{ ...secundariaCellSx, ...compactoPy }}>{nombreCategoria(r.idCategoria)}</TableCell>
-                <TableCell align="center" sx={{ ...secundariaCellSx, ...compactoPy }}>
-                  {unidadAbrev(r.idUnidadMedida)}
-                </TableCell>
-                <TableCell align="right" sx={{ ...tableBodyCellSx, ...compactoPy, fontWeight: 600 }}>
-                  {r.stockActual}
-                </TableCell>
-                <TableCell align="right" sx={{ ...secundariaCellSx, ...compactoPy }}>
-                  {r.stockMinimo}
-                </TableCell>
-                <TableCell align="right" sx={{ ...secundariaCellSx, ...compactoPy }}>
-                  {formatoMoneda(r.costoPromedio)}
-                </TableCell>
-                <TableCell sx={{ ...tableBodyCellSx, ...compactoPy }}>
-                  <EstadoSwitch
-                    activo={r.estado}
-                    stockBajo={ev === "Stock Bajo"}
-                    nombre={r.nombre}
-                    onChange={() => onCambiarEstado(r)}
-                  />
-                </TableCell>
-                <TableCell align="right" sx={{ ...tableBodyCellSx, ...compactoPy, whiteSpace: "nowrap" }}>
-                  <Stack direction="row" spacing={0.25} justifyContent="flex-end">
-                    <IconButton size="small" title="Ver detalle" sx={accionIconSx} onClick={() => onVer(r)}>
-                      <VisibilityOutlinedIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton size="small" title="Editar" sx={accionIconSx} onClick={() => onEditar(r)}>
-                      <EditOutlinedIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      title="Eliminar"
-                      sx={{ ...accionIconSx, "&:hover": { color: "error.main", bgcolor: "action.hover" } }}
-                      onClick={() => onEliminar(r)}
-                    >
-                      <DeleteOutlineIcon fontSize="small" />
-                    </IconButton>
-                  </Stack>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </Box>
-  );
+    <DataTable
+      columns={columns}
+      data={rows}
+      keyExtractor={(r) => r.id}
+      sortKey={sortKey}
+      sortDir={sortDir}
+      onSort={onSort}
+      emptyMessage="Sin insumos encontrados"
+    />
+  )
 }

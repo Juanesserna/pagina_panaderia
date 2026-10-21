@@ -1,25 +1,13 @@
-import { Grid } from "@mui/material";
-import LocalShippingIcon from "@mui/icons-material/LocalShipping";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CancelIcon from "@mui/icons-material/Cancel";
-import { KPICard } from "./KPICard";
+import { IconTruck, IconCircleCheck, IconCircleX } from '@tabler/icons-react'
+import { KPICard, KPIGrid } from '@shared/ui'
 
-/**
- * Tres KPIs en fila (Total / Activos / Inactivos), mismo componente y
- * estilo de tarjeta que InsumosKpis (KPICard local, no el de shared).
- */
+/** Tres KPIs en fila: Total / Activos / Inactivos. */
 export function ProveedoresKpis({ kpis }) {
-    return (
-        <Grid container spacing={2} alignItems="stretch">
-            <Grid size={{ xs: 12, sm: 4 }}>
-                <KPICard title="Total Proveedores" value={kpis.total} icon={<LocalShippingIcon />} variant="accent" />
-            </Grid>
-            <Grid size={{ xs: 6, sm: 4 }}>
-                <KPICard title="Activos" value={kpis.activos} icon={<CheckCircleIcon />} variant="success" />
-            </Grid>
-            <Grid size={{ xs: 6, sm: 4 }}>
-                <KPICard title="Inactivos" value={kpis.inactivos} icon={<CancelIcon />} variant="danger" />
-            </Grid>
-        </Grid>
-    );
+  return (
+    <KPIGrid>
+      <KPICard title="Total proveedores" value={kpis.total} icon={<IconTruck size={16} />} variant="accent" />
+      <KPICard title="Activos" value={kpis.activos} icon={<IconCircleCheck size={16} />} variant="success" />
+      <KPICard title="Inactivos" value={kpis.inactivos} icon={<IconCircleX size={16} />} variant="danger" />
+    </KPIGrid>
+  )
 }

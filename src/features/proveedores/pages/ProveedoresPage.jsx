@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Box, Stack, Typography, Badge } from '@mui/material'
-import { IconSearch, IconPlus, IconFilter } from '@tabler/icons-react'
-import { Input, Button, Pagination } from '@shared/components'
-
+import { Box, Divider, Stack, Typography } from '@mui/material'
+import { alpha } from '@mui/material/styles'
+import { IconPlus, IconFilter } from '@tabler/icons-react'
+import { Button, Pagination, SearchInput } from '@shared/ui'
 import { useProveedores } from '../hooks/useProveedores'
 import { ProveedoresKpis } from '../components/ProveedoresKpis'
 import { ProveedoresTable } from '../components/ProveedoresTable'
@@ -47,67 +47,65 @@ export function ProveedoresPage() {
   const [showFiltros, setShowFiltros] = useState(false)
   const hayFiltros = filtrosActivosCount > 0
 
-  const desde = filtered.length === 0 ? 0 : (page - 1) * pageSize + 1
-  const hasta = Math.min(page * pageSize, filtered.length)
-
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 1.5 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <ProveedoresKpis kpis={kpis} />
 
       <Box sx={{ borderRadius: 2.5, overflow: 'hidden', bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: 1.5,
-            px: 2,
-            py: 1.5,
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-          }}
-        >
-          <Typography sx={{ fontSize: 15, fontWeight: 700, color: 'text.primary', whiteSpace: 'nowrap' }}>
+        <Stack direction="row" flexWrap="wrap" alignItems="center" sx={{ px: 2.5, py: 2 }}>
+          <Typography variant="h6" sx={{ mr: 'auto' }}>
             Registro de proveedores
           </Typography>
-          <Stack direction="row" flexWrap="wrap" alignItems="center" justifyContent="flex-end" sx={{ gap: 1, rowGap: 1 }}>
-            <Box sx={{ width: 220 }}>
-              <Input
-                placeholder="Buscar empresa, NIT o código…"
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value)
-                  setPage(1)
-                }}
-                leftIcon={<IconSearch size={13} />}
-                sx={{ bgcolor: (theme) => theme.alhorno.surface2 }}
-              />
-            </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1.25 }}>
+            <SearchInput
+              placeholder="Buscar empresa, NIT o código…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
+            />
             <Button
-              variant="primary"
-              size="sm"
-              leftIcon={<IconPlus size={12} />}
+              size="toolbar"
+              leftIcon={<IconPlus size={13} />}
               onClick={() => {
                 setSeleccionado(null)
                 setVista('crear')
               }}
-              sx={{ fontSize: 12, px: 1.5, py: 0.5, minHeight: 0 }}
             >
               Nuevo proveedor
             </Button>
-            <Badge badgeContent={hayFiltros ? filtrosActivosCount : 0} color="primary">
-              <Button
-                variant={hayFiltros ? 'primary' : 'secondary'}
-                size="sm"
-                leftIcon={<IconFilter size={13} />}
-                onClick={() => setShowFiltros((v) => !v)}
-              >
-                Filtrar
-              </Button>
-            </Badge>
-          </Stack>
-        </Box>
+            <Button
+              variant={hayFiltros ? 'primary' : 'secondary'}
+              size="toolbar"
+              leftIcon={<IconFilter size={13} />}
+              onClick={() => setShowFiltros((v) => !v)}
+            >
+              Filtrar
+              {hayFiltros && (
+                <Box
+                  component="span"
+                  sx={{
+                    ml: 0.75,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: 16,
+                    width: 16,
+                    borderRadius: '50%',
+                    typography: 'overline',
+                    bgcolor: (t) => alpha(t.palette.common.white, 0.3),
+                    color: 'inherit',
+                  }}
+                >
+                  {filtrosActivosCount}
+                </Box>
+              )}
+            </Button>
+          </Box>
+        </Stack>
+
+        <Divider />
 
         {showFiltros && (
           <FiltrosProveedoresPanel
@@ -122,7 +120,9 @@ export function ProveedoresPage() {
 
         {loading ? (
           <Box sx={{ py: 8, textAlign: 'center' }}>
-            <Typography sx={{ fontSize: 14, color: 'text.dim' }}>Cargando proveedores…</Typography>
+            <Typography variant="body1" sx={{ color: 'text.dim' }}>
+              Cargando proveedores…
+            </Typography>
           </Box>
         ) : (
           <ProveedoresTable
@@ -149,18 +149,9 @@ export function ProveedoresPage() {
           />
         )}
 
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          flexWrap="wrap"
-          sx={{ px: 2, py: 1.25, borderTop: '1px solid', borderColor: 'divider', gap: 1 }}
-        >
-          <Typography sx={{ fontSize: 12, color: 'text.dim' }}>
-            Mostrando {desde}–{hasta} de {filtered.length} registros
-          </Typography>
+        <Box sx={{ px: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
           <Pagination page={page} total={filtered.length} pageSize={pageSize} onPageChange={setPage} />
-        </Stack>
+        </Box>
       </Box>
 
       <FormularioProveedor

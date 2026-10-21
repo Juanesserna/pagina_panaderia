@@ -78,5 +78,32 @@ export default defineConfig([
         },
       ],
     }
+  },
+  {
+    files: ['src/features/**/*.{js,jsx}'],
+    // Los datos de ejemplo no son estilos (ahí hay ids como '#2851' que parecen colores)
+    ignores: ['src/features/**/mocks/**'],
+    rules: {
+      'no-restricted-syntax': [
+        'warn',
+        {
+          // Colores hex de 3, 6 u 8 dígitos (no marca ids tipo '#2851')
+          selector: 'Literal[value=/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/]',
+          message: 'No uses colores hex. Usa nombres del tema (ej: "divider", "primary.main") o agrégalo a src/app/theme/colors.js.',
+        },
+        {
+          selector: 'Literal[value=/^rgba?\\(/]',
+          message: 'No uses rgba() directo. Usa nombres del tema o alpha(theme.palette.x.main, 0.12).',
+        },
+        {
+          selector: 'JSXOpeningElement[name.name=/^(Input|Select|Button|KPICard|StatusBadge|Pagination|DataTable)$/] > JSXAttribute[name.name="sx"]',
+          message: 'No uses sx en componentes de @shared/ui. Usa sus props (size, variant...), SearchInput o KPIGrid.',
+        },
+        {
+          selector: 'Property[key.name=/^(fontSize|fontWeight|fontFamily|letterSpacing|lineHeight)$/]',
+          message: 'No definas tipografía a mano. Usa un nivel: <Typography variant="body1|body2|caption|overline|h6...">. Ver src/app/theme/README.md.',
+        },
+      ],
+    },
   }
 ])

@@ -6,7 +6,6 @@ import { TrustBar } from '../components/TrustBar'
 import { Categories } from '../components/Categories'
 import { Products } from '../components/Products'
 import { Nosotros } from '../components/Nosotros'
-import { Testimonios } from '../components/Testimonios'
 import { Proceso } from '../components/Proceso'
 import { CTAEspecial } from '../components/CTAEspecial'
 import { useCart } from '../context/CartContext'
@@ -33,7 +32,6 @@ export default function LandingPage() {
         </Button>
       </Box>
       <Nosotros isDark={isDark} />
-      <Testimonios />
       <Proceso isDark={isDark} />
       <CTAEspecial />
 
