@@ -63,3 +63,16 @@ export const horaActualFormateada = () => {
   const ahora = new Date()
   return `${pad(ahora.getHours())}:${pad(ahora.getMinutes())}`
 }
+
+// ---------- Reglas de visibilidad / stock ----------
+
+// El comprobante solo se puede ver cuando la venta ya está cerrada
+export const puedeVerComprobante = (venta) => venta.estado === 'completado' || venta.estado === 'cancelado'
+
+// Sin stock si el producto trae stock numérico <= 0.
+// TEMPORAL: mientras el mock no trae stock, "Pan francés" simula estar agotado.
+export const productoSinStock = (producto) => {
+  if (!producto) return false
+  if (typeof producto.stock === 'number') return producto.stock <= 0
+  return normalizarTexto(producto.nombre) === 'pan frances'
+}
