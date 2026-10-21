@@ -82,7 +82,7 @@ export default function AgregarRecetaPage() {
           </Typography>
           <Link
             component={RouterLink}
-            to={ROUTES.NUEVO_PRODUCTO}
+            to={ROUTES.PRODUCTOS}
             underline="hover"
             sx={{
               fontFamily: fonts.sans,
