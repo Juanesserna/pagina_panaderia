@@ -15,7 +15,6 @@ export default function CategoriasPage() {
     handleSearch,
     filtros,
     aplicarFiltros,
-    limpiarFiltros,
     paginaActual,
     totalRegistros,
     porPagina,
@@ -30,8 +29,6 @@ export default function CategoriasPage() {
     crear,
     editar,
     eliminar,
-    aplicarFiltros,
-    limpiarFiltros,
   })
 
   return (
@@ -63,7 +60,8 @@ export default function CategoriasPage() {
           valorBusqueda={searchTerm}
           onBuscar={handleSearch}
           onNuevoClick={gestion.abrirNueva}
-          onFiltrarClick={gestion.abrirFiltros}
+          filtros={filtros}
+          onFiltrosChange={aplicarFiltros}
         />
 
         <CategoriasTable
@@ -81,7 +79,7 @@ export default function CategoriasPage() {
         />
       </Card>
 
-      <ModalesCategorias gestion={gestion} filtros={filtros} />
+      <ModalesCategorias gestion={gestion} />
     </Box>
   )
 }

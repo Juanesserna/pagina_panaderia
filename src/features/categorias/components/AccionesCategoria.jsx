@@ -9,7 +9,12 @@ export default function AccionesCategoria({ categoria, onEditar, onEliminar }) {
       <IconButton size="small" onClick={() => onEditar(categoria.id)} sx={BOTON_SX} title="Editar">
         <IconPencil size={15} />
       </IconButton>
-      <IconButton size="small" onClick={() => onEliminar(categoria.id)} sx={BOTON_SX} title="Eliminar">
+      <IconButton
+        size="small"
+        onClick={() => onEliminar(categoria.id)}
+        sx={{ ...BOTON_SX, color: 'error.main' }}
+        title="Eliminar"
+      >
         <IconTrash size={15} />
       </IconButton>
     </Stack>

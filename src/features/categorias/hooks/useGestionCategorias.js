@@ -1,20 +1,17 @@
 import { useState } from 'react'
 
-// Estado de los modales y del drawer de la página de categorías, con sus acciones.
+// Estado de los modales de la página de categorías, con sus acciones.
 export function useGestionCategorias({
   allCategorias,
   crear,
   editar,
   eliminar,
-  aplicarFiltros,
-  limpiarFiltros,
 }) {
   const [nuevaAbierto, setNuevaAbierto] = useState(false)
   const [editarAbierto, setEditarAbierto] = useState(false)
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState(null)
   const [eliminarAbierto, setEliminarAbierto] = useState(false)
   const [categoriaAEliminar, setCategoriaAEliminar] = useState(null)
-  const [filtrosAbierto, setFiltrosAbierto] = useState(false)
   const [categoriaCambioEstado, setCategoriaCambioEstado] = useState(null)
 
   const abrirNueva = () => setNuevaAbierto(true)
@@ -22,13 +19,6 @@ export function useGestionCategorias({
   const guardarNueva = (datos) => {
     crear(datos)
     setNuevaAbierto(false)
-  }
-
-  const abrirFiltros = () => setFiltrosAbierto(true)
-  const cerrarFiltros = () => setFiltrosAbierto(false)
-  const aplicar = (nuevosFiltros) => {
-    aplicarFiltros(nuevosFiltros)
-    setFiltrosAbierto(false)
   }
 
   const abrirCambioEstado = (categoria) => setCategoriaCambioEstado(categoria)
@@ -72,17 +62,12 @@ export function useGestionCategorias({
     nuevaAbierto,
     editarAbierto,
     eliminarAbierto,
-    filtrosAbierto,
     categoriaSeleccionada,
     categoriaAEliminar,
     categoriaCambioEstado,
     abrirNueva,
     cerrarNueva,
     guardarNueva,
-    abrirFiltros,
-    cerrarFiltros,
-    aplicar,
-    limpiar: limpiarFiltros,
     abrirCambioEstado,
     cerrarCambioEstado,
     confirmarCambioEstado,
