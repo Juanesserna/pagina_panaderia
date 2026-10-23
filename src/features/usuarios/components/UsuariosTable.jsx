@@ -8,8 +8,7 @@ import Typography from '@mui/material/Typography'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
-import { Pencil } from 'lucide-react';
-import { ToggleLeft, ToggleRight } from 'lucide-react'
+import { Pencil, ToggleLeft, ToggleRight } from 'lucide-react'
 import UserAvatar from '@shared/components/UserAvatar'
 import { AVATAR_PALETTE, colorFromName } from '@shared/utils/colors'
 import StatusChip from './StatusChip'
@@ -26,18 +25,23 @@ function colorForRole(rol) {
 }
 
 const headCellSx = {
-  fontSize: 12,
-  fontWeight: 600,
-  letterSpacing: 0.5,
+  typography: 'overline',
   color: 'text.secondary',
-  textTransform: 'uppercase',
 }
 
-export default function UsuariosTable({ usuarios, loading, onVer, onEditar, onInhabilitar }) {
+export default function UsuariosTable({
+  usuarios,
+  loading,
+  onVer,
+  onEditar,
+  onInhabilitar,
+}) {
   if (!loading && usuarios.length === 0) {
     return (
-      <Box sx={{ py: 6, textAlign: 'center', color: 'text.secondary' }}>
-        No se encontraron usuarios con los filtros aplicados.
+      <Box sx={{ py: 6, textAlign: 'center' }}>
+        <Typography variant="body2" color="text.secondary">
+          No se encontraron usuarios con los filtros aplicados.
+        </Typography>
       </Box>
     )
   }
@@ -54,20 +58,27 @@ export default function UsuariosTable({ usuarios, loading, onVer, onEditar, onIn
           </TableCell>
         </TableRow>
       </TableHead>
+
       <TableBody>
         {usuarios.map((usuario) => (
-          <TableRow key={usuario.id} sx={{ '&:last-child td': { borderBottom: 0 } }}>
+          <TableRow
+            key={usuario.id}
+            sx={{ '&:last-child td': { borderBottom: 0 } }}
+          >
             <TableCell>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 <UserAvatar name={usuario.nombre} />
+
                 <Box>
-                  <Typography sx={{ fontWeight: 600, fontSize: 13.5, color: 'text.primary' }}>
+                  <Typography variant="body1" color="text.primary">
                     {usuario.nombre}
                   </Typography>
-                  <Typography sx={{ fontSize: 12.5, color: 'text.secondary' }}>
+
+                  <Typography variant="body2" color="text.secondary">
                     {usuario.email}
                   </Typography>
-                  <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+
+                  <Typography variant="caption" color="text.secondary">
                     CC: {usuario.cedula}
                   </Typography>
                 </Box>
@@ -75,16 +86,25 @@ export default function UsuariosTable({ usuarios, loading, onVer, onEditar, onIn
             </TableCell>
 
             <TableCell>
-              <Typography sx={{ fontWeight: 700, fontSize: 13.5, color: colorForRole(usuario.rol) }}>
+              <Typography
+                variant="body1"
+                sx={{ color: colorForRole(usuario.rol) }}
+              >
                 {usuario.rol}
               </Typography>
             </TableCell>
 
-            {/* ✅ ESTADO + INTERRUPTOR JUNTOS */}
             <TableCell>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <StatusChip estado={usuario.estado} />
-                <Tooltip title={usuario.estado === 'Activo' ? 'Inhabilitar' : 'Reactivar'}>
+
+                <Tooltip
+                  title={
+                    usuario.estado === 'Activo'
+                      ? 'Inhabilitar'
+                      : 'Reactivar'
+                  }
+                >
                   <IconButton
                     size="small"
                     onClick={() => onInhabilitar(usuario)}
@@ -100,7 +120,6 @@ export default function UsuariosTable({ usuarios, loading, onVer, onEditar, onIn
               </Box>
             </TableCell>
 
-            {/* ✅ Solo Ver y Editar quedan en Acciones */}
             <TableCell align="right">
               <Tooltip title="Ver detalle">
                 <IconButton
@@ -111,6 +130,7 @@ export default function UsuariosTable({ usuarios, loading, onVer, onEditar, onIn
                   <VisibilityOutlinedIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
+
               <Tooltip title="Editar">
                 <IconButton
                   size="small"

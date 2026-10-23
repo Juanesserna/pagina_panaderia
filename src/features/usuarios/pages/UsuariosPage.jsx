@@ -10,7 +10,7 @@ import UsuariosTable from '../components/UsuariosTable'
 import UsuarioFormDialog from '../components/UsuarioFormDialog'
 import UsuarioDetailDialog from '../components/UsuarioDetailDialog'
 import DeleteUserDialog from '../components/DeleteUserDialog'
-import TablePaginationFooter from '@shared/components/TablePaginationFooter'
+import { Pagination } from '@shared/ui'
 
 export default function UsuariosPage() {
   const {
@@ -102,14 +102,17 @@ export default function UsuariosPage() {
           onInhabilitar={setUsuarioAInhabilitar}
         />
 
-        <TablePaginationFooter
-          page={page}
-          pageCount={pageCount}
-          totalItems={totalFiltrados}
-          pageSize={pageSize}
-          onPageChange={setPage}
-        />
+         <Box sx={{ px: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Pagination
+            page={page}
+            total={totalFiltrados}
+            pageSize={pageSize}
+            onPageChange={setPage}
+          />
+        </Box>
       </Paper>
+
+
 
       <UsuarioFormDialog
         open={Boolean(formDialog)}

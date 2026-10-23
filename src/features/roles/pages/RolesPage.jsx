@@ -10,7 +10,7 @@ import RolesTable from '../components/RolesTable'
 import RoleFormDialog from '../components/RoleFormDialog'
 import RoleDetailDialog from '../components/RoleDetailDialog'
 import DeleteRoleDialog from '../components/DeleteRoleDialog'
-import TablePaginationFooter from '@shared/components/TablePaginationFooter'
+import { Pagination } from '@shared/ui'
 
 export default function RolesPage() {
   const {
@@ -78,13 +78,14 @@ export default function RolesPage() {
           onEliminar={setRolAEliminar}
         />
 
-        <TablePaginationFooter
-          page={page}
-          pageCount={pageCount}
-          totalItems={totalFiltrados}
-          pageSize={pageSize}
-          onPageChange={setPage}
-        />
+          <Box sx={{ px: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Pagination
+            page={page}
+            total={totalFiltrados}
+            pageSize={pageSize}
+            onPageChange={setPage}
+          />
+        </Box>
       </Paper>
 
       <RoleFormDialog
