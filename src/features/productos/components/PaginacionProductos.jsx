@@ -1,14 +1,12 @@
 import { Box, Typography, Stack, IconButton, useTheme } from '@mui/material'
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
-import { fonts } from '@app/theme/colors'
 
 const pageButtonBase = {
   minWidth: 32,
   width: 32,
   height: 32,
   borderRadius: 1.5,
-  fontSize: 13,
-  fontWeight: 500,
+  typography: 'subtitle1',
 }
 
 export default function PaginacionProductos({ paginaActual = 1, totalRegistros = 6, porPagina = 6 }) {
@@ -29,7 +27,7 @@ export default function PaginacionProductos({ paginaActual = 1, totalRegistros =
      >
       <Typography
         variant="body2"
-        sx={{ fontFamily: fonts.sans, fontSize: 12, color: theme.palette.text.secondary }}
+        sx={{ color: theme.palette.text.secondary }}
       >
         Mostrando {from}–{to} de {totalRegistros} registros
       </Typography>
@@ -54,8 +52,7 @@ export default function PaginacionProductos({ paginaActual = 1, totalRegistros =
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: 13,
-            fontWeight: 500,
+            typography: 'subtitle1',
           }}
         >
           {paginaActual}

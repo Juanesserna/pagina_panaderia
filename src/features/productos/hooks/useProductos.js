@@ -12,6 +12,12 @@ function mapFormDataToProducto(datos) {
     categoria: datos.categoria,
     precioVenta: datos.precioVenta,
     stock: datos.stockActual,
+    // Guarda el stock mínimo como campo propio del producto
+    stockMinimo: datos.stockMinimo,
+    // Guarda la cantidad mínima de producción como campo propio del producto
+    cantMinimaProduccion: datos.cantMinimaProduccion,
+    // Guarda la cantidad máxima de producción como campo propio del producto
+    cantMaximaProduccion: datos.cantMaximaProduccion,
     estado: datos.activo ? 'Activo' : 'Agotado',
     imagenUrl: datos.imagen,
   }
@@ -41,10 +47,15 @@ export function useProductos() {
     setProductos((prev) => prev.filter((p) => p.id !== id))
   }, [])
 
+  const cambiarEstado = useCallback((id, estado) => {
+    setProductos((prev) => prev.map((p) => (p.id === id ? { ...p, estado } : p)))
+  }, [])
+
   return {
     productos,
     crearProducto,
     editarProducto,
     eliminarProducto,
+    cambiarEstado,
   }
 }

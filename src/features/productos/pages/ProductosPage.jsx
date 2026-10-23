@@ -11,11 +11,12 @@ import NuevoProductoModal from '../components/NuevoProductoModal'
 import EditarProductoModal from '../components/EditarProductoModal'
 import DetalleProductoModal from '../components/DetalleProductoModal'
 import EliminarProductoModal from '../components/EliminarProductoModal'
+import CambiarEstadoModal from '../components/CambiarEstadoModal'
 import { useProductos } from '../hooks/useProductos'
 
 export default function ProductosPage() {
   const navigate = useNavigate()
-  const { productos, crearProducto, editarProducto, eliminarProducto } = useProductos()
+  const { productos, crearProducto, editarProducto, eliminarProducto, cambiarEstado } = useProductos()
   const [nuevoProductoModal, setNuevoProductoModal] = useState(false)
   const [editarProductoModal, setEditarProductoModal] = useState(false)
   const [productoEditar, setProductoEditar] = useState(null)
@@ -23,6 +24,7 @@ export default function ProductosPage() {
   const [productoDetalle, setProductoDetalle] = useState(null)
   const [eliminarProductoModal, setEliminarProductoModal] = useState(false)
   const [productoAEliminar, setProductoAEliminar] = useState(null)
+  const [productoEstado, setProductoEstado] = useState(null)
   const [busqueda, setBusqueda] = useState('')
   const [filtroCategoria, setFiltroCategoria] = useState('')
   const [filtroEstado, setFiltroEstado] = useState('')
@@ -62,6 +64,15 @@ export default function ProductosPage() {
     eliminarProducto(productoAEliminar.id)
     setEliminarProductoModal(false)
     setProductoAEliminar(null)
+  }
+
+  const handleCambiarEstado = (producto) => {
+    setProductoEstado(producto)
+  }
+
+  const handleConfirmarEstado = (estado) => {
+    cambiarEstado(productoEstado.id, estado)
+    setProductoEstado(null)
   }
 
   const handleBuscar = (e) => {
@@ -136,6 +147,7 @@ export default function ProductosPage() {
           onEdit={handleEditarProducto}
           onVer={handleVerDetalle}
           onEliminar={handleEliminarProducto}
+          onCambiarEstado={handleCambiarEstado}
         />
         <PaginacionProductos totalRegistros={6} />
       </Card>
@@ -145,15 +157,19 @@ export default function ProductosPage() {
         onClose={() => setNuevoProductoModal(false)}
         onGuardar={handleGuardarProducto}
       />
-      <EditarProductoModal
-        open={editarProductoModal}
-        onClose={() => {
-          setEditarProductoModal(false)
-          setProductoEditar(null)
-        }}
-        onGuardar={handleGuardarEdicion}
-        producto={productoEditar}
-      />
+      {/* El modal se monta solo cuando hay un producto seleccionado; la key reinicia el formulario por producto */}
+      {productoEditar && (
+        <EditarProductoModal
+          key={productoEditar.id}
+          open={editarProductoModal}
+          onClose={() => {
+            setEditarProductoModal(false)
+            setProductoEditar(null)
+          }}
+          onGuardar={handleGuardarEdicion}
+          producto={productoEditar}
+        />
+      )}
       <DetalleProductoModal
         open={detalleProductoModal}
         onClose={() => {
@@ -171,6 +187,14 @@ export default function ProductosPage() {
         onConfirm={handleConfirmarEliminar}
         nombreProducto={productoAEliminar?.nombre}
       />
+      {productoEstado && (
+        <CambiarEstadoModal
+          key={productoEstado.id}
+          producto={productoEstado}
+          onClose={() => setProductoEstado(null)}
+          onConfirmar={handleConfirmarEstado}
+        />
+      )}
     </Box>
   )
 }

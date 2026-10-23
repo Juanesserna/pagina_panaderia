@@ -8,30 +8,15 @@ import {
   TableRow,
   Typography,
   Box,
-  IconButton,
   useTheme,
 } from '@mui/material'
 import {
   IconChevronUp,
   IconChevronDown,
-  IconEye,
-  IconPencil,
-  IconTrash,
 } from '@tabler/icons-react'
-import { fonts } from '@app/theme/colors'
-import { alpha } from '@mui/material/styles'
-import { formatPrice } from '../services/productos.service'
-import EstadoBadge from './EstadoBadge'
-
-const HEADER_SX = {
-  padding: '12px 16px',
-  backgroundColor: 'transparent',
-  borderBottom: 'none',
-}
-
-const CELL_SX = {
-  padding: '12px 16px',
-}
+import { HEADER_SX } from './comunes/tablaEstilos'
+import HeaderLabel from './comunes/HeaderLabel'
+import FilaProducto from './FilaProducto'
 
 function SortableHeader({ nombre, columna, sortConfig, onSort }) {
   const theme = useTheme()
@@ -55,18 +40,14 @@ function SortableHeader({ nombre, columna, sortConfig, onSort }) {
     >
       <Typography
         component="span"
+        variant="overline"
         sx={{
-          fontFamily: fonts.sans,
-          fontSize: 11,
-          fontWeight: 500,
-          textTransform: 'uppercase',
-          letterSpacing: '0.06em',
           color: theme.palette.text.secondary,
         }}
       >
         {nombre}
       </Typography>
-      <Box sx={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
         <IconChevronUp size={12} color={colorUp} />
         <IconChevronDown size={12} color={colorDown} />
       </Box>
@@ -74,27 +55,7 @@ function SortableHeader({ nombre, columna, sortConfig, onSort }) {
   )
 }
 
-function HeaderLabel({ children }) {
-  const theme = useTheme()
-  return (
-    <Typography
-      component="span"
-      sx={{
-        fontFamily: fonts.sans,
-        fontSize: 11,
-        fontWeight: 500,
-        textTransform: 'uppercase',
-        letterSpacing: '0.06em',
-        color: theme.palette.text.secondary,
-      }}
-    >
-      {children}
-    </Typography>
-  )
-}
-
-export default function ProductosTable({ productos, onEdit, onVer, onEliminar }) {
-  const theme = useTheme()
+export default function ProductosTable({ productos, onEdit, onVer, onEliminar, onCambiarEstado }) {
   const [sortConfig, setSortConfig] = useState({ column: null, direction: 'asc' })
 
   const handleSort = (columna) => {
@@ -155,124 +116,8 @@ export default function ProductosTable({ productos, onEdit, onVer, onEliminar })
           </TableRow>
         </TableHead>
         <TableBody>
-            {sortedProductos.map((p, index) => (
-          <TableRow
-            key={p.id}
-            sx={{
-              backgroundColor: index % 2 === 1 ? alpha(theme.palette.text.primary, 0.03) : 'transparent',
-              '&:hover': { bgcolor: theme.palette.action.hover },
-            }}
-          >
-            <TableCell sx={CELL_SX}>
-              <Typography
-                sx={{
-                  fontFamily: fonts.sans,
-                  fontSize: 13,
-                  color: theme.palette.text.primary,
-                }}
-              >
-                {p.codigo}
-              </Typography>
-            </TableCell>
-            <TableCell sx={CELL_SX}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-                <Box
-                  component="img"
-                  src={p.imagenUrl}
-                  alt={p.nombre}
-                  sx={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 1,
-                    objectFit: 'cover',
-                  }}
-                />
-                <Typography
-                  sx={{
-                    fontFamily: fonts.sans,
-                    fontSize: 13,
-                    color: theme.palette.text.primary,
-                  }}
-                >
-                  {p.nombre}
-                </Typography>
-              </Box>
-            </TableCell>
-            <TableCell sx={CELL_SX}>
-              <Typography
-                sx={{
-                  fontFamily: fonts.sans,
-                  fontSize: 13,
-                  color: theme.palette.text.primary,
-                }}
-              >
-                {p.categoria}
-              </Typography>
-            </TableCell>
-            <TableCell sx={{ ...CELL_SX, textAlign: 'right' }}>
-              <Typography
-                sx={{
-                  fontFamily: fonts.sans,
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: theme.palette.text.primary,
-                }}
-              >
-                {formatPrice(p.precioVenta)}
-              </Typography>
-            </TableCell>
-            <TableCell sx={CELL_SX}>
-              <Typography
-                sx={{
-                  fontFamily: fonts.sans,
-                  fontSize: 13,
-                  color: theme.palette.text.primary,
-                }}
-              >
-                {p.stock}
-              </Typography>
-            </TableCell>
-            <TableCell sx={CELL_SX}>
-              <EstadoBadge estado={p.estado} />
-            </TableCell>
-            <TableCell sx={{ ...CELL_SX, textAlign: 'right' }}>
-              <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.25 }}>
-                <IconButton
-                  size="small"
-                  onClick={() => onVer?.(p)}
-                  sx={{
-                    color: theme.palette.text.secondary,
-                    width: 28,
-                    height: 28,
-                  }}
-                >
-                  <IconEye size={15} />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={() => onEdit?.(p)}
-                  sx={{
-                    color: theme.palette.text.secondary,
-                    width: 28,
-                    height: 28,
-                  }}
-                >
-                  <IconPencil size={15} />
-                </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={() => onEliminar?.(p)}
-                  sx={{
-                    color: theme.palette.error.main,
-                    width: 28,
-                    height: 28,
-                  }}
-                >
-                  <IconTrash size={15} />
-                </IconButton>
-              </Box>
-            </TableCell>
-          </TableRow>
+          {sortedProductos.map((p, index) => (
+            <FilaProducto key={p.id} producto={p} index={index} onVer={onVer} onEdit={onEdit} onEliminar={onEliminar} onCambiarEstado={onCambiarEstado} />
           ))}
         </TableBody>
       </Table>

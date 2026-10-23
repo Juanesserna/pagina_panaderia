@@ -1,18 +1,13 @@
 import {
   Box,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Divider,
-  IconButton,
+  Stack,
   Typography,
   useTheme,
 } from '@mui/material'
 import { alpha } from '@mui/material/styles'
-import { IconAlertTriangle, IconTrash, IconX } from '@tabler/icons-react'
-import { fonts } from '@app/theme/colors'
+import { IconAlertTriangle, IconTrash } from '@tabler/icons-react'
+// Botón y modal estándar del panel
+import { Button, Modal } from '@shared/ui'
 
 export default function EliminarProductoModal({
   open,
@@ -24,57 +19,7 @@ export default function EliminarProductoModal({
   const errorColor = theme.palette.error.main
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="sm"
-      fullWidth
-      sx={{
-        '& .MuiDialog-paper': {
-          borderRadius: 3,
-          padding: 0,
-          overflow: 'hidden',
-        },
-      }}
-    >
-      <DialogTitle
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          px: 3,
-          py: 2.5,
-          backgroundColor: 'background.paper',
-        }}
-      >
-        <Typography
-          component="span"
-          variant="h6"
-          sx={{
-            fontFamily: fonts.sans,
-            fontSize: 18,
-            fontWeight: 700,
-            color: theme.palette.text.primary,
-          }}
-        >
-          Eliminar producto
-        </Typography>
-        <IconButton
-          size="small"
-          onClick={onClose}
-          sx={{
-            color: theme.palette.text.secondary,
-            '&:hover': { bgcolor: theme.palette.action.hover },
-          }}
-          aria-label="Cerrar"
-        >
-          <IconX size={20} />
-        </IconButton>
-      </DialogTitle>
-
-      <Divider />
-
-      <DialogContent sx={{ p: 0 }}>
+    <Modal open={open} onClose={onClose} title="Eliminar producto" size="sm" showDivider>
         <Box
           sx={{
             display: 'flex',
@@ -102,11 +47,8 @@ export default function EliminarProductoModal({
           </Box>
 
           <Typography
+            variant="h5"
             sx={{
-              fontFamily: fonts.sans,
-              fontSize: 18,
-              fontWeight: 700,
-              lineHeight: 1.3,
               color: theme.palette.text.primary,
             }}
           >
@@ -114,19 +56,16 @@ export default function EliminarProductoModal({
           </Typography>
 
           <Typography
+            variant="body1"
             sx={{
-              fontFamily: fonts.sans,
-              fontSize: 14,
-              lineHeight: 1.5,
               color: theme.palette.text.secondary,
             }}
           >
             Estás a punto de eliminar{' '}
             <Typography
               component="span"
+              variant="subtitle1"
               sx={{
-                fontFamily: fonts.sans,
-                fontWeight: 600,
                 color: theme.palette.text.primary,
               }}
             >
@@ -151,10 +90,8 @@ export default function EliminarProductoModal({
           >
             <IconAlertTriangle size={18} color={errorColor} />
             <Typography
+              variant="body1"
               sx={{
-                fontFamily: fonts.sans,
-                fontSize: 13,
-                lineHeight: 1.5,
                 color: errorColor,
               }}
             >
@@ -162,64 +99,14 @@ export default function EliminarProductoModal({
             </Typography>
           </Box>
         </Box>
-      </DialogContent>
-
-      <Divider />
-
-      <DialogActions
-        sx={{
-          px: 3,
-          pt: 2,
-          pb: 2.5,
-          backgroundColor: 'background.paper',
-          justifyContent: 'flex-start',
-          gap: 1.5,
-        }}
-      >
-        <Button
-          type="button"
-          variant="text"
-          onClick={onClose}
-          sx={{
-            textTransform: 'none',
-            fontSize: 13,
-            fontWeight: 500,
-            px: 2.5,
-            py: 1,
-            color: theme.palette.text.secondary,
-            '&:hover': {
-              bgcolor: theme.palette.action.hover,
-            },
-          }}
-        >
+      <Stack direction="row" spacing={1.5} sx={{ justifyContent: 'flex-end', mt: 2 }}>
+        <Button type="button" variant="secondary" onClick={onClose}>
           Cancelar
         </Button>
-        <Button
-          type="button"
-          variant="contained"
-          color="primary"
-          onClick={onConfirm}
-          sx={{
-            backgroundColor: theme.palette.primary.main,
-            color: '#FFFFFF',
-            textTransform: 'none',
-            fontSize: 13,
-            fontWeight: 500,
-            px: 2.5,
-            py: 1,
-            borderRadius: '8px',
-            '&:hover': {
-              backgroundColor: theme.palette.primary.dark,
-              color: '#FFFFFF',
-            },
-            '&.Mui-focusVisible': {
-              color: '#FFFFFF',
-            },
-          }}
-        >
+        <Button type="button" variant="danger" onClick={onConfirm}>
           Sí, eliminar
         </Button>
-      </DialogActions>
-    </Dialog>
+      </Stack>
+    </Modal>
   )
 }

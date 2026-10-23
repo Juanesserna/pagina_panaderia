@@ -1,22 +1,37 @@
+import { useState } from 'react'
+import { Box, Divider, Typography } from '@mui/material'
+import { IconPlus, IconFilter } from '@tabler/icons-react'
+import { Button, SearchInput } from '@shared/ui'
+import CampoFiltro from './filtros/CampoFiltro'
 import {
-  Box,
-  Typography,
-  TextField,
-  Button,
-  InputAdornment,
-  Divider,
-  useTheme,
-} from '@mui/material'
-import { IconCirclePlus, IconFilter, IconSearch } from '@tabler/icons-react'
-import { fonts } from '@app/theme/colors'
+  TIPOS_CATEGORIA,
+  ESTADOS_CATEGORIA,
+  FILTRO_TODOS_TIPOS,
+  FILTRO_TODAS_ESTADOS,
+} from './comunes/opcionesCategoria'
+
+const aOpciones = (lista) => lista.map((valor) => ({ value: valor, label: valor }))
+
+const OPCIONES_TIPO = [{ value: FILTRO_TODOS_TIPOS, label: FILTRO_TODOS_TIPOS }, ...aOpciones(TIPOS_CATEGORIA)]
+const OPCIONES_ESTADO = [{ value: FILTRO_TODAS_ESTADOS, label: FILTRO_TODAS_ESTADOS }, ...aOpciones(ESTADOS_CATEGORIA)]
 
 export default function CatalogoCategorias({
   onBuscar,
   onNuevoClick,
-  onFiltrarClick,
   valorBusqueda = '',
+  filtros,
+  onFiltrosChange,
 }) {
-  const theme = useTheme()
+  const [mostrarFiltros, setMostrarFiltros] = useState(false)
+
+  const handleFiltrarClick = () => {
+    setMostrarFiltros((prev) => !prev)
+  }
+
+  // Aplica el filtro al elegir una opción, conservando el otro filtro
+  const cambiarFiltro = (campo) => (e) => {
+    onFiltrosChange?.({ ...filtros, [campo]: e.target.value })
+  }
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -29,79 +44,58 @@ export default function CatalogoCategorias({
           gap: 2,
         }}
       >
-        <Typography
-          sx={{
-            fontFamily: fonts.sans,
-            fontSize: 20,
-            fontWeight: 600,
-            color: theme.palette.text.primary,
-          }}
-        >
+        <Typography variant="h5" component="p">
           Categorías
         </Typography>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <TextField
+          <SearchInput
             placeholder="Buscar categoría..."
-            size="small"
             value={valorBusqueda}
             onChange={onBuscar}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <IconSearch size={16} color={theme.palette.text.secondary} />
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              width: 280,
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: '#F0EBE3',
-                overflow: 'hidden',
-              },
-            }}
           />
-
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<IconCirclePlus size={16} />}
-            onClick={onNuevoClick}
-            sx={{
-              textTransform: 'none',
-              fontSize: 13,
-              fontWeight: 500,
-              px: 2,
-              py: 1,
-            }}
-          >
+          <Button size="toolbar" leftIcon={<IconPlus size={16} />} onClick={onNuevoClick}>
             Nueva categoría
           </Button>
-
           <Button
-            variant="outlined"
-            startIcon={<IconFilter size={16} />}
-            onClick={onFiltrarClick}
-            sx={{
-              textTransform: 'none',
-              fontSize: 13,
-              fontWeight: 500,
-              px: 2,
-              py: 1,
-              backgroundColor: '#F0EBE3',
-              borderColor: theme.palette.divider,
-              color: theme.palette.text.primary,
-              '&:hover': {
-                borderColor: theme.palette.primary.main,
-                backgroundColor: '#F0EBE3',
-              },
-            }}
+            variant="secondary"
+            size="toolbar"
+            leftIcon={<IconFilter size={16} />}
+            onClick={handleFiltrarClick}
           >
             Filtrar
           </Button>
         </Box>
       </Box>
       <Divider />
+
+      {mostrarFiltros && (
+        <Box
+          sx={{
+            p: 2,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+            flexWrap: 'wrap',
+            backgroundColor: 'background.default',
+          }}
+        >
+          <CampoFiltro
+            etiqueta="Tipo"
+            opciones={OPCIONES_TIPO}
+            value={filtros?.tipo ?? FILTRO_TODOS_TIPOS}
+            onChange={cambiarFiltro('tipo')}
+            minWidth={220}
+          />
+          <CampoFiltro
+            etiqueta="Estado"
+            opciones={OPCIONES_ESTADO}
+            value={filtros?.estado ?? FILTRO_TODAS_ESTADOS}
+            onChange={cambiarFiltro('estado')}
+            minWidth={200}
+          />
+        </Box>
+      )}
     </Box>
   )
 }
