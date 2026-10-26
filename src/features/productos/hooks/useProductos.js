@@ -1,61 +1,109 @@
-import { useState, useCallback } from 'react'
-import { productos as mockProductos } from '../services/productos.service'
+import { useState, useEffect, useCallback } from 'react';
+import { productosApi } from '../api/productosApi';
 
-// Convierte los datos que entregan NuevoProductoModal/EditarProductoModal
-// (stockActual, activo boolean, imagen) al formato real del objeto producto
-// (stock, estado 'Activo'/'Agotado', imagenUrl).
+// Mantiene tu función original de mapeo para los modales
 function mapFormDataToProducto(datos) {
   return {
     id: datos.id,
     codigo: datos.codigo,
     nombre: datos.nombre,
     categoria: datos.categoria,
-    precioVenta: datos.precioVenta,
-    stock: datos.stockActual,
-    // Guarda el stock mínimo como campo propio del producto
-    stockMinimo: datos.stockMinimo,
-    // Guarda la cantidad mínima de producción como campo propio del producto
-    cantMinimaProduccion: datos.cantMinimaProduccion,
-    // Guarda la cantidad máxima de producción como campo propio del producto
-    cantMaximaProduccion: datos.cantMaximaProduccion,
-    estado: datos.activo ? 'Activo' : 'Agotado',
-    imagenUrl: datos.imagen,
+    precioVenta: Number(datos.precioVenta),
+    stock: Number(datos.stockActual ?? datos.stock),
+    stockMinimo: Number(datos.stockMinimo),
+    cantMinimaProduccion: Number(datos.cantMinimaProduccion),
+    cantMaximaProduccion: Number(datos.cantMaximaProduccion),
+    estado: datos.activo !== undefined ? (datos.activo ? 'Activo' : 'Agotado') : (datos.estado || 'Activo'),
+    imagenUrl: datos.imagen || datos.imagenUrl,
   }
 }
 
 export function useProductos() {
-  const [productos, setProductos] = useState(mockProductos)
+  const [productos, setProductos] = useState([]);
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState(null);
+  const [filtros, setFiltros] = useState({ buscar: '', categoria: '', estado: '', pagina: 1, limite: 10 });
+  const [paginacion, setPaginacion] = useState({ total: 0, totalPaginas: 1 });
 
-  const crearProducto = useCallback((datos) => {
-    const nuevoProducto = mapFormDataToProducto({
-      ...datos,
-      id: datos.id ?? Date.now(),
-      codigo: datos.codigo ?? `PR-${Math.floor(Math.random() * 900) + 100}`,
-    })
-    setProductos((prev) => [...prev, nuevoProducto])
-    return nuevoProducto
-  }, [])
+  const cargarProductos = useCallback(async () => {
+    setCargando(true);
+    setError(null);
+    try {
+      const respuesta = await productosApi.obtenerProductos(filtros);
+      // Asume que el backend devuelve { datos, total, pagina, totalPaginas }
+      setProductos(respuesta.datos || respuesta);
+      if (respuesta.totalPaginas) {
+        setPaginacion({ total: respuesta.total, totalPaginas: respuesta.totalPaginas });
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCargando(false);
+    }
+  }, [filtros]);
 
-  const editarProducto = useCallback((id, datos) => {
-    const productoActualizado = mapFormDataToProducto({ ...datos, id, codigo: datos.codigo })
-    setProductos((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...productoActualizado } : p))
-    )
-  }, [])
+  useEffect(() => {
+    cargarProductos();
+  }, [cargarProductos]);
 
-  const eliminarProducto = useCallback((id) => {
-    setProductos((prev) => prev.filter((p) => p.id !== id))
-  }, [])
+  const crearProducto = useCallback(async (datos) => {
+    try {
+      const datosMapeados = mapFormDataToProducto({
+        ...datos,
+        id: datos.id ?? Date.now(),
+        codigo: datos.codigo ?? `PR-${Math.floor(Math.random() * 900) + 100}`,
+      });
+      const nuevo = await productosApi.crearProducto(datosMapeados);
+      await cargarProductos(); // Refresca la lista desde el servidor
+      return nuevo;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  }, [cargarProductos]);
 
-  const cambiarEstado = useCallback((id, estado) => {
-    setProductos((prev) => prev.map((p) => (p.id === id ? { ...p, estado } : p)))
-  }, [])
+  const editarProducto = useCallback(async (id, datos) => {
+    try {
+      const datosMapeados = mapFormDataToProducto({ ...datos, id, codigo: datos.codigo });
+      await productosApi.actualizarProducto(id, datosMapeados);
+      await cargarProductos();
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  }, [cargarProductos]);
+
+  const eliminarProducto = useCallback(async (id) => {
+    try {
+      await productosApi.eliminarProducto(id);
+      await cargarProductos();
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  }, [cargarProductos]);
+
+  const cambiarEstado = useCallback(async (id, estado) => {
+    try {
+      await productosApi.cambiarEstado(id, estado);
+      await cargarProductos();
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  }, [cargarProductos]);
 
   return {
     productos,
+    cargando,
+    error,
+    filtros,
+    setFiltros,
+    paginacion,
     crearProducto,
     editarProducto,
     eliminarProducto,
     cambiarEstado,
-  }
+    recargar: cargarProductos,
+  };
 }
