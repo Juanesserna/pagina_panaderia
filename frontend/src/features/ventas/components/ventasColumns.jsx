@@ -43,7 +43,7 @@ export function getVentasColumns({ onCambiarEstado, onPagos, onVerComprobante })
       key: 'estado',
       header: 'Estado',
       accessor: (r) => {
-        const bloqueado = r.estado === 'cancelado'
+        const bloqueado = r.estado === 'anulado'
         return (
           <Stack direction="row" alignItems="center" spacing={0.75}>
             <StatusBadge variant={estadoVariant[r.estado]} dot>
@@ -52,7 +52,7 @@ export function getVentasColumns({ onCambiarEstado, onPagos, onVerComprobante })
             <IconButton
               size="small"
               disabled={bloqueado}
-              title={bloqueado ? 'Una venta cancelada no se puede modificar' : 'Cambiar estado'}
+              title={bloqueado ? 'Una venta anulada no se puede modificar' : 'Cambiar estado'}
               onClick={(e) => {
                 e.stopPropagation()
                 onCambiarEstado(r)
@@ -89,7 +89,7 @@ export function getVentasColumns({ onCambiarEstado, onPagos, onVerComprobante })
               onPagos(r)
             }}
           >
-            Pagos
+            Captura
           </Button>
           <Button
             variant="ghost"

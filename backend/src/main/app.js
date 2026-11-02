@@ -6,6 +6,7 @@ import { config } from './config.js'
 import { buildContainer } from './container.js'
 import { authRouter } from '../presentation/http/auth.routes.js'
 import { ventasRouter } from '../presentation/http/ventas.routes.js'
+import { pedidosRouter } from '../presentation/http/pedidos.routes.js'
 import { productosRouter } from '../presentation/http/productos.routes.js'
 import { requireAuth } from '../presentation/http/auth.middleware.js'
 import { errorHandler } from '../presentation/http/errorHandler.js'
@@ -18,8 +19,9 @@ export async function createApp(container) {
   app.use(helmet())
   app.use(cors({ origin: config.CORS_ORIGIN.split(',').map((s) => s.trim()) }))
 
-  // Solo la ruta de comprobantes admite cuerpos grandes; el resto, 100kb
+  // Solo la ruta de comprobantes admite cuerpos grandes (imágenes base64); el resto, 100kb
   app.use('/api/ventas/:id/pagos', express.json({ limit: '3mb' }))
+  app.use('/api/pedidos/:id/pagos', express.json({ limit: '3mb' }))
   app.use(express.json({ limit: '100kb' }))
 
   app.get('/health', (_q, res) => res.json({ status: 'ok' })) // sin detalles internos
@@ -52,6 +54,7 @@ export async function createApp(container) {
   app.get('/api/catalogos/clientes', async (_q, res) => res.json(await c.catalogoClientes.listar()))
   app.get('/api/catalogos/productos', async (_q, res) => res.json(await c.catalogoProductos.listar()))
   app.use('/api/ventas', ventasRouter(c.ventas))
+  app.use('/api/pedidos', pedidosRouter(c.pedidos))
   app.use('/api/productos', productosRouter(c.productos))
 
   app.use((_q, res) => res.status(404).json({ code: 'NOT_FOUND', message: 'Ruta no encontrada' }))

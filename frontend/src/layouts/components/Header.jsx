@@ -13,7 +13,7 @@ const SAMPLE_NOTIFICATIONS = [
 ];
 
 const PAGE_TITLES = {
-  dashboard: "Dashboard", ventas: "Ventas", produccion: "Producción", compras: "Compras",
+  dashboard: "Dashboard", ventas: "Ventas", pedidos: "Pedidos", produccion: "Producción", compras: "Compras",
   proveedores: "Proveedores", insumos: "Insumos", productos: "Productos",
   usuarios: "Usuarios", categorias: "Categorías", roles: "Roles",
   perfil: "Mi perfil",
