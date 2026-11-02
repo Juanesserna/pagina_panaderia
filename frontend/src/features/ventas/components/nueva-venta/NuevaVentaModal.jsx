@@ -27,8 +27,6 @@ export default function NuevaVentaModal({ nuevaVenta: nv }) {
           onClienteInputChange={nv.onClienteInputChange}
           metodo={nv.metodo}
           onMetodoChange={nv.setMetodo}
-          pagoDividido={nv.pagoDividido}
-          onPagoDivididoChange={nv.setPagoDividido}
         />
 
         <Divider />

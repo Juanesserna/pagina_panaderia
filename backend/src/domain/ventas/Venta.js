@@ -1,7 +1,7 @@
 // Entidad/agregado Venta. Contiene las reglas de negocio que antes estaban en
 // utils/ventasHelpers.js, utils/ventasPagos.js y hooks/useVentas.js del frontend.
 import { ESTADOS, METODOS, CANALES } from './constants.js'
-import { TransicionInvalidaError, ValidationError } from './errors.js'
+import { TransicionInvalidaError, ValidationError } from '../shared/errors.js'
 
 export class Venta {
   constructor({ id, usuario, cliente = null, nit, origen, canal, pagoUnico = true, items = [], productos, total, estado = ESTADOS.PENDIENTE, metodo, fechaHora, abonos = [] }) {

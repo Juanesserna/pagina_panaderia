@@ -19,7 +19,10 @@ const NAV_GROUPS = [
   },
   {
     key: "ventas", label: "Ventas", icon: <TrendingUp size={18} />,
-    items: [{ id: "ventas", label: "Ventas", icon: <TrendingUp size={18} /> }]
+    items: [
+      { id: "ventas", label: "Ventas", icon: <TrendingUp size={18} /> },
+      { id: "pedidos", label: "Pedidos", icon: <ClipboardList size={18} /> },
+    ]
   },
   {
     key: "produccion", label: "Producción", icon: <Factory size={18} />,
