@@ -9,6 +9,7 @@ const PATH_TO_PAGE = {
   [ROUTES.MIS_PEDIDOS]: "mis-pedidos",
   [ROUTES.PERFIL]: "perfil",
   [ROUTES.VENTAS]: "ventas",
+  [ROUTES.PEDIDOS]: "pedidos",
   [ROUTES.PRODUCCION]: "produccion",
   [ROUTES.COMPRAS]: "compras",
   [ROUTES.PROVEEDORES]: "proveedores",

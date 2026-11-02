@@ -7,7 +7,7 @@ export function useCambiarEstado(cambiarEstado) {
   const [estadoSeleccionado, setEstadoSeleccionado] = useState(null)
 
   const abrir = (v) => {
-    if (v.estado === 'cancelado') return
+    if (v.estado === 'anulado') return
     setVenta(v)
     setEstadoSeleccionado(v.estado)
     setAbierto(true)

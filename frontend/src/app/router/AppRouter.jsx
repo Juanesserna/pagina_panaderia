@@ -24,6 +24,7 @@ const ProveedoresPage = lazy(() => import('@features/proveedores/pages/Proveedor
 const RolesPage = lazy(() => import('@features/roles/pages/RolesPage'))
 const UsuariosPage = lazy(() => import('@features/usuarios/pages/UsuariosPage'))
 const VentasPage = lazy(() => import('@features/ventas/pages/VentasPage'))
+const PedidosPage = lazy(() => import('@features/pedidos/pages/PedidosPage'))
 const MisPedidosPage = lazy(() => import('@features/perfil/pages/MisPedidosPage'))
 
 export default function AppRouter() {
@@ -57,6 +58,7 @@ export default function AppRouter() {
               <Route path={ROUTES.ROLES} element={<RolesPage />} />
               <Route path={ROUTES.USUARIOS} element={<UsuariosPage />} />
               <Route path={ROUTES.VENTAS} element={<VentasPage />} />
+              <Route path={ROUTES.PEDIDOS} element={<PedidosPage />} />
             </Route>
           </Route>
         </Routes>
