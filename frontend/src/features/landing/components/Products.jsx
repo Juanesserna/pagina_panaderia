@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { Box, Typography, Button } from '@mui/material'
 import { IconCirclePlus } from '@tabler/icons-react'
 import { fonts } from '@app/theme/colors'
-import { products } from '../data/products'
+import { useProductosLanding } from '@features/landing/hooks/useProductosLanding'
 
 /* ───────────── Helpers ───────────── */
 
@@ -13,6 +13,13 @@ export function formatPrice(p) {
 
 const ADDED_FEEDBACK_MS = 900
 
+// Imagen por defecto cuando el producto no tiene imagen en la API
+const IMG_POR_DEFECTO =
+  'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&h=450&fit=crop&auto=format'
+
+// Descripción por defecto cuando el producto no tiene descripción en la API
+const DESCRIPCION_POR_DEFECTO = 'Sin descripción disponible'
+
 /* ───────────── Sección: "Lo más pedido" ─────────────
    Props:
    - isDark:      modo oscuro
@@ -21,12 +28,66 @@ const ADDED_FEEDBACK_MS = 900
 */
 export function Products({ isDark, onAddToCart, limit }) {
   const [added, setAdded] = useState(null)
+  const { productos: productosApi, cargando, error } = useProductosLanding()
+
+  // Mapear campos de la API al formato que usa ProductCard
+  const productos = productosApi.map((p) => ({
+    id: p.id,
+    name: p.nombre,
+    category: p.categoria,
+    price: p.precio,
+    img: p.imagen || IMG_POR_DEFECTO,
+    description: p.descripcion || DESCRIPCION_POR_DEFECTO,
+  }))
 
   const handleAdd = (product) => {
     onAddToCart({ id: product.id, name: product.name, price: product.price, img: product.img })
     setAdded(product.id)
     setTimeout(() => setAdded(null), ADDED_FEEDBACK_MS)
   }
+
+  // Estado de carga o error
+  if (cargando) {
+    return (
+      <Box component="section" sx={{ bgcolor: isDark ? '#150a03' : '#F7F0E6', py: { xs: 8, md: 12.5 } }}>
+        <Box sx={{ maxWidth: 1200, mx: 'auto', px: 3, textAlign: 'center', py: 4 }}>
+          <Typography sx={{ fontFamily: fonts.sans, fontSize: 14, color: isDark ? 'rgba(243,233,220,0.6)' : 'rgba(46,24,16,0.55)' }}>
+            Cargando productos…
+          </Typography>
+        </Box>
+      </Box>
+    )
+  }
+
+  if (error) {
+    return (
+      <Box component="section" sx={{ bgcolor: isDark ? '#150a03' : '#F7F0E6', py: { xs: 8, md: 12.5 } }}>
+        <Box sx={{ maxWidth: 1200, mx: 'auto', px: 3, textAlign: 'center', py: 4 }}>
+          <Typography sx={{ fontFamily: fonts.sans, fontSize: 14, color: '#C08552', fontWeight: 500 }}>
+            Error al cargar productos
+          </Typography>
+          <Typography sx={{ fontFamily: fonts.sans, fontSize: 13, color: isDark ? 'rgba(243,233,220,0.6)' : 'rgba(46,24,16,0.55)', mt: 1 }}>
+            {error}
+          </Typography>
+        </Box>
+      </Box>
+    )
+  }
+
+  // Lista vacía
+  if (productos.length === 0) {
+    return (
+      <Box component="section" sx={{ bgcolor: isDark ? '#150a03' : '#F7F0E6', py: { xs: 8, md: 12.5 } }}>
+        <Box sx={{ maxWidth: 1200, mx: 'auto', px: 3, textAlign: 'center', py: 4 }}>
+          <Typography sx={{ fontFamily: fonts.sans, fontSize: 14, color: isDark ? 'rgba(243,233,220,0.6)' : 'rgba(46,24,16,0.55)' }}>
+            No hay productos disponibles en este momento.
+          </Typography>
+        </Box>
+      </Box>
+    )
+  }
+
+  const productosAMostrar = limit ? productos.slice(0, limit) : productos
 
   return (
     <Box component="section" sx={{ bgcolor: isDark ? '#150a03' : '#F7F0E6', py: { xs: 8, md: 12.5 } }}>
@@ -40,7 +101,7 @@ export function Products({ isDark, onAddToCart, limit }) {
             gap: 3,
           }}
         >
-          {products.slice(0, limit).map((p) => (
+          {productosAMostrar.map((p) => (
             <ProductCard
               key={p.id}
               product={p}
