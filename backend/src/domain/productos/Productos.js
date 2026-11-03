@@ -1,5 +1,5 @@
 export class Producto {
-  constructor({ id, nombre, categoria, precio, stock, estado = 'ACTIVO', receta = [] }) {
+  constructor({ id, nombre, categoria, precio, stock, estado = 'ACTIVO', receta = [], imagen = null }) {
     this.id = id;
     this.nombre = nombre;
     this.categoria = categoria;
@@ -7,6 +7,7 @@ export class Producto {
     this.stock = Number(stock);
     this.estado = estado;
     this.receta = receta; // Lista de insumos/ingredientes
+    this.imagen = imagen; // URL opcional de la imagen del producto
 
     this.validar();
   }

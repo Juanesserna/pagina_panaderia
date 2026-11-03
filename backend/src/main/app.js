@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import { buildContainer } from './container.js'
+import { crearProductosRouter } from '../presentation/http/productosController.js'
 import { ventasRouter } from '../presentation/http/ventas.routes.js'
 import { errorHandler } from '../presentation/http/errorHandler.js'
 import { usuarioActualStub } from '../infrastructure/catalogos/InMemoryCatalogos.js'
@@ -15,6 +16,7 @@ export function createApp(container = buildContainer()) {
   app.get('/api/catalogos/clientes', async (_q, res) => res.json(await container.catalogoClientes.listar()))
   app.get('/api/catalogos/productos', async (_q, res) => res.json(await container.catalogoProductos.listar()))
 
+  app.use('/api/productos', crearProductosRouter(container.productos))
   app.use('/api/ventas', ventasRouter(container.ventas))
   app.use(errorHandler)
   return app
