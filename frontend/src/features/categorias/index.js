@@ -1,3 +1,2 @@
-export { default as CategoriasPage } from './pages/CategoriasPage'
+export { CategoriasProvider } from './context/CategoriasContext'
 export { useCategorias } from './hooks/useCategorias'
-export { categorias, categoriasService } from './services/categorias.service'
