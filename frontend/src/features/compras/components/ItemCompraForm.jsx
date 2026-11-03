@@ -1,7 +1,7 @@
 import { Box, IconButton, Typography } from '@mui/material'
 import { IconCalendar, IconChevronDown, IconChevronUp, IconHash, IconX } from '@tabler/icons-react'
 import { Input, Select } from '@shared/ui'
-import { opcionesInsumo } from '../utils/comprasHelpers'
+import { formatearMoneda, opcionesInsumo } from '../utils/comprasHelpers'
 import { Campo } from './Campo'
 
 // Una línea de "Productos solicitados": insumo, cantidad, unidad (heredada), valor
@@ -20,7 +20,7 @@ export function ItemCompraForm({ item, insumos, lotesAbierto, puedeQuitar, onCha
         </IconButton>
       )}
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1.6fr 0.8fr 0.8fr 1fr', gap: 1.5 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1.4fr 0.6fr 0.6fr 0.85fr 0.65fr 0.9fr', gap: 1.5 }}>
         <Campo label="Insumo">
           <Select options={opcionesInsumo(insumos)} value={item.nombre} onChange={(e) => onChange('nombre', e.target.value)} />
         </Campo>
@@ -43,6 +43,21 @@ export function ItemCompraForm({ item, insumos, lotesAbierto, puedeQuitar, onCha
             placeholder="0"
             value={item.precioUnitario || ''}
             onChange={(e) => onChange('precioUnitario', Math.max(0, parseInt(e.target.value, 10) || 0))}
+          />
+        </Campo>
+        <Campo label="Descuento de producto" ayuda="Opcional, % sobre el ítem">
+          <Input
+            type="number"
+            min={0}
+            placeholder="0"
+            value={item.descuentoProducto || ''}
+            onChange={(e) => onChange('descuentoProducto', Math.min(100, Math.max(0, parseInt(e.target.value, 10) || 0)))}
+          />
+        </Campo>
+        <Campo label="Subtotal ($)">
+          <Input
+            disabled
+            value={formatearMoneda(Math.round(item.cantidad * item.precioUnitario * (1 - (item.descuentoProducto || 0) / 100)))}
           />
         </Campo>
       </Box>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Box, Divider } from '@mui/material'
 import { Pagination } from '@shared/ui'
-import { PAGE_SIZE } from '../constants/compras.constants'
+import { PAGE_SIZE, ESTADO } from '../constants/compras.constants'
 import { usuarioAutenticado } from '../mocks/comprasMockData'
 import { useCompras } from '../hooks/useCompras'
 import { useNotificaciones } from '../hooks/useNotificaciones'
@@ -44,18 +44,30 @@ export default function ComprasPage() {
   }
 
   const crearCompra = async (datos) => {
-    if (await ejecutar(() => c.crear(datos), 'Orden registrada', 'Nueva orden registrada con éxito')) cerrar()
+    if (await ejecutar(() => c.crear(datos), 'Nueva orden', 'Nueva orden de compra creada con éxito')) cerrar()
   }
 
   const guardarEdicion = async (compra) => {
+    if (compra.estado === ESTADO.RECIBIDA) {
+      notificar('advertencia', 'No se puede editar', 'Una orden recibida ya no se puede modificar')
+      return
+    }
     if (await ejecutar(() => c.actualizar(compra), 'Orden actualizada', 'Cambios realizados con éxito')) cerrar()
   }
 
   const cambiarEstado = async (nuevoEstado) => {
-    if (await ejecutar(() => c.cambiarEstado(modal.id, nuevoEstado), 'Estado actualizado', 'Cambios de estado realizados con éxito')) cerrar()
+    if (compraActiva && compraActiva.estado === ESTADO.RECIBIDA) {
+      notificar('advertencia', 'No se puede cambiar', 'Una orden recibida ya no se puede modificar')
+      return
+    }
+    if (await ejecutar(() => c.cambiarEstado(modal.id, nuevoEstado), 'Cambio de estado', `Estado de la orden ${modal.id} actualizado a ${nuevoEstado}`)) cerrar()
   }
 
   const eliminarCompra = async () => {
+    if (compraActiva && compraActiva.estado === ESTADO.RECIBIDA) {
+      notificar('advertencia', 'No se puede eliminar', 'No se puede eliminar una orden ya recibida')
+      return
+    }
     if (await ejecutar(() => c.eliminar(modal.id), 'Orden eliminada', 'Compra eliminada de forma exitosa')) cerrar()
   }
 
@@ -99,9 +111,21 @@ export default function ComprasPage() {
           onOrdenar={c.alternarOrden}
           mensajeVacio={mensajeVacio}
           onVer={(compra) => abrir('ver', compra)}
-          onEditar={(compra) => abrir('editar', compra)}
+          onEditar={(compra) => {
+            if (compra.estado === ESTADO.RECIBIDA) {
+              notificar('advertencia', 'No se puede editar', 'Una orden recibida ya no se puede modificar')
+              return
+            }
+            abrir('editar', compra)
+          }}
           onCambiarEstado={(compra) => abrir('estado', compra)}
-          onEliminar={(compra) => abrir('eliminar', compra)}
+          onEliminar={(compra) => {
+            if (compra.estado === ESTADO.RECIBIDA) {
+              notificar('advertencia', 'No se puede eliminar', 'No se puede eliminar una orden ya recibida')
+              return
+            }
+            abrir('eliminar', compra)
+          }}
         />
 
         <Box sx={{ px: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>

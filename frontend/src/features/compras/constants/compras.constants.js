@@ -7,35 +7,27 @@ export const PAGE_SIZE = 8
 export const NOTIF_DURATION = 3000
 
 // ---------- Estados de la orden ----------
-// La BD (tb_detalle_compra.estado) maneja pendiente / parcial / recibido / cancelado.
+// Solo se manejan dos estados: Pendiente y Recibida.
 export const ESTADO = {
   PENDIENTE: 'Pendiente',
-  PARCIAL: 'Parcial',
   RECIBIDA: 'Recibida',
-  CANCELADA: 'Cancelada',
 }
 
 // Variante de <StatusBadge> según el estado de la orden
 export const estadoVariant = {
   [ESTADO.RECIBIDA]: 'success',
   [ESTADO.PENDIENTE]: 'warning',
-  [ESTADO.PARCIAL]: 'accent',
-  [ESTADO.CANCELADA]: 'danger',
 }
 
 // Color del puntito de cada estado (nombre del tema, sirve directo en sx: bgcolor: estadoDotColor[estado])
 export const estadoDotColor = {
   [ESTADO.RECIBIDA]: 'success.main',
   [ESTADO.PENDIENTE]: 'warning.main',
-  [ESTADO.PARCIAL]: 'primary.main',
-  [ESTADO.CANCELADA]: 'error.main',
 }
 
 export const estadoOptions = [
   { value: ESTADO.PENDIENTE, label: 'Pendiente' },
-  { value: ESTADO.PARCIAL, label: 'Parcial' },
   { value: ESTADO.RECIBIDA, label: 'Recibida' },
-  { value: ESTADO.CANCELADA, label: 'Cancelada' },
 ]
 
 // ---------- Categorías ----------

@@ -60,7 +60,7 @@ export function ComprasTable({
     },
     {
       key: 'items',
-      header: 'Ítems',
+      header: 'Cantidad',
       align: 'center',
       accessor: (r) => <Typography variant="body2">{r.detalle.length}</Typography>,
     },
@@ -94,27 +94,32 @@ export function ComprasTable({
         )
       },
     },
-    {
-      key: 'acciones',
-      header: '',
-      align: 'right',
-      accessor: (r) => {
-        const bloqueado = r.estado === ESTADO.CANCELADA
-        return (
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
-            <AccionFila titulo="Ver detalle" icono={<IconEye size={15} />} onClick={() => onVer(r)} />
-            <AccionFila titulo="Editar orden" icono={<IconPencil size={15} />} onClick={() => onEditar(r)} />
-            <AccionFila
-              titulo={bloqueado ? MENSAJE_CANCELADA : 'Cambiar estado'}
-              icono={<IconToggleLeft size={15} />}
-              disabled={bloqueado}
-              onClick={() => onCambiarEstado(r)}
-            />
-            <AccionFila titulo="Eliminar orden" icono={<IconTrash size={15} />} color="error.main" onClick={() => onEliminar(r)} />
-          </Stack>
-        )
+      {
+        key: 'acciones',
+        header: '',
+        align: 'right',
+        accessor: (r) => {
+          const recibida = r.estado === ESTADO.RECIBIDA
+          return (
+            <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
+              <AccionFila titulo="Ver detalle" icono={<IconEye size={15} />} onClick={() => onVer(r)} />
+              {!recibida && (
+                <AccionFila titulo="Editar orden" icono={<IconPencil size={15} />} onClick={() => onEditar(r)} />
+              )}
+              {!recibida && (
+                <AccionFila
+                  titulo="Cambiar estado"
+                  icono={<IconToggleLeft size={15} />}
+                  onClick={() => onCambiarEstado(r)}
+                />
+              )}
+              {!recibida && (
+                <AccionFila titulo="Eliminar orden" icono={<IconTrash size={15} />} color="error.main" onClick={() => onEliminar(r)} />
+              )}
+            </Stack>
+          )
+        },
       },
-    },
   ]
 
   return (
