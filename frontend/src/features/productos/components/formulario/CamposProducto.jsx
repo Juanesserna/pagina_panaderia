@@ -4,8 +4,8 @@ import { Box, Stack, Switch, TextField, Typography, useTheme } from '@mui/materi
 import { IconPhoto } from '@tabler/icons-react'
 // Importa los campos y selectores estándar del panel
 import { Input, Select } from '@shared/ui'
-// Importa las categorías disponibles para los productos
-import { CATEGORIAS_PRODUCTO } from '../comunes/opcionesProducto'
+// Importa las categorías del módulo Categorías (estado compartido vía CategoriasProvider)
+import { useCategorias } from '@features/categorias'
 // Importa la etiqueta compartida por los formularios de producto
 import FieldLabel from './FieldLabel'
 // Importa los estilos compartidos de los formularios de producto
@@ -15,6 +15,21 @@ import { inputSx, imagePreviewSx } from './estilos'
 export default function CamposProducto({ formulario, handleChange, handleNumber, handleSwitch }) {
   // Obtiene el tema actual (claro u oscuro)
   const theme = useTheme()
+  // Lee todas las categorías del contexto compartido
+  const { allCategorias } = useCategorias()
+
+  // Filtra solo categorías activas de tipo Producto o Ambos
+  const categoriasFiltradas = allCategorias.filter(
+    (c) => c.estado === 'Activa' && (c.tipo === 'Producto' || c.tipo === 'Ambos')
+  )
+
+  const opcionesCategoria = categoriasFiltradas.map((c) => ({ value: c.nombre, label: c.nombre }))
+
+  // Si el producto en edición tiene una categoría que no está entre las opciones,
+  // la agrega para que el selector no quede en blanco
+  if (formulario.categoria && !opcionesCategoria.some((o) => o.value === formulario.categoria)) {
+    opcionesCategoria.push({ value: formulario.categoria, label: formulario.categoria })
+  }
   return (
     <Stack spacing={3}>
       <Box>
@@ -38,7 +53,7 @@ export default function CamposProducto({ formulario, handleChange, handleNumber,
           <Select
             value={formulario.categoria}
             onChange={handleChange('categoria')}
-            options={CATEGORIAS_PRODUCTO.map((c) => ({ value: c, label: c }))}
+            options={opcionesCategoria}
           />
         </Box>
 

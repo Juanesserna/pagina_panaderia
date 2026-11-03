@@ -43,16 +43,27 @@ export default function ProductosPage() {
     setDetalleProductoModal(true)
   }
 
-  const handleGuardarProducto = (datos) => {
-    const producto = crearProducto(datos)
-    setNuevoProductoModal(false)
-    navigate(ROUTES.AGREGAR_RECETA, { state: { producto } })
+  const handleGuardarProducto = async (datos) => {
+    try {
+      const productoCreado = await crearProducto(datos)
+      setNuevoProductoModal(false)
+      navigate(ROUTES.AGREGAR_RECETA, {
+        state: { productoId: productoCreado?.id, producto: productoCreado },
+      })
+    } catch (error) {
+      console.error('[ProductosPage] Error al crear producto:', error)
+    }
   }
 
-  const handleGuardarEdicion = (datos) => {
-    editarProducto(productoEditar.id, datos)
-    setEditarProductoModal(false)
-    setProductoEditar(null)
+  const handleGuardarEdicion = async (datos) => {
+    if (!productoEditar?.id) return
+    try {
+      await editarProducto(productoEditar.id, datos)
+      setEditarProductoModal(false)
+      setProductoEditar(null)
+    } catch (error) {
+      console.error('[ProductosPage] Error al editar producto:', error)
+    }
   }
 
   const handleEliminarProducto = (producto) => {

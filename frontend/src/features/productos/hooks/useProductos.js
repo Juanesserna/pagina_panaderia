@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { productosApi } from '../api/productosApi';
 
-// Mantiene tu función original de mapeo para los modales
 function mapFormDataToProducto(datos) {
   return {
     id: datos.id,
@@ -15,6 +14,7 @@ function mapFormDataToProducto(datos) {
     cantMaximaProduccion: Number(datos.cantMaximaProduccion),
     estado: datos.activo !== undefined ? (datos.activo ? 'Activo' : 'Agotado') : (datos.estado || 'Activo'),
     imagenUrl: datos.imagen || datos.imagenUrl,
+    imagen: datos.imagen || datos.imagenUrl,
   }
 }
 
@@ -30,8 +30,7 @@ export function useProductos() {
     setError(null);
     try {
       const respuesta = await productosApi.obtenerProductos(filtros);
-      // Asume que el backend devuelve { datos, total, pagina, totalPaginas }
-      setProductos(respuesta.datos || respuesta);
+      setProductos(respuesta.datos || respuesta || []);
       if (respuesta.totalPaginas) {
         setPaginacion({ total: respuesta.total, totalPaginas: respuesta.totalPaginas });
       }
@@ -50,11 +49,10 @@ export function useProductos() {
     try {
       const datosMapeados = mapFormDataToProducto({
         ...datos,
-        id: datos.id ?? Date.now(),
-        codigo: datos.codigo ?? `PR-${Math.floor(Math.random() * 900) + 100}`,
+        codigo: datos.codigo || 'PR-' + (Math.floor(Math.random() * 900) + 100),
       });
       const nuevo = await productosApi.crearProducto(datosMapeados);
-      await cargarProductos(); // Refresca la lista desde el servidor
+      await cargarProductos();
       return nuevo;
     } catch (err) {
       setError(err.message);
