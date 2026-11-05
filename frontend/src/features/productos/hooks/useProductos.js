@@ -1,20 +1,20 @@
 ﻿import { useState, useEffect, useCallback } from 'react';
 import { productosApi } from '../api/productosApi';
 
-function mapFormDataToProducto(datos) {
+function mapearProductoFrontend(p) {
   return {
-    id: datos.id,
-    codigo: datos.codigo,
-    nombre: datos.nombre,
-    categoria: datos.categoria,
-    precioVenta: Number(datos.precioVenta),
-    stock: Number(datos.stockActual ?? datos.stock),
-    stockMinimo: Number(datos.stockMinimo),
-    cantMinimaProduccion: Number(datos.cantMinimaProduccion),
-    cantMaximaProduccion: Number(datos.cantMaximaProduccion),
-    estado: datos.activo !== undefined ? (datos.activo ? 'Activo' : 'Agotado') : (datos.estado || 'Activo'),
-    imagenUrl: datos.imagen || datos.imagenUrl,
-    imagen: datos.imagen || datos.imagenUrl,
+    id: p.id,
+    codigo: p.codigo ?? `PR-${p.id}`,
+    nombre: p.nombre,
+    categoria: p.categoria,
+    precioVenta: Number(p.precioVenta),
+    stock: Number(p.stockActual ?? p.stock),
+    stockMinimo: p.stockMinimo == null ? undefined : Number(p.stockMinimo),
+    cantMinimaProduccion: p.cantMinimaProduccion == null ? undefined : Number(p.cantMinimaProduccion),
+    cantMaximaProduccion: p.cantMaximaProduccion == null ? undefined : Number(p.cantMaximaProduccion),
+    estado: p.activo !== undefined ? (p.activo ? 'Activo' : 'Agotado') : (p.estado || 'Activo'),
+    imagenUrl: p.imagenUrl || p.imagen,
+    imagen: p.imagenUrl || p.imagen,
   }
 }
 
@@ -30,7 +30,7 @@ export function useProductos() {
     setError(null);
     try {
       const respuesta = await productosApi.obtenerProductos(filtros);
-      setProductos(respuesta.datos || respuesta || []);
+      setProductos((respuesta.datos || respuesta.items || respuesta || []).map(mapearProductoFrontend));
       if (respuesta.totalPaginas) {
         setPaginacion({ total: respuesta.total, totalPaginas: respuesta.totalPaginas });
       }
@@ -42,18 +42,16 @@ export function useProductos() {
   }, [filtros]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     cargarProductos();
   }, [cargarProductos]);
 
   const crearProducto = useCallback(async (datos) => {
     try {
-      const datosMapeados = mapFormDataToProducto({
-        ...datos,
-        codigo: datos.codigo || 'PR-' + (Math.floor(Math.random() * 900) + 100),
-      });
-      const nuevo = await productosApi.crearProducto(datosMapeados);
+      const nuevo = await productosApi.crearProducto(datos);
+      const normalizado = mapearProductoFrontend(nuevo);
       await cargarProductos();
-      return nuevo;
+      return normalizado;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -62,9 +60,10 @@ export function useProductos() {
 
   const editarProducto = useCallback(async (id, datos) => {
     try {
-      const datosMapeados = mapFormDataToProducto({ ...datos, id, codigo: datos.codigo });
-      await productosApi.actualizarProducto(id, datosMapeados);
+      const actualizado = await productosApi.actualizarProducto(id, datos);
+      const normalizado = mapearProductoFrontend(actualizado);
       await cargarProductos();
+      return normalizado;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -83,8 +82,10 @@ export function useProductos() {
 
   const cambiarEstado = useCallback(async (id, estado) => {
     try {
-      await productosApi.cambiarEstado(id, estado);
+      const cambiado = await productosApi.cambiarEstado(id, estado);
+      const normalizado = mapearProductoFrontend(cambiado);
       await cargarProductos();
+      return normalizado;
     } catch (err) {
       setError(err.message);
       throw err;

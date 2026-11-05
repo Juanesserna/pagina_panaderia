@@ -12,7 +12,7 @@ import FieldLabel from './FieldLabel'
 import { inputSx, imagePreviewSx } from './estilos'
 
 // Bloque con los campos del formulario de producto
-export default function CamposProducto({ formulario, handleChange, handleNumber, handleSwitch }) {
+export default function CamposProducto({ formulario, handleChange, handleNumber, handleSwitch, errores, touched, tocar }) {
   // Obtiene el tema actual (claro u oscuro)
   const theme = useTheme()
   // Lee todas las categorías del contexto compartido
@@ -30,6 +30,10 @@ export default function CamposProducto({ formulario, handleChange, handleNumber,
   if (formulario.categoria && !opcionesCategoria.some((o) => o.value === formulario.categoria)) {
     opcionesCategoria.push({ value: formulario.categoria, label: formulario.categoria })
   }
+
+  // Muestra el error de un campo solo si fue tocado y hay error de validación
+  const errorDe = (campo) => touched[campo] && errores[campo] ? errores[campo] : null
+
   return (
     <Stack spacing={3}>
       <Box>
@@ -38,7 +42,13 @@ export default function CamposProducto({ formulario, handleChange, handleNumber,
           placeholder="Nombre del producto"
           value={formulario.nombre}
           onChange={handleChange('nombre')}
+          onBlur={() => tocar('nombre')}
         />
+        {errorDe('nombre') && (
+          <Typography variant="caption" sx={{ color: theme.palette.error.main, mt: 0.5 }}>
+            {errores.nombre}
+          </Typography>
+        )}
       </Box>
 
       <Box
@@ -53,8 +63,14 @@ export default function CamposProducto({ formulario, handleChange, handleNumber,
           <Select
             value={formulario.categoria}
             onChange={handleChange('categoria')}
+            onBlur={() => tocar('categoria')}
             options={opcionesCategoria}
           />
+          {errorDe('categoria') && (
+            <Typography variant="caption" sx={{ color: theme.palette.error.main, mt: 0.5 }}>
+              {errores.categoria}
+            </Typography>
+          )}
         </Box>
 
         <Box>
@@ -66,10 +82,16 @@ export default function CamposProducto({ formulario, handleChange, handleNumber,
             placeholder="0.00"
             value={formulario.precioVenta}
             onChange={handleNumber('precioVenta')}
+            onBlur={() => tocar('precioVenta')}
             variant="outlined"
             inputProps={{ inputMode: 'decimal', min: 0, step: '0.01' }}
             sx={inputSx(theme)}
           />
+          {errorDe('precioVenta') && (
+            <Typography variant="caption" sx={{ color: theme.palette.error.main, mt: 0.5 }}>
+              {errores.precioVenta}
+            </Typography>
+          )}
         </Box>
       </Box>
 
@@ -88,7 +110,13 @@ export default function CamposProducto({ formulario, handleChange, handleNumber,
             placeholder="0"
             value={formulario.stockActual}
             onChange={handleNumber('stockActual')}
+            onBlur={() => tocar('stockActual')}
           />
+          {errorDe('stockActual') && (
+            <Typography variant="caption" sx={{ color: theme.palette.error.main, mt: 0.5 }}>
+              {errores.stockActual}
+            </Typography>
+          )}
         </Box>
 
         <Box>
@@ -99,6 +127,7 @@ export default function CamposProducto({ formulario, handleChange, handleNumber,
             placeholder="0"
             value={formulario.stockMinimo}
             onChange={handleNumber('stockMinimo')}
+            onBlur={() => tocar('stockMinimo')}
           />
         </Box>
       </Box>
@@ -118,6 +147,7 @@ export default function CamposProducto({ formulario, handleChange, handleNumber,
             placeholder="1"
             value={formulario.cantMinimaProduccion}
             onChange={handleNumber('cantMinimaProduccion')}
+            onBlur={() => tocar('cantMinimaProduccion')}
           />
         </Box>
 
@@ -129,6 +159,7 @@ export default function CamposProducto({ formulario, handleChange, handleNumber,
             placeholder="100"
             value={formulario.cantMaximaProduccion}
             onChange={handleNumber('cantMaximaProduccion')}
+            onBlur={() => tocar('cantMaximaProduccion')}
           />
         </Box>
       </Box>
@@ -142,7 +173,13 @@ export default function CamposProducto({ formulario, handleChange, handleNumber,
             placeholder="https://ejemplo.com/imagen.jpg"
             value={formulario.imagen}
             onChange={handleChange('imagen')}
+            onBlur={() => tocar('imagen')}
           />
+          {errorDe('imagen') && (
+            <Typography variant="caption" sx={{ color: theme.palette.error.main, mt: 0.5 }}>
+              {errores.imagen}
+            </Typography>
+          )}
           <Box sx={imagePreviewSx(theme)}>
             {formulario.imagen ? (
               <Box

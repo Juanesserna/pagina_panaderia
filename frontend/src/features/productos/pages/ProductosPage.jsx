@@ -1,4 +1,4 @@
-import { Box, Stack, Card } from '@mui/material'
+import { Box, Stack, Card, Alert } from '@mui/material'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IconBox, IconBread } from '@tabler/icons-react'
@@ -28,12 +28,15 @@ export default function ProductosPage() {
   const [busqueda, setBusqueda] = useState('')
   const [filtroCategoria, setFiltroCategoria] = useState('')
   const [filtroEstado, setFiltroEstado] = useState('')
+  const [errorServidor, setErrorServidor] = useState(null)
 
   const handleNuevoProducto = () => {
+    setErrorServidor(null)
     setNuevoProductoModal(true)
   }
 
   const handleEditarProducto = (producto) => {
+    setErrorServidor(null)
     setProductoEditar(producto)
     setEditarProductoModal(true)
   }
@@ -48,10 +51,10 @@ export default function ProductosPage() {
       const productoCreado = await crearProducto(datos)
       setNuevoProductoModal(false)
       navigate(ROUTES.AGREGAR_RECETA, {
-        state: { productoId: productoCreado?.id, producto: productoCreado },
+        state: { productoId: productoCreado.id, producto: productoCreado },
       })
     } catch (error) {
-      console.error('[ProductosPage] Error al crear producto:', error)
+      setErrorServidor(error.message || 'Error al crear el producto')
     }
   }
 
@@ -62,7 +65,7 @@ export default function ProductosPage() {
       setEditarProductoModal(false)
       setProductoEditar(null)
     } catch (error) {
-      console.error('[ProductosPage] Error al editar producto:', error)
+      setErrorServidor(error.message || 'Error al editar el producto')
     }
   }
 
@@ -108,6 +111,10 @@ export default function ProductosPage() {
     return coincideBusqueda && coincideCategoria && coincideEstado
   })
 
+  const limpiarErrorServidor = () => {
+    setErrorServidor(null)
+  }
+
   return (
     <Box
       sx={{
@@ -122,6 +129,11 @@ export default function ProductosPage() {
         boxSizing: 'border-box',
       }}
     >
+      {errorServidor && (
+        <Alert severity="error" onClose={limpiarErrorServidor}>
+          {errorServidor}
+        </Alert>
+      )}
       <Stack direction="row" spacing={2}>
         <StatsCard
           label="PRODUCTOS ACTIVOS"
