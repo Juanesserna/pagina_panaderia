@@ -1,4 +1,4 @@
-import { Producto } from '../../domain/productos/Productos.js';
+import { Producto } from '../../domain/productos/Producto.js';
 
 export class CrearProducto {
   constructor({ productoRepository }) {

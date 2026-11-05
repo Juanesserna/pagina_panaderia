@@ -9,7 +9,7 @@ export const estadoVariant = {
   'en proceso': 'process',
   'pago parcial': 'process',
   pendiente: 'warning',
-  cancelado: 'danger',
+  anulado: 'danger',
 }
 
 // Color del puntito de cada estado (nombre del tema, sirve directo en sx: bgcolor: estadoDotColor[estado])
@@ -18,7 +18,7 @@ export const estadoDotColor = {
   'en proceso': 'primary.main',
   pendiente: 'warning.main',
   'pago parcial': 'info.main',
-  cancelado: 'error.main',
+  anulado: 'error.main',
 }
 
 export const estadoOptions = [
@@ -26,7 +26,7 @@ export const estadoOptions = [
   { value: 'pago parcial', label: 'Pago parcial' },
   { value: 'en proceso', label: 'En proceso' },
   { value: 'completado', label: 'Completado' },
-  { value: 'cancelado', label: 'Cancelado' },
+  { value: 'anulado', label: 'Anulado' },
 ]
 
 // Métodos de pago: mismos valores que muestra la columna "Método" del listado y el filtro
@@ -36,9 +36,8 @@ export const metodoOptions = [
   { value: 'transferencia', label: 'Transferencia' },
 ]
 
-// Canales de venta
+// Canales de venta (sin encargo)
 export const canalOptions = [
   { value: 'pagina', label: 'Página' },
-  { value: 'encargo', label: 'Encargo' },
   { value: 'presencial', label: 'Presencial' },
 ]

@@ -1,3 +1,4 @@
+import './setupEnv.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { buildContainer } from '../src/main/container.js'
@@ -5,7 +6,7 @@ import { buildContainer } from '../src/main/container.js'
 const usuario = { nombre: 'Andrea Gómez', nit: '1020304050' }
 
 test('listar: filtra, ordena y pagina', async () => {
-  const { ventas } = buildContainer()
+  const { ventas } = await buildContainer()
   const r = await ventas.listarVentas.execute({ estado: 'completado', page: 1, pageSize: 3 })
   assert.equal(r.items.length, 3)
   assert.ok(r.total > 3)
@@ -13,7 +14,7 @@ test('listar: filtra, ordena y pagina', async () => {
 })
 
 test('transiciones: completado solo puede ir a cancelado', async () => {
-  const { ventas } = buildContainer()
+  const { ventas } = await buildContainer()
   await assert.rejects(ventas.cambiarEstadoVenta.execute({ id: '#2851', estado: 'pendiente' }), { code: 'TRANSICION_INVALIDA' })
   const v = await ventas.cambiarEstadoVenta.execute({ id: '#2851', estado: 'cancelado' })
   assert.equal(v.estado, 'cancelado')
@@ -21,7 +22,7 @@ test('transiciones: completado solo puede ir a cancelado', async () => {
 })
 
 test('crear: calcula total en servidor, siguiente id, rechaza sin stock', async () => {
-  const { ventas } = buildContainer()
+  const { ventas } = await buildContainer()
   const v = await ventas.crearVenta.execute({ usuario, clienteNit: '1085822412', metodo: 'efectivo', items: [{ nombre: 'Croissant', cantidad: 2 }, { nombre: 'Baguette', cantidad: 1 }] })
   assert.equal(v.id, '#2852')
   assert.equal(v.total, 34)
@@ -31,7 +32,7 @@ test('crear: calcula total en servidor, siguiente id, rechaza sin stock', async 
 })
 
 test('abonos: encargo en 2 pagos pasa a "pago parcial" y calcula saldo', async () => {
-  const { ventas } = buildContainer()
+  const { ventas } = await buildContainer()
   let v = await ventas.registrarAbono.execute({ id: '#2848', slot: 1, urlComprobante: 'data:image/png;base64,AAA' })
   assert.equal(v.estado, 'pago parcial')
   assert.deepEqual([v.resumenPagos().totalAbonado, v.resumenPagos().saldoPendiente], [170, 170])

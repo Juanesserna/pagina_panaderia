@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react'
 import { productosApi } from '@features/productos/api/productosApi'
 
-// Límite alto porque el backend aplica paginación con limite=10 por defecto
-// y no permite quitar el límite sin modificar el backend.
-const LIMITE_ALTO = 100
+// Límite 50 (máximo permitido por el backend en paginación).
+const LIMITE_ALTO = 50
 
 // Hook de lectura de productos para el Landing (consulta la API al montarse).
 // Devuelve solo productos con estado ACTIVO.

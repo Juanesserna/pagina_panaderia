@@ -25,8 +25,8 @@ export const pagosPermitidos = (venta) => (venta?.pagoUnico === false ? 2 : 1)
 
 export const esTransicionValida = (estadoActual, nuevoEstado) => {
   if (estadoActual === nuevoEstado) return true
-  if (estadoActual === 'cancelado') return false
-  if (estadoActual === 'completado') return nuevoEstado === 'cancelado'
+  if (estadoActual === 'anulado') return false
+  if (estadoActual === 'completado') return nuevoEstado === 'anulado'
   return true
 }
 
@@ -67,7 +67,7 @@ export const horaActualFormateada = () => {
 // ---------- Reglas de visibilidad / stock ----------
 
 // El comprobante solo se puede ver cuando la venta ya está cerrada
-export const puedeVerComprobante = (venta) => venta.estado === 'completado' || venta.estado === 'cancelado'
+export const puedeVerComprobante = (venta) => venta.estado === 'completado' || venta.estado === 'anulado'
 
 // Sin stock si el producto trae stock numérico <= 0.
 // TEMPORAL: mientras el mock no trae stock, "Pan francés" simula estar agotado.

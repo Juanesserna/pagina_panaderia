@@ -14,6 +14,7 @@ export const ROUTES = {
   ROLES: '/roles',
   USUARIOS: '/usuarios',
   VENTAS: '/ventas',
+  PEDIDOS: '/pedidos',
   CATALOGO: '/catalogo',
   CHECKOUT: '/checkout',
   MIS_PEDIDOS: '/mis-pedidos',

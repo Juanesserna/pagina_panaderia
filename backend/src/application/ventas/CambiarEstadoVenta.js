@@ -1,4 +1,4 @@
-import { NotFoundError } from '../../domain/ventas/errors.js'
+import { NotFoundError } from '../../domain/shared/errors.js'
 
 export class CambiarEstadoVenta {
   constructor({ ventaRepository }) { this.ventaRepository = ventaRepository }
