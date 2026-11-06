@@ -3,6 +3,7 @@ import { Box, Divider, Stack, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { IconPlus, IconFilter } from '@tabler/icons-react'
 import { Button, Pagination, SearchInput } from '@shared/ui'
+import { NotificacionesContainer, useNotificaciones } from '@shared/notifications'
 import { useInsumos } from '../hooks/useInsumos'
 import { InsumosKpis } from '../components/InsumosKpis'
 import { InsumosTable } from '../components/InsumosTable'
@@ -12,6 +13,8 @@ import { DetalleInsumo } from '../components/DetalleInsumo'
 import { EliminarInsumoDialog, CambiarEstadoInsumoDialog } from '../components/InsumoDialogs'
 
 export function InsumosPage() {
+  const { notificaciones, mostrarNotificacion } = useNotificaciones()
+
   const {
     loading,
     kpis,
@@ -42,13 +45,15 @@ export function InsumosPage() {
     setModalEstado,
     insumoAccion,
     setInsumoAccion,
-  } = useInsumos()
+  } = useInsumos({ mostrarNotificacion })
 
   const [showFiltros, setShowFiltros] = useState(false)
   const hayFiltros = filtrosActivosCount > 0
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <NotificacionesContainer notificaciones={notificaciones} />
+
       <InsumosKpis kpis={kpis} />
 
       <Box sx={{ borderRadius: 2.5, overflow: 'hidden', bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
@@ -58,7 +63,7 @@ export function InsumosPage() {
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1.25 }}>
             <SearchInput
-              placeholder="Buscar por nombre o código…"
+              placeholder="Buscar por nombre o ID…"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)

@@ -19,7 +19,7 @@ export const initialUnidadesMedida = [
 
 export const initialInsumos = [
   {
-    id: 1,
+    id: 1001,
     nombre: 'Harina de Trigo Fortificada Multipropósito',
     descripcion: 'Harina de trigo de alta calidad para pan artesanal',
     idCategoria: 1,
@@ -50,7 +50,7 @@ export const initialInsumos = [
     ],
   },
   {
-    id: 2,
+    id: 1002,
     nombre: 'Mantequilla Sin Sal 80% Grasa',
     descripcion: 'Mantequilla sin sal para repostería fina',
     idCategoria: 2,
@@ -72,7 +72,7 @@ export const initialInsumos = [
     ],
   },
   {
-    id: 3,
+    id: 1003,
     nombre: 'Azúcar Refinada Blanco Especial',
     descripcion: 'Azúcar blanca refinada de caña',
     idCategoria: 3,
@@ -84,7 +84,7 @@ export const initialInsumos = [
     lotes: [],
   },
   {
-    id: 4,
+    id: 1004,
     nombre: 'Levadura Fresca en Pasta',
     descripcion: 'Levadura fresca para fermentación de panes',
     idCategoria: 4,
@@ -96,7 +96,7 @@ export const initialInsumos = [
     lotes: [],
   },
   {
-    id: 5,
+    id: 1005,
     nombre: 'Esencia de Vainilla Negra',
     descripcion: 'Extracto puro de vainilla',
     idCategoria: 5,

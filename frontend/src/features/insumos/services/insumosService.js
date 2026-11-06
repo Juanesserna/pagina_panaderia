@@ -29,7 +29,8 @@ export function fetchInsumos() {
 
 export function createInsumo(data) {
   const nuevo = {
-    id: insumos.length ? Math.max(...insumos.map((i) => i.id)) + 1 : 1,
+    // Insumos usan IDs desde 1001; Proveedores desde 2001 (no se cruzan).
+    id: insumos.length ? Math.max(...insumos.map((i) => i.id)) + 1 : 1001,
     nombre: data.nombre,
     descripcion: data.descripcion,
     idCategoria: Number(data.idCategoria),
@@ -50,7 +51,7 @@ export function updateInsumo(id, data) {
       ? {
           ...i,
           nombre: data.nombre,
-          descripcion: data.descripcion,
+          descripcion: data.descripcion ?? i.descripcion,
           idCategoria: Number(data.idCategoria),
           idUnidadMedida: Number(data.idUnidadMedida),
           stockMinimo: Number(data.stockMinimo),

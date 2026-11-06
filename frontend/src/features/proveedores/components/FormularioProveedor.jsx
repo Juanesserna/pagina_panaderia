@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Box, Stack, Typography } from '@mui/material'
 import { Button, Input, Modal, Select } from '@shared/ui'
 import { estadoOptions, formVacio } from '../constants/proveedores.constants'
-import { formatoCodigo } from '../utils/proveedoresHelpers'
+import { validarProveedor } from '../utils/proveedoresValidaciones'
 import { Campo } from './Campo'
 
 const gridSx = { display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }
@@ -22,7 +22,29 @@ function CuerpoFormulario({ modo, proveedor, onGuardar, onCancelar }) {
       : formVacio
   )
 
-  const set = (campo, valor) => setForm((p) => ({ ...p, [campo]: valor }))
+  // Un campo se marca "tocado" al escribir o al salir de él; al pulsar Guardar
+  // se marcan todos. El error solo se ve en campos tocados.
+  const [tocados, setTocados] = useState({})
+  const [intentoGuardar, setIntentoGuardar] = useState(false)
+
+  const errores = validarProveedor(form)
+  const error = (campo) => (tocados[campo] || intentoGuardar ? errores[campo] ?? '' : '')
+  const tocar = (campo) => setTocados((p) => (p[campo] ? p : { ...p, [campo]: true }))
+  const set = (campo, valor) => {
+    setForm((p) => ({ ...p, [campo]: valor }))
+    tocar(campo)
+  }
+
+  const limpiar = () => {
+    setForm(formVacio)
+    setTocados({})
+    setIntentoGuardar(false)
+  }
+  const guardar = () => {
+    setIntentoGuardar(true)
+    if (Object.keys(errores).length > 0) return
+    onGuardar(form)
+  }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 1 }}>
@@ -33,10 +55,10 @@ function CuerpoFormulario({ modo, proveedor, onGuardar, onCancelar }) {
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <Typography variant="subtitle1">Información general</Typography>
         <Box sx={gridSx}>
-          <Campo label="Código">
+          <Campo label="ID">
             <Input
               disabled
-              value={modo === 'editar' && proveedor ? formatoCodigo(proveedor.id) : 'Se asigna al guardar'}
+              value={modo === 'editar' && proveedor ? String(proveedor.id) : 'Se asigna al guardar'}
               onChange={() => {}}
             />
           </Campo>
@@ -48,10 +70,10 @@ function CuerpoFormulario({ modo, proveedor, onGuardar, onCancelar }) {
             />
           </Campo>
 
-          <Campo label="Nombre empresa" required>
+          <Campo label="Nombre empresa" required error={error('nombre')} onBlur={() => tocar('nombre')}>
             <Input placeholder="Ej: Molinos El Trigal S.A." value={form.nombre} onChange={(e) => set('nombre', e.target.value)} />
           </Campo>
-          <Campo label="NIT" required>
+          <Campo label="NIT" required error={error('nit')} onBlur={() => tocar('nit')}>
             <Input placeholder="900.123.456-7" value={form.nit} onChange={(e) => set('nit', e.target.value)} />
           </Campo>
         </Box>
@@ -60,16 +82,16 @@ function CuerpoFormulario({ modo, proveedor, onGuardar, onCancelar }) {
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <Typography variant="subtitle1">Contacto</Typography>
         <Box sx={gridSx}>
-          <Campo label="Nombre contacto" required>
+          <Campo label="Nombre contacto" required error={error('nombreContacto')} onBlur={() => tocar('nombreContacto')}>
             <Input value={form.nombreContacto} onChange={(e) => set('nombreContacto', e.target.value)} />
           </Campo>
-          <Campo label="Teléfono" required>
+          <Campo label="Teléfono" required error={error('telefono')} onBlur={() => tocar('telefono')}>
             <Input placeholder="+57 300 000 0000" value={form.telefono} onChange={(e) => set('telefono', e.target.value)} />
           </Campo>
-          <Campo label="Correo electrónico" required>
+          <Campo label="Correo electrónico" required error={error('email')} onBlur={() => tocar('email')}>
             <Input type="email" placeholder="correo@empresa.com" value={form.email} onChange={(e) => set('email', e.target.value)} />
           </Campo>
-          <Campo label="Dirección" required>
+          <Campo label="Dirección" required error={error('direccion')} onBlur={() => tocar('direccion')}>
             <Input value={form.direccion} onChange={(e) => set('direccion', e.target.value)} />
           </Campo>
         </Box>
@@ -79,10 +101,10 @@ function CuerpoFormulario({ modo, proveedor, onGuardar, onCancelar }) {
         <Button variant="ghost" size="sm" onClick={onCancelar}>
           Cancelar
         </Button>
-        <Button variant="secondary" size="sm" onClick={() => setForm(formVacio)}>
+        <Button variant="secondary" size="sm" onClick={limpiar}>
           Limpiar campos
         </Button>
-        <Button variant="primary" size="sm" onClick={() => onGuardar(form)}>
+        <Button variant="primary" size="sm" onClick={guardar}>
           {modo === 'editar' ? 'Actualizar proveedor' : 'Guardar proveedor'}
         </Button>
       </Stack>
