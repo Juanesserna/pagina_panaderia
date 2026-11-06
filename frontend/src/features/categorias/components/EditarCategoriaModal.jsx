@@ -3,7 +3,8 @@ import { useFormularioCategoria } from '../hooks/useFormularioCategoria'
 import FormularioCategoria from './formulario/FormularioCategoria'
 
 export default function EditarCategoriaModal({ open, onClose, onSubmit, categoria }) {
-  const { valores, cambiar, reiniciar } = useFormularioCategoria(categoria)
+  const { valores, cambiar, reiniciar, validar, tocarUrl } = useFormularioCategoria(categoria)
+  const { esValido, errorUrl } = validar()
 
   const handleClose = () => {
     reiniciar()
@@ -12,15 +13,19 @@ export default function EditarCategoriaModal({ open, onClose, onSubmit, categori
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (valores.nombre.trim()) {
-      onSubmit(categoria?.id, {
-        nombre: valores.nombre.trim(),
-        tipo: valores.tipo,
-        estado: valores.estado,
-      })
-      reiniciar()
-      onClose()
+    const validacion = validar()
+    if (!validacion.esValido) {
+      tocarUrl()
+      return
     }
+    onSubmit(categoria?.id, {
+      nombre: valores.nombre.trim(),
+      tipo: valores.tipo,
+      estado: valores.estado,
+      urlImagen: valores.urlImagen.trim(),
+    })
+    reiniciar()
+    onClose()
   }
 
   return (
@@ -31,6 +36,9 @@ export default function EditarCategoriaModal({ open, onClose, onSubmit, categori
         onSubmit={handleSubmit}
         onCancelar={handleClose}
         textoGuardar="Guardar cambios"
+        esValido={esValido}
+        errorUrl={errorUrl}
+        onTocarUrl={tocarUrl}
       />
     </Modal>
   )

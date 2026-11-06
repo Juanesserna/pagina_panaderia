@@ -9,8 +9,10 @@ import { IconPlus, IconFilter } from '@tabler/icons-react'
 import { fonts } from '@app/theme/colors'
 // Botón y buscador estándar del panel
 import { Button, Select, SearchInput } from '@shared/ui'
-// Opciones compartidas de productos
-import { CATEGORIAS_PRODUCTO, ESTADOS_PRODUCTO } from './comunes/opcionesProducto'
+// Categorías del módulo Categorías (estado compartido vía CategoriasProvider)
+import { useCategorias } from '@features/categorias'
+// Opciones de estado de producto
+import { ESTADOS_PRODUCTO } from './comunes/opcionesProducto'
 
 // Valor que representa "sin filtro" en los selectores del catálogo
 const TODAS = 'todas'
@@ -26,6 +28,13 @@ export default function CatalogoProductos({
 }) {
   const theme = useTheme()
   const [mostrarFiltros, setMostrarFiltros] = useState(false)
+  // Lee todas las categorías del contexto compartido
+  const { allCategorias } = useCategorias()
+
+  // Filtra solo categorías activas de tipo Producto o Ambos
+  const categoriasFiltradas = allCategorias.filter(
+    (c) => c.estado === 'Activa' && (c.tipo === 'Producto' || c.tipo === 'Ambos')
+  )
 
   const handleFiltrarClick = () => {
     setMostrarFiltros((prev) => !prev)
@@ -96,7 +105,7 @@ export default function CatalogoProductos({
             <Select
               value={filtroCategoria || TODAS}
               onChange={(e) => onFiltroCategoriaChange?.(e.target.value === TODAS ? '' : e.target.value)}
-              options={[{ value: TODAS, label: 'Todas las categorías' }, ...CATEGORIAS_PRODUCTO.map((c) => ({ value: c, label: c }))]}
+              options={[{ value: TODAS, label: 'Todas las categorías' }, ...categoriasFiltradas.map((c) => ({ value: c.nombre, label: c.nombre }))]}
             />
           </Box>
 
