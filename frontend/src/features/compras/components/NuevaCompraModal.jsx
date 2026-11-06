@@ -1,7 +1,6 @@
 import { Box, Stack, Typography } from '@mui/material'
 import { IconLock, IconPlus } from '@tabler/icons-react'
 import { Button, Input, Modal, Select } from '@shared/ui'
-import { estadoOptions } from '../constants/compras.constants'
 import { useNuevaCompraForm } from '../hooks/useNuevaCompraForm'
 import { formatearMoneda, opcionesProveedor } from '../utils/comprasHelpers'
 import { Campo } from './Campo'
@@ -21,7 +20,7 @@ function NuevaCompraForm({ compras, proveedores, insumos, solicitanteInicial, on
 
   return (
     // Cuerpo con scroll propio y footer con el total siempre visible
-    <Box sx={{ display: 'flex', flexDirection: 'column', maxHeight: '70vh' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', maxHeight: '85vh' }}>
       <Box sx={{ flex: 1, overflowY: 'auto', pr: 0.5 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pb: 1 }}>
           {/* Identificación (la pone el sistema) */}
@@ -35,21 +34,16 @@ function NuevaCompraForm({ compras, proveedores, insumos, solicitanteInicial, on
           </Box>
 
           {/* Configuración */}
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2.5 }}>
-            <Campo label="Estado inicial">
-              <Select options={estadoOptions} value={f.form.estado} onChange={(e) => f.cambiarCampo('estado', e.target.value)} />
-            </Campo>
-            <Campo label="Proveedor">
-              <Select
-                options={opcionesProveedor(proveedores)}
-                value={f.form.proveedorId}
-                onChange={(e) => f.cambiarCampo('proveedorId', e.target.value)}
-              />
-            </Campo>
-          </Box>
+          <Campo label="Proveedor">
+            <Select
+              options={opcionesProveedor(proveedores)}
+              value={f.form.proveedorId}
+              onChange={(e) => f.cambiarCampo('proveedorId', e.target.value)}
+            />
+          </Campo>
 
           <Box sx={{ maxWidth: 220 }}>
-            <Campo label="Descuento especial (%)">
+            <Campo label="Descuento general (%)">
               <Input
                 type="number"
                 min={0}
@@ -84,10 +78,32 @@ function NuevaCompraForm({ compras, proveedores, insumos, solicitanteInicial, on
 
       {/* Footer fijo: no se desplaza junto con el cuerpo */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid', borderColor: 'divider', pt: 2, mt: 2 }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-          <Typography variant="caption" sx={{ color: 'text.dim' }}>
-            Total a pagar
-          </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+            <Typography variant="caption" sx={{ color: 'text.dim' }}>
+              Total a pagar
+            </Typography>
+            {f.totalDescontado > 0 && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  px: 1,
+                  py: 0.5,
+                  borderRadius: 1,
+                  bgcolor: 'accentDim',
+                  color: 'primary.main',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                }}
+              >
+                <Typography variant="caption" sx={{ color: 'primary.main', my: 0, fontWeight: 600 }}>
+                  −{formatearMoneda(f.totalDescontado)} descontado
+                </Typography>
+              </Box>
+            )}
+          </Box>
           <Typography variant="h5">{formatearMoneda(f.total)}</Typography>
         </Box>
         <Stack direction="row" spacing={1}>
@@ -105,7 +121,7 @@ function NuevaCompraForm({ compras, proveedores, insumos, solicitanteInicial, on
 
 export function NuevaCompraModal({ open, onClose, ...props }) {
   return (
-    <Modal open={open} onClose={onClose} title="Nueva orden de compra" size="lg" showDivider>
+    <Modal open={open} onClose={onClose} title="Nueva orden de compra" size="lg" showDivider sx={{ maxWidth: 'xl', width: '100%' }}>
       <NuevaCompraForm onClose={onClose} {...props} />
     </Modal>
   )

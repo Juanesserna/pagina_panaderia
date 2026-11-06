@@ -19,7 +19,6 @@ export function useNuevaVenta({ ventas, onVentaCreada, mostrarNotificacion }) {
   const [hora, setHora] = useState('')
   const [cliente, setCliente] = useState(null)
   const [metodo, setMetodo] = useState('efectivo')
-  const [pagoDividido, setPagoDividido] = useState(false) // false = pago único (100%) · true = 2 pagos de 50%
   const [busqueda, setBusqueda] = useState('')
 
   const clienteTuvoCaracterEspecialRef = useRef(false)
@@ -58,7 +57,6 @@ export function useNuevaVenta({ ventas, onVentaCreada, mostrarNotificacion }) {
     setItems([])
     setCliente(null)
     setMetodo('efectivo')
-    setPagoDividido(false)
     setBusqueda('')
     clienteTuvoCaracterEspecialRef.current = false
     productoTuvoCaracterEspecialRef.current = false
@@ -122,7 +120,7 @@ export function useNuevaVenta({ ventas, onVentaCreada, mostrarNotificacion }) {
       estado: 'pendiente',
       metodo,
       canal: 'presencial',
-      pagoUnico: !pagoDividido,
+      pagoUnico: true,
       fecha,
       hora,
       items,
@@ -144,8 +142,6 @@ export function useNuevaVenta({ ventas, onVentaCreada, mostrarNotificacion }) {
     setCliente,
     metodo,
     setMetodo,
-    pagoDividido,
-    setPagoDividido,
     busqueda,
     onBusquedaChange,
     onClienteInputChange,

@@ -1,4 +1,4 @@
-import { Autocomplete, Box, Checkbox, FormControlLabel, InputAdornment, TextField, Typography } from '@mui/material'
+import { Autocomplete, Box, InputAdornment, TextField } from '@mui/material'
 import { IconSearch } from '@tabler/icons-react'
 import { Input, Select } from '@shared/ui'
 import { metodoOptions } from '../../constants/ventas.constants'
@@ -14,7 +14,7 @@ const autocompleteSx = {
   },
 }
 
-// Parte superior: ID, fecha, NIT/Cédula, método de pago y pago dividido
+// Parte superior: ID, fecha, NIT/Cédula y método de pago
 export default function NuevaVentaEncabezado({
   id,
   fecha,
@@ -25,14 +25,12 @@ export default function NuevaVentaEncabezado({
   onClienteInputChange,
   metodo,
   onMetodoChange,
-  pagoDividido,
-  onPagoDivididoChange,
 }) {
   return (
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '0.8fr 1.3fr 1.5fr 1fr 1.8fr' },
+        gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '0.8fr 1.3fr 1.8fr 1.2fr' },
         gap: 2,
         alignItems: 'end',
       }}
@@ -77,14 +75,6 @@ export default function NuevaVentaEncabezado({
       <Box sx={{ minWidth: 0 }}>
         <FilterLabel>Método de pago</FilterLabel>
         <Select options={metodoOptions} value={metodo} onChange={(e) => onMetodoChange(e.target.value)} />
-      </Box>
-
-      <Box sx={{ minWidth: 0 }}>
-        <FormControlLabel
-          control={<Checkbox size="small" checked={pagoDividido} onChange={(e) => onPagoDivididoChange(e.target.checked)} />}
-          label={<Typography variant="body2" sx={{ color: 'text.primary' }}>Pago dividido (dos pagos del 50%)</Typography>}
-          sx={{ m: 0 }}
-        />
       </Box>
     </Box>
   )

@@ -3,7 +3,6 @@ import { ESTADO } from '../constants/compras.constants'
 import {
   buscarInsumo,
   calcularSubtotal,
-  calcularTotal,
   construirCompra,
   crearItemVacio,
   fechaHoyFormateada,
@@ -59,8 +58,13 @@ export function useNuevaCompraForm({ compras, proveedores, insumos, solicitanteI
 
   const alternarLote = (lote) => setLotesAbiertos((prev) => ({ ...prev, [lote]: !prev[lote] }))
 
+  const subtotalBruto = form.items.reduce((suma, i) => suma + i.cantidad * i.precioUnitario, 0)
   const subtotal = calcularSubtotal(form.items)
-  const total = calcularTotal(subtotal, form.descuento)
+  const descuento = form.descuento || 0
+  const montoDescontadoGeneral = Math.round(subtotal * descuento / 100)
+  const total = subtotal - montoDescontadoGeneral
+  // Monto total descontado: diferencia entre el bruto antes de descuentos y el total final
+  const totalDescontado = subtotalBruto - total
 
   const construir = () => construirCompra({ ...meta, ...form, insumos })
 
@@ -69,6 +73,7 @@ export function useNuevaCompraForm({ compras, proveedores, insumos, solicitanteI
     form,
     lotesAbiertos,
     total,
+    totalDescontado,
     esValido: itemsSonValidos(form.items),
     cambiarCampo,
     cambiarItem,
