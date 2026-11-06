@@ -1,4 +1,4 @@
-// Composition root: único lugar donde se conectan implementaciones concretas con casos de uso.
+﻿// Composition root: único lugar donde se conectan implementaciones concretas con casos de uso.
 import { InMemoryVentaRepository } from '../infrastructure/ventas/InMemoryVentaRepository.js'
 import { InMemoryCatalogoClientes, InMemoryCatalogoProductos } from '../infrastructure/catalogos/InMemoryCatalogos.js'
 import { ProductoRepositoryInMemory } from '../infrastructure/catalogos/productoRepositoryInMemory.js'
@@ -13,6 +13,9 @@ import { RegistrarAbono } from '../application/ventas/RegistrarAbono.js'
 
 import { CrearProducto } from '../application/productos/CrearProducto.js'
 import { ListarProductos } from '../application/productos/ListarProductos.js'
+import { ActualizarProducto } from '../application/productos/ActualizarProducto.js'
+import { CambiarEstadoProducto } from '../application/productos/CambiarEstadoProducto.js'
+import { EliminarProducto } from '../application/productos/EliminarProducto.js'
 
 import { InMemoryPedidoRepository } from '../infrastructure/pedidos/InMemoryPedidoRepository.js'
 import { ListarPedidos } from '../application/pedidos/ListarPedidos.js'
@@ -46,6 +49,9 @@ export async function buildContainer(overrides = {}) {
   const productos = overrides.productos ?? {
     crearProducto: new CrearProducto({ productoRepository }),
     listarProductos: new ListarProductos({ productoRepository }),
+    actualizarProducto: new ActualizarProducto({ productoRepository }),
+    cambiarEstadoProducto: new CambiarEstadoProducto({ productoRepository }),
+    eliminarProducto: new EliminarProducto({ productoRepository }),
   }
 
   const ventas = overrides.ventas ?? {
