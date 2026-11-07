@@ -3,6 +3,7 @@ import { Box, Divider, Stack, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { IconPlus, IconFilter } from '@tabler/icons-react'
 import { Button, Pagination, SearchInput } from '@shared/ui'
+import { NotificacionesContainer, useNotificaciones } from '@shared/notifications'
 import { useProveedores } from '../hooks/useProveedores'
 import { ProveedoresKpis } from '../components/ProveedoresKpis'
 import { ProveedoresTable } from '../components/ProveedoresTable'
@@ -12,6 +13,8 @@ import { DetalleProveedor } from '../components/DetalleProveedor'
 import { EliminarProveedorDialog, CambiarEstadoProveedorDialog } from '../components/ProveedorDialogos'
 
 export function ProveedoresPage() {
+  const { notificaciones, mostrarNotificacion } = useNotificaciones()
+
   const {
     loading,
     kpis,
@@ -42,13 +45,15 @@ export function ProveedoresPage() {
     setModalEstado,
     proveedorAccion,
     setProveedorAccion,
-  } = useProveedores()
+  } = useProveedores({ mostrarNotificacion })
 
   const [showFiltros, setShowFiltros] = useState(false)
   const hayFiltros = filtrosActivosCount > 0
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <NotificacionesContainer notificaciones={notificaciones} />
+
       <ProveedoresKpis kpis={kpis} />
 
       <Box sx={{ borderRadius: 2.5, overflow: 'hidden', bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider' }}>
@@ -58,7 +63,7 @@ export function ProveedoresPage() {
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1.25 }}>
             <SearchInput
-              placeholder="Buscar empresa, NIT o código…"
+              placeholder="Buscar empresa, NIT o ID…"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)
