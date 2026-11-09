@@ -1,8 +1,11 @@
+
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import Link from '@mui/material/Link'
+
 import { Filter, X } from 'lucide-react'
 import AddIcon from '@mui/icons-material/Add'
+
 import { Button, SearchInput, Select } from '@shared/ui'
 import { ROLES, ESTADOS } from '../services/usuariosService'
 
@@ -21,12 +24,18 @@ export default function UsuariosToolbar({
 }) {
   const opcionesRol = [
     { value: 'Todos', label: 'Todos los roles' },
-    ...ROLES.map((rol) => ({ value: rol, label: rol })),
+    ...ROLES.map((rol) => ({
+      value: rol,
+      label: rol,
+    })),
   ]
 
   const opcionesEstado = [
-    { value: 'Todos', label: 'Todos' },
-    ...ESTADOS.map((estado) => ({ value: estado, label: estado })),
+    { value: 'Todos', label: 'Todos los estados' },
+    ...ESTADOS.map((estado) => ({
+      value: estado,
+      label: estado,
+    })),
   ]
 
   return (
@@ -45,12 +54,30 @@ export default function UsuariosToolbar({
           Gestión de usuarios
         </Typography>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-          <SearchInput
-            placeholder="Buscar nombre o email..."
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-          />
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            flexWrap: 'wrap',
+            justifyContent: 'flex-end',
+            flex: '0 1 auto',
+            minWidth: 0,
+          }}
+        >
+          <Box
+            sx={{
+              width: 280,
+              maxWidth: '100%',
+              flex: '1 1 220px',
+            }}
+          >
+            <SearchInput
+              placeholder="Buscar por nombre o correo..."
+              value={search}
+              onChange={(e) => onSearchChange(e.target.value)}
+            />
+          </Box>
 
           <Button
             size="toolbar"
@@ -66,7 +93,7 @@ export default function UsuariosToolbar({
             leftIcon={<Filter size={16} />}
             onClick={onToggleFilters}
           >
-            Filtrar
+            {filtersOpen ? 'Ocultar filtros' : 'Filtrar'}
           </Button>
         </Box>
       </Box>
@@ -83,10 +110,11 @@ export default function UsuariosToolbar({
             flexWrap: 'wrap',
           }}
         >
-          <Box sx={{ width: 180 }}>
+          <Box sx={{ width: 180, maxWidth: '100%' }}>
             <Typography variant="overline" component="label">
               ROL
             </Typography>
+
             <Select
               fullWidth
               value={rolFiltro}
@@ -95,10 +123,11 @@ export default function UsuariosToolbar({
             />
           </Box>
 
-          <Box sx={{ width: 150 }}>
+          <Box sx={{ width: 180, maxWidth: '100%' }}>
             <Typography variant="overline" component="label">
               ESTADO
             </Typography>
+
             <Select
               fullWidth
               value={estadoFiltro}
@@ -119,6 +148,7 @@ export default function UsuariosToolbar({
                 gap: 0.5,
                 color: 'text.secondary',
                 mb: 1,
+                cursor: 'pointer',
               }}
             >
               <X size={16} />

@@ -1,45 +1,47 @@
-import { useState } from 'react'
-import Dialog from '@mui/material/Dialog'
-import DialogTitle from '@mui/material/DialogTitle'
-import DialogContent from '@mui/material/DialogContent'
-import DialogActions from '@mui/material/DialogActions'
-import Typography from '@mui/material/Typography'
-import IconButton from '@mui/material/IconButton'
-import Box from '@mui/material/Box'
-import TextField from '@mui/material/TextField'
-import MenuItem from '@mui/material/MenuItem'
-import Button from '@mui/material/Button'
-import InputAdornment from '@mui/material/InputAdornment'
-import CloseIcon from '@mui/icons-material/Close'
-import CreditCardOutlinedIcon from '@mui/icons-material/CreditCardOutlined'
-import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined'
-import MailOutlinedIcon from '@mui/icons-material/MailOutlined'
-import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
-import Visibility from '@mui/icons-material/Visibility'
-import VisibilityOff from '@mui/icons-material/VisibilityOff'
-import AddIcon from '@mui/icons-material/Add'
-import EditIcon from '@mui/icons-material/Edit'
+import { useEffect, useMemo, useRef, useState } from 'react'
+
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Typography,
+  Box,
+  TextField,
+  MenuItem,
+  Button,
+  InputAdornment,
+  IconButton,
+} from '@mui/material'
+
+import {
+  MailOutlined as MailOutlinedIcon,
+  LockOutlined as LockOutlinedIcon,
+  Visibility,
+  VisibilityOff,
+  Add as AddIcon,
+  Edit as EditIcon,
+} from '@mui/icons-material'
+
 import { BRAND } from '@shared/utils/colors'
-import { ROLES, ESTADOS } from '../services/usuariosService'
-import { Pencil } from 'lucide-react'
+import { ESTADOS } from '../services/usuariosService'
+import { fetchRoles } from '../../roles/services/rolesService'
 
 const EMPTY_FORM = {
-  cedula: '',
-  nombre: '',
   email: '',
-  telefono: '',
-  rol: '',
+  id_rol: '',
   estado: 'Activo',
   password: '',
   confirmPassword: '',
 }
 
-// Mismo criterio que en Roles y Ventas: un label fijo, chico y en mayúsculas
-// ARRIBA del campo (en vez del label flotante de MUI, que en un grid de dos
-// columnas quedaba tapado/recortado en el primer renglón y era ilegible en
-// modo oscuro). Así el alto de cada campo es siempre el mismo y no depende
-// de si el campo tiene o no contenido.
+const CAMPOS = Object.keys(EMPTY_FORM)
+const CAMPOS_EDICION = ['email', 'id_rol', 'estado']
+
+const inputSx = {
+  '& .MuiOutlinedInput-root': { bgcolor: 'action.hover', borderRadius: 2 },
+}
+
 function FieldLabel({ children }) {
   return (
     <Typography
@@ -57,281 +59,389 @@ function FieldLabel({ children }) {
   )
 }
 
-const inputSx = {
-  '& .MuiOutlinedInput-root': { bgcolor: 'action.hover', borderRadius: 2 },
+const validadores = {
+  email: (v) =>
+    !v
+      ? 'El correo electrónico es obligatorio.'
+      : v.length > 120 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)
+        ? 'Ingresa un correo electrónico válido.'
+        : '',
+
+  id_rol: (v, _form, roles) =>
+    !v
+      ? 'Debes seleccionar un rol.'
+      : !roles.some((rol) => rol.id === Number(v))
+        ? 'Selecciona un rol disponible.'
+        : '',
+
+  estado: (v) => (ESTADOS.includes(v) ? '' : 'Selecciona un estado válido.'),
+
+  password: (_v, form, _roles, esCreacion) =>
+    !esCreacion
+      ? ''
+      : !form.password
+        ? 'La contraseña es obligatoria.'
+        : form.password.length < 6
+          ? 'La contraseña debe tener mínimo 6 caracteres.'
+          : '',
+
+  confirmPassword: (_v, form, _roles, esCreacion) =>
+    !esCreacion
+      ? ''
+      : !form.confirmPassword
+        ? 'Debes confirmar la contraseña.'
+        : form.confirmPassword !== form.password
+          ? 'Las contraseñas no coinciden.'
+          : '',
 }
 
-export default function UsuarioFormDialog({ open, mode, initialData, onClose, onSubmit, submitting }) {
-  const isCreate = mode === 'create'
-  const [form, setForm] = useState(EMPTY_FORM)
-  const [touched, setTouched] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
+function validarCampo(campo, form, roles, esCreacion) {
+  const valor = String(form[campo] ?? '').trim()
+  return validadores[campo]?.(valor, form, roles, esCreacion) ?? ''
+}
 
-  // Reinicia el formulario cada vez que el diálogo pasa de cerrado a abierto,
-  // ajustando el estado durante el render (patrón recomendado por React) en
-  // vez de en un useEffect, para evitar el render en cascada que marca la
-  // regla react-hooks/set-state-in-effect.
-  const [prevOpen, setPrevOpen] = useState(open)
-  if (open !== prevOpen) {
-    setPrevOpen(open)
-    if (open) {
-      setForm(
-        isCreate
-          ? EMPTY_FORM
-          : {
-              cedula: initialData?.cedula ?? '',
-              nombre: initialData?.nombre ?? '',
-              email: initialData?.email ?? '',
-              telefono: initialData?.telefono ?? '',
-              rol: initialData?.rol ?? '',
-              estado: initialData?.estado ?? 'Activo',
-              password: '',
-              confirmPassword: '',
-            }
-      )
-      setTouched(false)
-      setShowPassword(false)
+export default function UsuarioFormDialog({
+  open,
+  mode,
+  initialData,
+  onClose,
+  onSubmit,
+  onError,
+  submitting = false,
+}) {
+  const esCreacion = mode === 'create'
+
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [touched, setTouched] = useState({})
+  const [showPassword, setShowPassword] = useState(false)
+  const [rolesDisponibles, setRolesDisponibles] = useState([])
+  const [confirmarSalida, setConfirmarSalida] = useState(false)
+
+  const initialFormRef = useRef(EMPTY_FORM)
+  const fieldRefs = useRef({})
+
+  const rolId = Number(form.id_rol)
+
+  // Cargar los roles registrados.
+  useEffect(() => {
+    if (!open) return
+
+    let activo = true
+
+    fetchRoles()
+      .then((roles) => {
+        if (activo) setRolesDisponibles(Array.isArray(roles) ? roles : [])
+      })
+      .catch(() => {
+        if (activo) onError?.('No se pudieron cargar los roles disponibles.')
+      })
+
+    return () => {
+      activo = false
+    }
+  }, [open, onError])
+
+  // Preparar los datos iniciales.
+  useEffect(() => {
+    if (!open) return
+
+    const datosIniciales = esCreacion
+      ? { ...EMPTY_FORM }
+      : {
+          ...EMPTY_FORM,
+          email: initialData?.email ?? '',
+          id_rol: initialData?.id_rol ? String(initialData.id_rol) : '',
+          estado: initialData?.estado ?? 'Activo',
+        }
+
+    setForm(datosIniciales)
+    initialFormRef.current = datosIniciales
+    setTouched({})
+    setShowPassword(false)
+    setConfirmarSalida(false)
+  }, [open, esCreacion, initialData])
+
+  const errores = useMemo(
+    () =>
+      Object.fromEntries(
+        CAMPOS.map((c) => [
+          c,
+          validarCampo(c, form, rolesDisponibles, esCreacion),
+        ])
+      ),
+    [form, rolesDisponibles, esCreacion]
+  )
+
+  const camposValidar = esCreacion ? CAMPOS : CAMPOS_EDICION
+  const formularioValido = camposValidar.every((c) => !errores[c])
+  const formularioModificado =
+    JSON.stringify(form) !== JSON.stringify(initialFormRef.current)
+
+  const cambiarCampo = (campo) => (event) => {
+    const valor = event.target.value
+    setForm((prev) => ({ ...prev, [campo]: valor }))
+  }
+
+  const marcarCampo = (campo) =>
+    setTouched((prev) => ({ ...prev, [campo]: true }))
+
+  const obtenerError = (campo) => (touched[campo] ? errores[campo] : '')
+
+  // Evitar avanzar con TAB si el campo actual es inválido.
+  const controlarTabulacion = (campo) => (event) => {
+    if (event.key !== 'Tab') return
+
+    if (validarCampo(campo, form, rolesDisponibles, esCreacion)) {
+      event.preventDefault()
+      marcarCampo(campo)
+      fieldRefs.current[campo]?.focus()
     }
   }
 
-  const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }))
-
-  // En creación TODOS los campos son obligatorios. En edición no bloqueamos
-  // el guardado (a pedido explícito: "en editar no debería ser tan exigente").
-  const isValid = isCreate
-    ? form.cedula.trim() &&
-      form.nombre.trim() &&
-      form.email.trim() &&
-      form.telefono.trim() &&
-      form.rol &&
-      form.estado &&
-      form.password.length >= 6 &&
-      form.password === form.confirmPassword
-    : true
-
   const handleSubmit = () => {
-    setTouched(true)
-    if (!isValid) return
-    const rest = { ...form }
-    delete rest.password
-    delete rest.confirmPassword
-    onSubmit(rest)
+    if (submitting) return
+
+    setTouched(Object.fromEntries(camposValidar.map((c) => [c, true])))
+
+    if (!formularioValido) {
+      const primerInvalido = camposValidar.find((c) => errores[c])
+      if (primerInvalido) fieldRefs.current[primerInvalido]?.focus()
+
+      onError?.(
+        'Completa los campos obligatorios y corrige los datos ingresados.'
+      )
+      return
+    }
+
+    const datos = {
+      email: form.email.trim().toLowerCase(),
+      id_rol: rolId,
+      estado: form.estado,
+    }
+
+    if (esCreacion) datos.password = form.password
+
+    onSubmit(datos)
   }
 
-  const showError = (value) => touched && isCreate && !value
+  const handleCancelar = () => {
+    if (submitting) return
+
+    if (formularioModificado) {
+      setConfirmarSalida(true)
+      return
+    }
+
+    onClose()
+  }
+
+  const salirSinGuardar = () => {
+    setConfirmarSalida(false)
+    onClose()
+  }
+
+  // Constructor de campos.
+  const campo = (
+    nombre,
+    etiqueta,
+    { Icono, endAdornment, selectProps, children, ...rest } = {}
+  ) => (
+    <Box key={nombre}>
+      <FieldLabel>{etiqueta}</FieldLabel>
+
+      <TextField
+        inputRef={(el) => {
+          fieldRefs.current[nombre] = el
+        }}
+        value={form[nombre]}
+        onChange={cambiarCampo(nombre)}
+        onBlur={() => marcarCampo(nombre)}
+        onKeyDown={controlarTabulacion(nombre)}
+        error={Boolean(obtenerError(nombre))}
+        helperText={obtenerError(nombre)}
+        fullWidth
+        sx={inputSx}
+        slotProps={{
+          input: Icono
+            ? {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Icono fontSize="small" sx={{ color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+                endAdornment,
+              }
+            : undefined,
+          select: selectProps,
+        }}
+        {...rest}
+      >
+        {children}
+      </TextField>
+    </Box>
+  )
+
+  const rolesVisibles = rolesDisponibles.filter(
+    (rol) => rol.estado === 'Activo' || rol.id === rolId
+  )
+
+  const propsPassword = {
+    Icono: LockOutlinedIcon,
+    type: showPassword ? 'text' : 'password',
+  }
 
   return (
-    <Dialog open={open} onClose={submitting ? undefined : onClose} fullWidth maxWidth="sm">
-      <DialogTitle sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', pb: 0 }}>
-        <Box>
+    <>
+      <Dialog
+        open={open}
+        onClose={() => {}}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            event.preventDefault()
+            event.stopPropagation()
+          }
+        }}
+        fullWidth
+        maxWidth="sm"
+        disableEscapeKeyDown
+      >
+        <DialogTitle sx={{ pb: 0 }}>
           <Typography sx={{ fontWeight: 700, fontSize: 18 }}>
-            {isCreate ? 'Nuevo usuario' : 'Editar usuario'}
+            {esCreacion ? 'Nuevo usuario' : 'Editar usuario'}
           </Typography>
-          <Typography sx={{ fontSize: 13, color: 'text.secondary', fontWeight: 400 }}>
-            {isCreate ? 'Completa los datos del nuevo usuario' : 'Actualiza los datos del usuario'}
+
+          <Typography
+            sx={{ fontSize: 13, color: 'text.secondary', fontWeight: 400 }}
+          >
+            {esCreacion
+              ? 'Registra una nueva cuenta de acceso al sistema.'
+              : 'Actualiza el correo, rol y estado de la cuenta.'}
           </Typography>
-        </Box>
-        <IconButton onClick={onClose} disabled={submitting} size="small">
-          <CloseIcon fontSize="small" />
-        </IconButton>
-      </DialogTitle>
+        </DialogTitle>
 
-      <DialogContent sx={{ pt: 3 }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-          <Box>
-            <FieldLabel>NIT / Cédula</FieldLabel>
-            <TextField
-              value={form.cedula}
-              onChange={set('cedula')}
-              placeholder="Ej. 1234567890"
-              error={showError(form.cedula.trim())}
-              fullWidth
-              sx={inputSx}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <CreditCardOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                    </InputAdornment>
+        <DialogContent sx={{ pt: 3 }}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+              gap: 2,
+            }}
+          >
+            {campo('email', 'Correo electrónico', {
+              Icono: MailOutlinedIcon,
+              placeholder: 'usuario@alhorno.mx',
+              type: 'email',
+            })}
+
+            {campo('id_rol', 'Rol asignado', {
+              select: true,
+              selectProps: {
+                displayEmpty: true,
+                renderValue: (selected) =>
+                  rolesDisponibles.find((r) => r.id === Number(selected))
+                    ?.nombre || (
+                    <Box sx={{ color: 'text.disabled' }}>
+                      Seleccionar rol...
+                    </Box>
                   ),
-                },
-              }}
-            />
-          </Box>
-
-          <Box>
-            <FieldLabel>Nombre completo</FieldLabel>
-            <TextField
-              value={form.nombre}
-              onChange={set('nombre')}
-              placeholder="Ej. Ana Martínez"
-              error={showError(form.nombre.trim())}
-              fullWidth
-              sx={inputSx}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <PersonOutlineOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                    </InputAdornment>
-                  ),
-                },
-              }}
-            />
-          </Box>
-
-          <Box>
-            <FieldLabel>Email</FieldLabel>
-            <TextField
-              type="email"
-              value={form.email}
-              onChange={set('email')}
-              placeholder="usuario@alhorno.mx"
-              error={showError(form.email.trim())}
-              fullWidth
-              sx={inputSx}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <MailOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                    </InputAdornment>
-                  ),
-                },
-              }}
-            />
-          </Box>
-
-          <Box>
-            <FieldLabel>Teléfono</FieldLabel>
-            <TextField
-              value={form.telefono}
-              onChange={set('telefono')}
-              placeholder="Ej. 3001234567"
-              error={showError(form.telefono.trim())}
-              fullWidth
-              sx={inputSx}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <PhoneOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                    </InputAdornment>
-                  ),
-                },
-              }}
-            />
-          </Box>
-
-          <Box>
-            <FieldLabel>Rol</FieldLabel>
-            <TextField
-              select
-              value={form.rol}
-              onChange={set('rol')}
-              error={showError(form.rol)}
-              fullWidth
-              sx={inputSx}
-              slotProps={{
-                select: {
-                  displayEmpty: true,
-                  renderValue: (selected) =>
-                    selected || <Box sx={{ color: 'text.disabled' }}>Seleccionar rol...</Box>,
-                },
-              }}
-            >
-              {ROLES.map((rol) => (
-                <MenuItem key={rol} value={rol}>
-                  {rol}
+              },
+              children: rolesVisibles.map((rol) => (
+                <MenuItem key={rol.id} value={String(rol.id)}>
+                  {rol.nombre}
                 </MenuItem>
-              ))}
-            </TextField>
-          </Box>
+              )),
+            })}
 
-          <Box>
-            <FieldLabel>{isCreate ? 'Estado inicial' : 'Estado'}</FieldLabel>
-            <TextField select value={form.estado} onChange={set('estado')} fullWidth sx={inputSx}>
-              {ESTADOS.map((estado) => (
+            {campo('estado', esCreacion ? 'Estado inicial' : 'Estado', {
+              select: true,
+              children: ESTADOS.map((estado) => (
                 <MenuItem key={estado} value={estado}>
                   {estado}
                 </MenuItem>
-              ))}
-            </TextField>
+              )),
+            })}
+
+            {esCreacion && (
+              <>
+                {campo('password', 'Contraseña', {
+                  ...propsPassword,
+                  placeholder: 'Mínimo 6 caracteres',
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        size="small"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                      >
+                        {showPassword ? (
+                          <VisibilityOff fontSize="small" />
+                        ) : (
+                          <Visibility fontSize="small" />
+                        )}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                })}
+
+                {campo('confirmPassword', 'Confirmar contraseña', {
+                  ...propsPassword,
+                  placeholder: 'Repetir contraseña',
+                })}
+              </>
+            )}
           </Box>
+        </DialogContent>
 
-          {isCreate && (
-            <>
-              <Box>
-                <FieldLabel>Contraseña</FieldLabel>
-                <TextField
-                  type={showPassword ? 'text' : 'password'}
-                  value={form.password}
-                  onChange={set('password')}
-                  placeholder="Mínimo 6 caracteres"
-                  error={touched && form.password.length < 6}
-                  helperText={touched && form.password.length < 6 ? 'Mínimo 6 caracteres' : ''}
-                  fullWidth
-                  sx={inputSx}
-                  slotProps={{
-                    input: {
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <LockOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                        </InputAdornment>
-                      ),
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton size="small" onClick={() => setShowPassword((p) => !p)}>
-                            {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    },
-                  }}
-                />
-              </Box>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button onClick={handleCancelar} disabled={submitting} color="inherit">
+            Cancelar
+          </Button>
 
-              <Box>
-                <FieldLabel>Confirmar contraseña</FieldLabel>
-                <TextField
-                  type={showPassword ? 'text' : 'password'}
-                  value={form.confirmPassword}
-                  onChange={set('confirmPassword')}
-                  placeholder="Repetir contraseña"
-                  error={touched && form.confirmPassword !== form.password}
-                  helperText={touched && form.confirmPassword !== form.password ? 'Las contraseñas no coinciden' : ''}
-                  fullWidth
-                  sx={inputSx}
-                  slotProps={{
-                    input: {
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <LockOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                        </InputAdornment>
-                      ),
-                    },
-                  }}
-                />
-              </Box>
-            </>
-          )}
-        </Box>
-      </DialogContent>
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            disabled={submitting}
+            startIcon={esCreacion ? <AddIcon /> : <EditIcon />}
+            sx={{
+              bgcolor: BRAND.orange,
+              '&:hover': { bgcolor: BRAND.orangeDark },
+            }}
+          >
+            {submitting
+              ? 'Guardando...'
+              : esCreacion
+                ? 'Guardar usuario'
+                : 'Guardar cambios'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-      <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button onClick={onClose} disabled={submitting} color="inherit">
-          Cancelar
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          disabled={submitting || (touched && isCreate && !isValid)}
-          startIcon={isCreate ? <AddIcon /> :  <Pencil size={18} />}
-          sx={{ bgcolor: BRAND.orange, '&:hover': { bgcolor: BRAND.orangeDark } }}
-        >
-          {submitting ? 'Guardando...' : isCreate ? 'Guardar usuario' : 'Guardar cambios'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+      <Dialog
+        open={confirmarSalida}
+        onClose={() => {}}
+        disableEscapeKeyDown
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 700, fontSize: 17 }}>
+          ¿Descartar los cambios?
+        </DialogTitle>
+
+        <DialogContent>
+          <Typography color="text.secondary" fontSize={14}>
+            Si sales ahora, los cambios realizados no se guardarán.
+          </Typography>
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setConfirmarSalida(false)} color="inherit">
+            Seguir editando
+          </Button>
+
+          <Button onClick={salirSinGuardar} variant="contained" color="error">
+            Salir
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   )
 }

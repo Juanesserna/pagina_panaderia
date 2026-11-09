@@ -17,7 +17,7 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import { Pencil, Trash } from 'lucide-react'
 import { Button, StatusBadge } from '@shared/ui'
 import { AVATAR_PALETTE, colorFromName } from '@shared/utils/colors'
-import { esEliminable } from '../services/rolesService'
+import { esEliminable, esRolSistema } from '../services/rolesService'
 
 const ROLE_TEXT_COLORS = {
   Gerente: AVATAR_PALETTE[0].color,
@@ -55,8 +55,9 @@ export default function RolesTable({
 
   const handleConfirmar = () => {
     if (rolPendiente) {
-      onToggleEstado(rolPendiente.id)
+      onToggleEstado(rolPendiente.id, nuevoEstado)
     }
+
     setDialogoAbierto(false)
     setRolPendiente(null)
     setNuevoEstado(null)
@@ -92,6 +93,7 @@ export default function RolesTable({
         <TableBody>
           {roles.map((rol) => {
             const eliminable = esEliminable(rol)
+            const protegido = esRolSistema(rol)
             const nombreColor = colorForRole(rol.nombre)
             const estaActivo = rol.estado === 'Activo'
 
@@ -101,12 +103,10 @@ export default function RolesTable({
                 sx={{ '&:last-child td': { borderBottom: 0 } }}
               >
                 <TableCell>
-                  <Typography
-                    variant="body1"
-                    sx={{ color: nombreColor }}
-                  >
+                  <Typography variant="body1" sx={{ color: nombreColor }}>
                     {rol.nombre}
                   </Typography>
+
                   <Typography variant="caption" color="text.secondary">
                     {rol.codigo}
                   </Typography>
@@ -146,7 +146,9 @@ export default function RolesTable({
                     title={
                       eliminable
                         ? 'Eliminar rol'
-                        : 'No se puede eliminar: hay usuarios con este rol'
+                        : protegido
+                          ? 'Los roles iniciales no se pueden eliminar'
+                          : 'No se puede eliminar: hay usuarios con este rol'
                     }
                   >
                     <span>
@@ -155,7 +157,7 @@ export default function RolesTable({
                         disabled={!eliminable}
                         onClick={() => onEliminar(rol)}
                         sx={{
-                          color: eliminable ? 'error.main' : undefined,
+                          color: eliminable ? 'error.main' : 'text.disabled',
                         }}
                       >
                         <Trash size={18} />
@@ -209,6 +211,7 @@ export default function RolesTable({
           <Button variant="secondary" onClick={handleCancelar}>
             Cancelar
           </Button>
+
           <Button variant="primary" onClick={handleConfirmar}>
             Confirmar
           </Button>

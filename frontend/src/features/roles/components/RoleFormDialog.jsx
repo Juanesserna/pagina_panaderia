@@ -1,178 +1,392 @@
-import { useEffect, useState } from 'react'
-import Dialog from '@mui/material/Dialog'
-import DialogTitle from '@mui/material/DialogTitle'
-import DialogContent from '@mui/material/DialogContent'
-import DialogActions from '@mui/material/DialogActions'
-import Typography from '@mui/material/Typography'
-import IconButton from '@mui/material/IconButton'
-import Box from '@mui/material/Box'
-import TextField from '@mui/material/TextField'
-import MenuItem from '@mui/material/MenuItem'
-import Button from '@mui/material/Button'
-import InputAdornment from '@mui/material/InputAdornment'
-import CloseIcon from '@mui/icons-material/Close'
-import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined'
+import { useEffect, useRef, useState } from 'react'
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Typography,
+  Box,
+  TextField,
+  MenuItem,
+  Button,
+} from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import EditIcon from '@mui/icons-material/Edit'
-import { BRAND } from '@shared/utils/colors'
-import { ESTADOS, siguienteCodigo } from '../services/rolesService'
+import { ESTADOS, getNextRoleId } from '../services/rolesService'
 import ModulosGrid from './ModulosGrid'
 
-const inputSx = {
-  '& .MuiOutlinedInput-root': { bgcolor: 'action.hover', borderRadius: 2 },
+const crearSnapshot = (nombre, estado, modulos, privilegios) => {
+  const ordenados = [...modulos].sort()
+
+  return JSON.stringify({
+    nombre: nombre.trim(),
+    estado,
+    modulos: ordenados,
+    privilegios: Object.fromEntries(
+      ordenados.map((modulo) => [
+        modulo,
+        [...(privilegios[modulo] ?? [])].sort(),
+      ])
+    ),
+  })
 }
 
-function FieldLabel({ children }) {
+const nombreValido = (nombre) =>
+  nombre.trim().length >= 3 && /^[\p{L}\s]+$/u.test(nombre.trim())
+
+const campoSx = {
+  '& .MuiInputBase-root': { height: 38, fontSize: 13 },
+  '& .MuiInputBase-input': { py: 1, px: 1.5 },
+}
+
+function Campo({ label, width, children }) {
   return (
-    <Typography
-      sx={{
-        fontSize: 11,
-        fontWeight: 600,
-        letterSpacing: 0.5,
-        color: 'text.secondary',
-        textTransform: 'uppercase',
-        mb: 0.5,
-      }}
-    >
+    <Box sx={{ width, maxWidth: '100%' }}>
+      <Typography variant="caption" fontWeight={600} sx={{ mb: 0.5, display: 'block' }}>
+        {label}
+      </Typography>
       {children}
-    </Typography>
+    </Box>
   )
 }
 
-export default function RoleFormDialog({ open, mode, initialData, onClose, onSubmit, submitting }) {
-  const isCreate = mode === 'create'
-  const [nombre, setNombre] = useState('')
-  const [estado, setEstado] = useState('Activo')
-  const [modulos, setModulos] = useState([])
-  const [touched, setTouched] = useState(false)
-
-  useEffect(() => {
-    if (open) {
-      setNombre(isCreate ? '' : initialData?.nombre ?? '')
-      setEstado(isCreate ? 'Activo' : initialData?.estado ?? 'Activo')
-      setModulos(isCreate ? [] : initialData?.modulos ?? [])
-      setTouched(false)
-    }
-  }, [open, isCreate, initialData])
-
-  const isValid = nombre.trim().length > 0
-
-  const handleSubmit = () => {
-    setTouched(true)
-    if (!isValid) return
-    if (isCreate) {
-      onSubmit({ nombre: nombre.trim(), estado, modulos })
-    } else {
-      onSubmit({ nombre: nombre.trim(), modulos })
-    }
-  }
-
-  const codigoMostrado = isCreate ? siguienteCodigo() : initialData?.codigo ?? ''
-
+function Confirmar({
+  open,
+  titulo,
+  texto,
+  textoConfirmar,
+  colorConfirmar = 'primary',
+  disabled,
+  onCancel,
+  onConfirm,
+}) {
   return (
-    <Dialog open={open} onClose={submitting ? undefined : onClose} fullWidth maxWidth="sm">
-      <DialogTitle sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', pb: 0 }}>
-        <Box>
-          <Typography sx={{ fontWeight: 700, fontSize: 18 }}>
-            {isCreate ? 'Nuevo rol' : 'Editar rol'}
-          </Typography>
-          <Typography sx={{ fontSize: 13, color: 'text.secondary', fontWeight: 400 }}>
-            Define el rol y los módulos que verán por defecto sus usuarios
-          </Typography>
-        </Box>
-        <IconButton onClick={onClose} disabled={submitting} size="small">
-          <CloseIcon fontSize="small" />
-        </IconButton>
-      </DialogTitle>
+    <Dialog open={open} onClose={() => {}} disableEscapeKeyDown maxWidth="xs" fullWidth>
+      <DialogTitle fontWeight={700}>{titulo}</DialogTitle>
 
-      <DialogContent sx={{ pt: 3 }}>
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: isCreate
-              ? '0.8fr 1.6fr 1fr'   
-              : '1fr 1fr',          
-            gap: 2,
-            mb: 3,
-          }}
-        >
-          {/* ID */}
-          <Box>
-            <FieldLabel>ID</FieldLabel>
-            <TextField
-              value={codigoMostrado}
-              disabled
-              fullWidth
-              sx={inputSx}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Typography sx={{ color: 'text.secondary', fontWeight: 600 }}>#</Typography>
-                    </InputAdornment>
-                  ),
-                },
-              }}
-            />
-          </Box>
-
-          {/* NOMBRE DEL ROL */}
-          <Box>
-            <FieldLabel>Nombre del rol</FieldLabel>
-            <TextField
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              placeholder="Ej. Supervisor de turno"
-              error={touched && !isValid}
-              fullWidth
-              sx={inputSx}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <ShieldOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                    </InputAdornment>
-                  ),
-                },
-              }}
-            />
-          </Box>
-
-          {/* ESTADO — SOLO al crear */}
-          {isCreate && (
-            <Box>
-              <FieldLabel>Estado</FieldLabel>
-              <TextField select value={estado} onChange={(e) => setEstado(e.target.value)} fullWidth sx={inputSx}>
-                {ESTADOS.map((e) => (
-                  <MenuItem key={e} value={e}>
-                    {e}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Box>
-          )}
-        </Box>
-
-        <Typography sx={{ fontSize: 13, color: 'text.secondary', mb: 1.2 }}>
-          Módulos que verán por defecto los usuarios con este rol:
+      <DialogContent>
+        <Typography variant="body2" color="text.secondary">
+          {texto}
         </Typography>
-        <ModulosGrid value={modulos} onChange={setModulos} />
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button onClick={onClose} disabled={submitting} color="inherit">
-          Cancelar
+      <DialogActions sx={{ p: 2 }}>
+        <Button onClick={onCancel} color="inherit" disabled={disabled}>
+          Seguir editando
         </Button>
         <Button
-          onClick={handleSubmit}
+          onClick={onConfirm}
+          color={colorConfirmar}
           variant="contained"
-          disabled={submitting}
-          startIcon={isCreate ? <AddIcon /> : <EditIcon />}
-          sx={{ bgcolor: BRAND.orange, '&:hover': { bgcolor: BRAND.orangeDark } }}
+          disabled={disabled}
         >
-          {submitting ? 'Guardando...' : isCreate ? 'Guardar rol' : 'Guardar cambios'}
+          {textoConfirmar}
         </Button>
       </DialogActions>
     </Dialog>
+  )
+}
+
+export default function RoleFormDialog({
+  open,
+  mode = 'create',
+  initialData,
+  onClose,
+  onSubmit,
+  onError,
+  submitting = false,
+}) {
+  const isCreate = mode === 'create'
+  const idMostrado = isCreate ? getNextRoleId() : initialData?.id ?? ''
+
+  const [nombre, setNombre] = useState('')
+  const [estado, setEstado] = useState('Activo')
+  const [modulos, setModulos] = useState([])
+  const [privilegios, setPrivilegios] = useState({})
+  const [touched, setTouched] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
+
+  const snapshotInicial = useRef('')
+  const nombreRef = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+
+    const mods = [
+      ...(initialData?.modulos ?? Object.keys(initialData?.privilegios ?? {})),
+    ]
+
+    const privs = Object.fromEntries(
+      mods.map((modulo) => [
+        modulo,
+        [...(initialData?.privilegios?.[modulo] ?? [])],
+      ])
+    )
+
+    const nom = initialData?.nombre ?? ''
+    const est = initialData?.estado ?? 'Activo'
+
+    setNombre(nom)
+    setEstado(est)
+    setModulos(mods)
+    setPrivilegios(privs)
+    setTouched(false)
+    setConfirmOpen(false)
+    setCancelConfirmOpen(false)
+
+    snapshotInicial.current = crearSnapshot(nom, est, mods, privs)
+  }, [open, initialData])
+
+  const esNombreValido = nombreValido(nombre)
+
+  const hayCambios =
+    crearSnapshot(nombre, estado, modulos, privilegios) !== snapshotInicial.current
+
+  const obtenerDatos = () => ({
+    nombre: nombre.trim(),
+    estado,
+    modulos: [...modulos],
+    privilegios,
+  })
+
+  const handleNombreChange = (value) => {
+    if (/^[\p{L}\s]*$/u.test(value)) {
+      setNombre(value)
+    }
+  }
+
+  const handleTab = (e) => {
+    if (e.key === 'Tab' && !esNombreValido) {
+      e.preventDefault()
+      setTouched(true)
+      nombreRef.current?.focus()
+    }
+  }
+
+  const handleCancel = () => {
+    if (submitting) return
+
+    if (hayCambios) {
+      setCancelConfirmOpen(true)
+      return
+    }
+
+    onClose()
+  }
+
+  const handleConfirmCancel = () => {
+    if (submitting) return
+
+    setCancelConfirmOpen(false)
+    onClose()
+  }
+
+  const handleSubmit = () => {
+    if (submitting) return
+
+    setTouched(true)
+
+    if (!esNombreValido) {
+      onError?.(
+        'Revisa el nombre del rol: debe tener mínimo 3 letras y no contener números ni símbolos.'
+      )
+      nombreRef.current?.focus()
+      return
+    }
+
+    if (isCreate) {
+      if (!modulos.length) {
+        onError?.('Debes agregar al menos un módulo.')
+        return
+      }
+
+      const moduloSinPrivilegios = modulos.find(
+        (modulo) => !privilegios[modulo]?.length
+      )
+
+      if (moduloSinPrivilegios) {
+        onError?.(
+          `Selecciona al menos un privilegio para el módulo ${moduloSinPrivilegios}.`
+        )
+        return
+      }
+
+      onSubmit(obtenerDatos())
+      return
+    }
+
+    setConfirmOpen(true)
+  }
+
+  const handleConfirmUpdate = () => {
+    if (submitting) return
+
+    setConfirmOpen(false)
+    onSubmit(obtenerDatos())
+  }
+
+  return (
+    <>
+      <Dialog
+        open={open}
+        onClose={() => {}}
+        disableEscapeKeyDown
+        maxWidth={false}
+        slotProps={{
+          paper: {
+            sx: {
+              width: '86vw',
+              maxWidth: 1250,
+              height: '88vh',
+              maxHeight: '88vh',
+              minWidth: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              borderRadius: 3,
+              overflow: 'hidden',
+              m: 1,
+            },
+          },
+        }}
+      >
+        <DialogTitle sx={{ px: 2.5, py: 1, flexShrink: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {isCreate ? (
+              <AddIcon color="primary" fontSize="small" />
+            ) : (
+              <EditIcon color="primary" fontSize="small" />
+            )}
+
+            <Typography variant="subtitle1" fontWeight={700}>
+              {isCreate ? 'Crear rol' : 'Editar rol'}
+            </Typography>
+          </Box>
+        </DialogTitle>
+
+        <DialogContent
+          dividers
+          sx={{
+            px: 2.5,
+            py: 1.25,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            minWidth: 0,
+            flex: 1,
+          }}
+        >
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, minWidth: 0 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                flexWrap: 'wrap',
+                gap: 1.5,
+                pb: 0.5,
+              }}
+            >
+              <Campo label="ID del rol" width={110}>
+                <TextField
+                  value={idMostrado}
+                  size="small"
+                  fullWidth
+                  disabled
+                  sx={campoSx}
+                />
+              </Campo>
+
+              <Campo label="Nombre del rol *" width={260}>
+                <TextField
+                  inputRef={nombreRef}
+                  value={nombre}
+                  onChange={(e) => handleNombreChange(e.target.value)}
+                  onKeyDown={handleTab}
+                  onBlur={() => setTouched(true)}
+                  size="small"
+                  fullWidth
+                  placeholder="Ej. Administrador"
+                  error={touched && !esNombreValido}
+                  helperText={
+                    touched && !esNombreValido
+                      ? 'Mínimo 3 letras. Solo letras y espacios.'
+                      : ''
+                  }
+                  sx={{
+                    ...campoSx,
+                    '& .MuiFormHelperText-root': {
+                      position: 'absolute',
+                      top: '100%',
+                      m: 0,
+                      mt: '2px',
+                    },
+                  }}
+                />
+              </Campo>
+
+              <Campo label="Estado" width={160}>
+                <TextField
+                  select
+                  value={estado}
+                  onChange={(e) => setEstado(e.target.value)}
+                  size="small"
+                  fullWidth
+                  sx={campoSx}
+                >
+                  {ESTADOS.map((item) => (
+                    <MenuItem key={item} value={item}>
+                      {item}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Campo>
+            </Box>
+
+            <Box sx={{ minWidth: 0 }}>
+              <ModulosGrid
+                modulos={modulos}
+                privilegios={privilegios}
+                onModulosChange={setModulos}
+                onPrivilegiosChange={setPrivilegios}
+              />
+            </Box>
+          </Box>
+        </DialogContent>
+
+        <DialogActions sx={{ px: 2.5, py: 1.25, gap: 1, flexShrink: 0 }}>
+          <Button onClick={handleCancel} color="inherit" disabled={submitting}>
+            Cancelar
+          </Button>
+
+          <Button onClick={handleSubmit} variant="contained" disabled={submitting}>
+            {submitting
+              ? 'Guardando...'
+              : isCreate
+                ? 'Crear rol'
+                : 'Guardar cambios'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Confirmar
+        open={confirmOpen}
+        titulo="Confirmar cambios"
+        texto="¿Deseas guardar los cambios realizados en este rol? Las modificaciones también afectarán a los usuarios que tengan asignado este rol."
+        textoConfirmar="Confirmar cambios"
+        disabled={submitting}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={handleConfirmUpdate}
+      />
+
+      <Confirmar
+        open={cancelConfirmOpen}
+        titulo="¿Cancelar los cambios?"
+        texto="Tienes cambios sin guardar. Si sales ahora, perderás las modificaciones realizadas."
+        textoConfirmar="Salir sin guardar"
+        colorConfirmar="error"
+        disabled={submitting}
+        onCancel={() => setCancelConfirmOpen(false)}
+        onConfirm={handleConfirmCancel}
+      />
+    </>
   )
 }

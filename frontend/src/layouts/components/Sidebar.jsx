@@ -6,7 +6,7 @@ import {
 import { useTheme } from "@mui/material/styles";
 import {
   LayoutDashboard, TrendingUp, Factory, ShoppingCart, Truck,
-  Package, Layers, Users, Tag, Shield, ClipboardList, ChevronLeft, ChevronRight, ChevronDown,
+  Package, Layers, Users, UserRound, UserCog, Tag, Shield, ClipboardList, ChevronLeft, ChevronRight, ChevronDown,
 } from "lucide-react";
 import { useColorMode } from "@app/providers/ThemeProvider";
 import logoOscuro from "@assets/img/logo_oscuro.png";
@@ -22,6 +22,7 @@ const NAV_GROUPS = [
     items: [
       { id: "ventas", label: "Ventas", icon: <TrendingUp size={18} /> },
       { id: "pedidos", label: "Pedidos", icon: <ClipboardList size={18} /> },
+      { id: "clientes", label: "Clientes", icon: <Users size={18} /> },
     ]
   },
   {
@@ -29,6 +30,7 @@ const NAV_GROUPS = [
     items: [
       { id: "produccion", label: "Producción", icon: <Factory size={18} /> },
       { id: "insumos", label: "Insumos", icon: <Package size={18} /> },
+      { id: "empleados", label: "Empleados", icon: <UserCog size={18} /> },
     ]
   },
   {
@@ -46,9 +48,14 @@ const NAV_GROUPS = [
     ]
   },
   {
-    key: "administracion", label: "Administración", icon: <Shield size={18} />,
+    key: "usuarios", label: "Usuarios", icon: <Users size={18} />,
     items: [
-      { id: "usuarios", label: "Usuarios", icon: <Users size={18} /> },
+      { id: "usuarios", label: "Usuarios", icon: <UserRound size={18} /> },
+    ]
+  },
+  {
+    key: "configuracion", label: "Configuración", icon: <Shield size={18} />,
+    items: [
       { id: "roles", label: "Roles", icon: <Shield size={18} /> },
     ]
   },
@@ -78,15 +85,21 @@ export function Sidebar({ activePage, onNavigate, collapsed, onToggle }) {
   };
 
   const handleGroupClick = (group) => {
-    if (group.items.length === 1) {
-      onNavigate(group.items[0].id);
-      if (collapsed) return;
-    } else if (collapsed) {
-      onNavigate(group.items[0].id);
-    } else {
-      toggleGroup(group.key);
-    }
-  };
+  const hasSubmenu =
+    group.items.length > 1 ||
+    ["usuarios", "configuracion"].includes(group.key);
+
+  if (!hasSubmenu) {
+    onNavigate(group.items[0].id);
+    return;
+  }
+
+  if (collapsed) {
+    onNavigate(group.items[0].id);
+  } else {
+    toggleGroup(group.key);
+  }
+};
 
   const drawerWidth = collapsed ? 64 : 232;
 
@@ -139,7 +152,7 @@ export function Sidebar({ activePage, onNavigate, collapsed, onToggle }) {
         )}
 
         {NAV_GROUPS.map((group) => {
-          const hasSubmenu = group.items.length > 1;
+          const hasSubmenu = group.items.length > 1 || ["usuarios", "configuracion"].includes(group.key);
           const isOpen = openGroups.has(group.key) && !collapsed;
           const isGroupActive = group.items.some((i) => i.id === activePage);
 

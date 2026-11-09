@@ -1,61 +1,71 @@
-import { useState } from 'react'
-import Dialog from '@mui/material/Dialog'
-import DialogTitle from '@mui/material/DialogTitle'
-import DialogContent from '@mui/material/DialogContent'
-import DialogActions from '@mui/material/DialogActions'
-import Typography from '@mui/material/Typography'
-import IconButton from '@mui/material/IconButton'
-import Box from '@mui/material/Box'
-import TextField from '@mui/material/TextField'
-import Button from '@mui/material/Button'
-import InputAdornment from '@mui/material/InputAdornment'
+
+import { useEffect, useState } from 'react'
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Typography,
+  IconButton,
+  Box,
+  TextField,
+  InputAdornment,
+  Stack,
+} from '@mui/material'
+
 import CloseIcon from '@mui/icons-material/Close'
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
 import Visibility from '@mui/icons-material/Visibility'
 import VisibilityOff from '@mui/icons-material/VisibilityOff'
+
 import { BRAND } from '@shared/utils/colors'
+import { Button } from '@shared/components/Button'
 
-const EMPTY_FORM = { actual: '', nueva: '', confirmar: '' }
-
-function FieldLabel({ children }) {
-  return (
-    <Typography
-      sx={{
-        fontSize: 11,
-        fontWeight: 600,
-        letterSpacing: 0.5,
-        color: 'text.secondary',
-        textTransform: 'uppercase',
-        mb: 0.5,
-      }}
-    >
-      {children}
-    </Typography>
-  )
+const EMPTY_FORM = {
+  actual: '',
+  nueva: '',
+  confirmar: '',
 }
 
-const inputSx = {
-  '& .MuiOutlinedInput-root': { bgcolor: 'action.hover', borderRadius: 2 },
-}
-
-export default function CambiarPasswordDialog({ open, onClose, onSubmit, submitting }) {
+export default function CambiarPasswordDialog({
+  open,
+  onClose,
+  onSubmit,
+  submitting,
+}) {
   const [form, setForm] = useState(EMPTY_FORM)
+  const [mostrar, setMostrar] = useState({
+    actual: false,
+    nueva: false,
+    confirmar: false,
+  })
   const [touched, setTouched] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
 
-  // Mismo patrón que UsuarioFormDialog: reinicia el formulario al abrir,
-  // ajustando el estado durante el render en vez de con useEffect.
-  const [prevOpen, setPrevOpen] = useState(open)
-  if (open !== prevOpen) {
-    setPrevOpen(open)
+  useEffect(() => {
     if (open) {
       setForm(EMPTY_FORM)
+      setMostrar({
+        actual: false,
+        nueva: false,
+        confirmar: false,
+      })
       setTouched(false)
-      setShowPassword(false)
     }
+  }, [open])
+
+  const handleChange = (campo) => (event) => {
+    setForm((prev) => ({
+      ...prev,
+      [campo]: event.target.value,
+    }))
   }
 
-  const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }))
+  const toggleMostrar = (campo) => {
+    setMostrar((prev) => ({
+      ...prev,
+      [campo]: !prev[campo],
+    }))
+  }
 
   const isValid =
     form.actual.trim().length > 0 &&
@@ -64,85 +74,166 @@ export default function CambiarPasswordDialog({ open, onClose, onSubmit, submitt
 
   const handleSubmit = () => {
     setTouched(true)
+
     if (!isValid) return
-    onSubmit({ actual: form.actual, nueva: form.nueva })
+
+    onSubmit({
+      actual: form.actual,
+      nueva: form.nueva,
+    })
   }
 
-  const passwordField = (label, field, placeholder) => (
-    <Box>
-      <FieldLabel>{label}</FieldLabel>
-      <TextField
-        type={showPassword ? 'text' : 'password'}
-        value={form[field]}
-        onChange={set(field)}
-        placeholder={placeholder}
-        error={
-          touched &&
-          ((field === 'nueva' && form.nueva.length < 6) ||
-            (field === 'confirmar' && form.confirmar !== form.nueva) ||
-            (field === 'actual' && !form.actual.trim()))
-        }
-        helperText={
-          touched && field === 'nueva' && form.nueva.length < 6
-            ? 'Mínimo 6 caracteres'
-            : touched && field === 'confirmar' && form.confirmar !== form.nueva
-            ? 'Las contraseñas no coinciden'
-            : ''
-        }
-        fullWidth
-        sx={inputSx}
-        slotProps={{
-          input: {
-            startAdornment: (
-              <InputAdornment position="start">
-                <LockOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-              </InputAdornment>
-            ),
-            endAdornment:
-              field === 'actual' ? (
-                <InputAdornment position="end">
-                  <IconButton size="small" onClick={() => setShowPassword((p) => !p)}>
-                    {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                  </IconButton>
-                </InputAdornment>
-              ) : undefined,
-          },
-        }}
-      />
-    </Box>
-  )
+  const campos = [
+    { id: 'actual', label: 'Contraseña actual' },
+    { id: 'nueva', label: 'Nueva contraseña' },
+    { id: 'confirmar', label: 'Confirmar nueva contraseña' },
+  ]
 
   return (
-    <Dialog open={open} onClose={submitting ? undefined : onClose} fullWidth maxWidth="xs">
-      <DialogTitle sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', pb: 0 }}>
+    <Dialog
+      open={open}
+      onClose={submitting ? undefined : onClose}
+      fullWidth
+      maxWidth="xs"
+    >
+      <DialogTitle
+        sx={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          pb: 0,
+        }}
+      >
         <Box>
-          <Typography sx={{ fontWeight: 700, fontSize: 18 }}>Cambiar contraseña</Typography>
-          <Typography sx={{ fontSize: 13, color: 'text.secondary', fontWeight: 400 }}>
-            Actualiza la contraseña de tu cuenta
+          <Typography fontWeight={700} fontSize={18}>
+            Cambiar contraseña
+          </Typography>
+          <Typography fontSize={13} color="text.secondary">
+            Actualiza la contraseña de tu cuenta.
           </Typography>
         </Box>
-        <IconButton onClick={onClose} disabled={submitting} size="small">
+
+        <IconButton
+          onClick={onClose}
+          disabled={submitting}
+          size="small"
+        >
           <CloseIcon fontSize="small" />
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ pt: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {passwordField('Contraseña actual', 'actual', 'Ingresa tu contraseña actual')}
-        {passwordField('Nueva contraseña', 'nueva', 'Mínimo 6 caracteres')}
-        {passwordField('Confirmar nueva contraseña', 'confirmar', 'Repetir nueva contraseña')}
+      <DialogContent
+        sx={{
+          pt: 3,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+        }}
+      >
+        <Stack spacing={2}>
+          {campos.map(({ id, label }) => {
+            const error =
+              touched &&
+              (
+                (id === 'actual' && !form.actual.trim()) ||
+                (id === 'nueva' && form.nueva.length < 6) ||
+                (id === 'confirmar' && form.confirmar !== form.nueva)
+              )
+
+            const helperText =
+              error && id === 'actual'
+                ? 'Ingresa tu contraseña actual'
+                : error && id === 'nueva'
+                  ? 'Mínimo 6 caracteres'
+                  : error && id === 'confirmar'
+                    ? 'Las contraseñas no coinciden'
+                    : ''
+
+            return (
+              <Box key={id}>
+                <Typography
+                  sx={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: 0.5,
+                    color: 'text.secondary',
+                    mb: 0.5,
+                  }}
+                >
+                  {label.toUpperCase()}
+                </Typography>
+
+                <TextField
+                  fullWidth
+                  size="small"
+                  type={mostrar[id] ? 'text' : 'password'}
+                  value={form[id]}
+                  onChange={handleChange(id)}
+                  placeholder={`Ingresa ${label.toLowerCase()}`}
+                  error={error}
+                  helperText={helperText}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      bgcolor: 'action.hover',
+                      borderRadius: 2,
+                    },
+                  }}
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <LockOutlinedIcon
+                            fontSize="small"
+                            sx={{ color: 'text.secondary' }}
+                          />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            size="small"
+                            edge="end"
+                            onClick={() => toggleMostrar(id)}
+                            disabled={submitting}
+                          >
+                            {mostrar[id] ? (
+                              <VisibilityOff fontSize="small" />
+                            ) : (
+                              <Visibility fontSize="small" />
+                            )}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                />
+              </Box>
+            )
+          })}
+        </Stack>
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button onClick={onClose} disabled={submitting} color="inherit">
+      <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+        <Button
+          onClick={onClose}
+          disabled={submitting}
+          color="inherit"
+        >
           Cancelar
         </Button>
+
         <Button
           onClick={handleSubmit}
           variant="contained"
           disabled={submitting || (touched && !isValid)}
-          sx={{ bgcolor: BRAND.orange, '&:hover': { bgcolor: BRAND.orangeDark } }}
+          sx={{
+            bgcolor: BRAND.orange,
+            '&:hover': {
+              bgcolor: BRAND.orangeDark,
+            },
+          }}
         >
-          {submitting ? 'Guardando...' : 'Guardar nueva contraseña'}
+          {submitting ? 'Guardando...' : 'Actualizar contraseña'}
         </Button>
       </DialogActions>
     </Dialog>

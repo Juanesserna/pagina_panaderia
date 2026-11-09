@@ -13,30 +13,49 @@ export default function useRoles() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+
   const PAGE_SIZE = 10
 
   useEffect(() => {
     let active = true
-    fetchRoles().then((data) => {
-      if (active) {
-        setRoles(data)
-        setLoading(false)
-      }
-    })
+
+    fetchRoles()
+      .then((data) => {
+        if (active) setRoles(data)
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+
     return () => {
       active = false
     }
   }, [])
 
   const rolesFiltrados = useMemo(() => {
-    const term = search.trim().toLowerCase()
-    if (!term) return roles
-    return roles.filter((r) => r.nombre.toLowerCase().includes(term))
-  }, [roles, search])
+  const term = search.trim().toLowerCase()
 
-  // Si una búsqueda deja menos páginas de las que había, no te quedes
-  // "varado" en una página que ya no existe.
-  const pageCount = Math.max(1, Math.ceil(rolesFiltrados.length / PAGE_SIZE))
+  if (!term) return roles
+
+  return roles.filter((rol) => {
+    const estado = String(rol.estado ?? '').trim().toLowerCase()
+
+    if (term === 'activo' || term === 'inactivo') {
+      return estado === term
+    }
+
+    return (
+      String(rol.id).includes(term) ||
+      String(rol.nombre ?? '').toLowerCase().includes(term)
+    )
+  })
+}, [roles, search])
+
+  const pageCount = Math.max(
+    1,
+    Math.ceil(rolesFiltrados.length / PAGE_SIZE)
+  )
+
   useEffect(() => {
     if (page > pageCount) setPage(pageCount)
   }, [page, pageCount])
@@ -46,32 +65,44 @@ export default function useRoles() {
     return rolesFiltrados.slice(start, start + PAGE_SIZE)
   }, [rolesFiltrados, page])
 
-  const kpis = useMemo(
-    () => ({
-      total: roles.length,
-      activos: roles.filter((r) => r.estado === 'Activo').length,
-    }),
-    [roles]
-  )
+  const kpis = useMemo(() => ({
+    total: roles.length,
+    activos: roles.filter((rol) => rol.estado === 'Activo').length,
+  }), [roles])
 
   const agregarRol = useCallback(async (data) => {
     const nuevo = await createRole(data)
-    setRoles((prev) => [nuevo, ...prev])
+    setRoles((prev) => [...prev, nuevo])
+    return nuevo
   }, [])
 
   const editarRol = useCallback(async (id, data) => {
     const actualizado = await updateRole(id, data)
-    setRoles((prev) => prev.map((r) => (r.id === id ? actualizado : r)))
+
+    if (!actualizado) throw new Error('No se encontró el rol.')
+
+    setRoles((prev) =>
+      prev.map((rol) => rol.id === id ? actualizado : rol)
+    )
+
+    return actualizado
   }, [])
 
   const cambiarEstado = useCallback(async (id) => {
     const actualizado = await toggleEstadoRole(id)
-    setRoles((prev) => prev.map((r) => (r.id === id ? actualizado : r)))
+
+    if (!actualizado) throw new Error('No se encontró el rol.')
+
+    setRoles((prev) =>
+      prev.map((rol) => rol.id === id ? actualizado : rol)
+    )
+
+    return actualizado
   }, [])
 
   const eliminarRol = useCallback(async (id) => {
     await deleteRole(id)
-    setRoles((prev) => prev.filter((r) => r.id !== id))
+    setRoles((prev) => prev.filter((rol) => rol.id !== id))
   }, [])
 
   const cambiarBusqueda = useCallback((value) => {

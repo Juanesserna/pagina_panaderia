@@ -1,8 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Box from '@mui/material/Box'
 import Paper from '@mui/material/Paper'
-import Snackbar from '@mui/material/Snackbar'
-import Alert from '@mui/material/Alert'
 import useUsuarios from '../hooks/useUsuarios'
 import UsuariosKpis from '../components/UsuariosKpis'
 import UsuariosToolbar from '../components/UsuariosToolbar'
@@ -10,17 +8,22 @@ import UsuariosTable from '../components/UsuariosTable'
 import UsuarioFormDialog from '../components/UsuarioFormDialog'
 import UsuarioDetailDialog from '../components/UsuarioDetailDialog'
 import DeleteUserDialog from '../components/DeleteUserDialog'
+
 import { Pagination } from '@shared/ui'
+import {
+  NotificacionesContainer,
+  useNotificaciones,
+} from '@shared/notifications'
 
 export default function UsuariosPage() {
   const {
     usuarios,
     totalFiltrados,
     page,
-    pageCount,
     pageSize,
     setPage,
     loading,
+    error,
     kpis,
     search,
     setSearch,
@@ -38,54 +41,109 @@ export default function UsuariosPage() {
 
   const [filtersOpen, setFiltersOpen] = useState(false)
 
-  // formDialog: { mode: 'create' | 'edit', usuario? } | null
   const [formDialog, setFormDialog] = useState(null)
   const [submitting, setSubmitting] = useState(false)
 
   const [usuarioDetalle, setUsuarioDetalle] = useState(null)
   const [usuarioAInhabilitar, setUsuarioAInhabilitar] = useState(null)
+  const [changingStatus, setChangingStatus] = useState(false)
 
-  const [snackbar, setSnackbar] = useState({ open: false, message: '' })
+  const { notificaciones, mostrarNotificacion } = useNotificaciones()
 
+  // Notificar errores durante la carga inicial.
+  useEffect(() => {
+    if (error) {
+      mostrarNotificacion('error', error)
+    }
+  }, [error, mostrarNotificacion])
+
+  // Guardar o actualizar usuario.
   const handleSubmitForm = async (data) => {
+    if (submitting || !formDialog) return
+
     setSubmitting(true)
+
     try {
       if (formDialog.mode === 'create') {
         await agregarUsuario(data)
+
+        mostrarNotificacion(
+          'exito',
+          'Usuario registrado correctamente.'
+        )
       } else {
         await editarUsuario(formDialog.usuario.id, data)
+
+        mostrarNotificacion(
+          'exito',
+          'Usuario actualizado correctamente.'
+        )
       }
+
       setFormDialog(null)
+    } catch (error) {
+      mostrarNotificacion(
+        'error',
+        error.message || 'No se pudo guardar el usuario.'
+      )
     } finally {
       setSubmitting(false)
     }
   }
 
-  // Los usuarios nunca se eliminan: solo cambian de estado. Acá se arma el
-  // mensaje de confirmación según a dónde quedó el usuario después del
-  // cambio (inhabilitado o reactivado).
-  const handleInhabilitar = async (id) => {
-    const actualizado = await cambiarEstado(id)
-    setSnackbar({
-      open: true,
-      message:
-        actualizado.estado === 'Inactivo'
-          ? 'El usuario ha sido inhabilitado.'
-          : 'El usuario ha sido reactivado.',
-    })
+  // Errores de validación del formulario.
+  const handleValidationError = (mensaje) => {
+    mostrarNotificacion('error', mensaje)
   }
+
+  // Cambiar estado después de confirmar.
+  const handleInhabilitar = async (id) => {
+  if (changingStatus) return false
+
+  setChangingStatus(true)
+
+  try {
+    const actualizado = await cambiarEstado(id)
+
+    mostrarNotificacion(
+      'exito',
+      actualizado.estado === 'Inactivo'
+        ? 'El usuario ha sido inhabilitado.'
+        : 'El usuario ha sido reactivado.'
+    )
+
+    setUsuarioAInhabilitar(null)
+    return true
+  } catch (error) {
+    mostrarNotificacion(
+      'error',
+      error.message || 'No se pudo cambiar el estado del usuario.'
+    )
+
+    return false
+  } finally {
+    setChangingStatus(false)
+  }
+}
 
   return (
     <Box>
       <UsuariosKpis kpis={kpis} />
 
-      <Paper variant="outlined" sx={{ borderColor: 'divider', borderRadius: 3, overflow: 'hidden' }}>
+      <Paper
+        variant="outlined"
+        sx={{
+          borderColor: 'divider',
+          borderRadius: 3,
+          overflow: 'hidden',
+        }}
+      >
         <UsuariosToolbar
           search={search}
           onSearchChange={setSearch}
           onNuevoUsuario={() => setFormDialog({ mode: 'create' })}
           filtersOpen={filtersOpen}
-          onToggleFilters={() => setFiltersOpen((p) => !p)}
+          onToggleFilters={() => setFiltersOpen((prev) => !prev)}
           rolFiltro={rolFiltro}
           onRolFiltroChange={setRolFiltro}
           estadoFiltro={estadoFiltro}
@@ -98,11 +156,19 @@ export default function UsuariosPage() {
           usuarios={usuarios}
           loading={loading}
           onVer={setUsuarioDetalle}
-          onEditar={(usuario) => setFormDialog({ mode: 'edit', usuario })}
+          onEditar={(usuario) =>
+            setFormDialog({ mode: 'edit', usuario })
+          }
           onInhabilitar={setUsuarioAInhabilitar}
         />
 
-         <Box sx={{ px: 2.5, borderTop: '1px solid', borderColor: 'divider' }}>
+        <Box
+          sx={{
+            px: 2.5,
+            borderTop: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
           <Pagination
             page={page}
             total={totalFiltrados}
@@ -112,14 +178,15 @@ export default function UsuariosPage() {
         </Box>
       </Paper>
 
-
-
       <UsuarioFormDialog
         open={Boolean(formDialog)}
         mode={formDialog?.mode}
         initialData={formDialog?.usuario}
-        onClose={() => setFormDialog(null)}
+        onClose={() => {
+          if (!submitting) setFormDialog(null)
+        }}
         onSubmit={handleSubmitForm}
+        onError={handleValidationError}
         submitting={submitting}
       />
 
@@ -133,31 +200,13 @@ export default function UsuariosPage() {
         open={Boolean(usuarioAInhabilitar)}
         usuario={usuarioAInhabilitar}
         esUnicoGerente={esUnicoGerente}
-        onClose={() => setUsuarioAInhabilitar(null)}
+        onClose={() => {
+          if (!changingStatus) setUsuarioAInhabilitar(null)
+        }}
         onInhabilitar={handleInhabilitar}
       />
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert
-          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-          severity="success"
-          variant="filled"
-          sx={{
-            width: '100%',
-            borderRadius: 2,
-            boxShadow: 3,
-            fontSize: 13.5,
-            fontWeight: 500,
-          }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+      <NotificacionesContainer notificaciones={notificaciones} />
     </Box>
   )
 }

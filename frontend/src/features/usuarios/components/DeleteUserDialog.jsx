@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -7,56 +8,121 @@ import Button from '@mui/material/Button'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
+
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded'
 import { BRAND } from '@shared/utils/colors'
 
-export default function DeleteUserDialog({ open, usuario, esUnicoGerente, onClose, onInhabilitar }) {
-  const [loadingAction, setLoadingAction] = useState(null)
+export default function DeleteUserDialog({
+  open,
+  usuario,
+  esUnicoGerente,
+  onClose,
+  onInhabilitar,
+}) {
+  const [loadingAction, setLoadingAction] = useState(false)
   const [errorText, setErrorText] = useState('')
 
-  if (!usuario) return null
+  const estaActivo = usuario?.estado === 'Activo'
+  const bloqueado =
+    Boolean(usuario) && estaActivo && esUnicoGerente(usuario)
 
-  const bloqueado = esUnicoGerente(usuario)
-  const estaActivo = usuario.estado === 'Activo'
+  const nombreUsuario =
+    usuario?.nombre?.trim() || `Usuario #${usuario?.id}`
 
-  const handleClose = () => {
-    if (loadingAction) return
+  useEffect(() => {
+    if (open) {
+      setErrorText('')
+      setLoadingAction(false)
+    }
+  }, [open, usuario?.id])
+
+  const handleClose = (event, reason) => {
+    if (
+      loadingAction ||
+      reason === 'backdropClick' ||
+      reason === 'escapeKeyDown'
+    ) {
+      return
+    }
+
     setErrorText('')
-    onClose()
+    onClose?.()
   }
 
-  const run = async (action, fn) => {
-    setLoadingAction(action)
+  const run = async () => {
+    if (loadingAction || bloqueado || !usuario) return
+
+    setLoadingAction(true)
     setErrorText('')
+
     try {
-      await fn(usuario.id)
-      setLoadingAction(null)
-      onClose()
-    } catch (err) {
-      setLoadingAction(null)
-      setErrorText(err.message || 'Ocurrió un error inesperado.')
+      const resultado = await onInhabilitar(usuario.id)
+
+      if (resultado === false) {
+        setErrorText(
+          'No se pudo completar el cambio de estado. Puedes intentarlo nuevamente.'
+        )
+        return
+      }
+
+      setErrorText('')
+      onClose?.()
+    } catch (error) {
+      setErrorText(
+        error.message || 'Ocurrió un error inesperado.'
+      )
+    } finally {
+      setLoadingAction(false)
     }
   }
 
+  if (!usuario) return null
+
   return (
-    <Dialog open={open} onClose={handleClose} fullWidth maxWidth="xs">
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      fullWidth
+      maxWidth="xs"
+    >
       <DialogTitle sx={{ fontWeight: 700 }}>
-        {bloqueado ? 'Acción no permitida' : ' Inhabilitar usuario'}
+        {bloqueado
+          ? 'Acción no permitida'
+          : estaActivo
+            ? 'Inhabilitar usuario'
+            : 'Reactivar usuario'}
       </DialogTitle>
+
       <DialogContent>
         {bloqueado ? (
-          <Alert severity="warning" icon={<WarningAmberRoundedIcon />}>
-            <strong>{usuario.nombre}</strong> es el único Gerente del sistema. No se puede
-            inhabilitar porque el sistema debe tener al menos un Gerente activo.
+          <Alert
+            severity="warning"
+            icon={<WarningAmberRoundedIcon />}
+          >
+            <strong>{nombreUsuario}</strong> es el único Gerente activo
+            del sistema. No se puede inhabilitar porque debe existir
+            al menos un Gerente activo.
           </Alert>
         ) : (
-          <Box sx={{ fontSize: 14, color: 'text.secondary' }}>
+          <Box sx={{ color: 'text.secondary' }}>
             <Typography sx={{ fontSize: 14, mb: 1 }}>
-              ¿Qué deseas hacer con <strong>{usuario.nombre}</strong>?
+              {estaActivo ? (
+                <>
+                  ¿Deseas inhabilitar la cuenta de{' '}
+                  <strong>{nombreUsuario}</strong>?
+                </>
+              ) : (
+                <>
+                  ¿Deseas reactivar la cuenta de{' '}
+                  <strong>{nombreUsuario}</strong>?
+                </>
+              )}
             </Typography>
+
             <Typography sx={{ fontSize: 13 }}>
-              • <strong>Inhabilitar</strong>: el usuario no podrá acceder al sistema, pero se
-              conserva y puede reactivarse luego.
+              {estaActivo
+                ? 'El usuario perderá el acceso al sistema, pero su cuenta y sus registros se conservarán. Podrá reactivarse posteriormente.'
+                : 'El usuario recuperará el acceso al sistema según los privilegios de su rol asignado.'}
             </Typography>
           </Box>
         )}
@@ -67,35 +133,48 @@ export default function DeleteUserDialog({ open, usuario, esUnicoGerente, onClos
           </Alert>
         )}
       </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2.5, flexWrap: 'wrap', gap: 1 }}>
+
+      <DialogActions
+        sx={{
+          px: 3,
+          pb: 2.5,
+          flexWrap: 'wrap',
+          gap: 1,
+        }}
+      >
         {bloqueado ? (
-          <Button onClick={handleClose} variant="contained" sx={{ bgcolor: BRAND.orange }}>
+          <Button
+            onClick={handleClose}
+            variant="contained"
+            sx={{ bgcolor: BRAND.orange }}
+          >
             Entendido
           </Button>
         ) : (
           <>
             <Button
               onClick={handleClose}
-              disabled={Boolean(loadingAction)}
+              disabled={loadingAction}
               variant="outlined"
               color="inherit"
               sx={{ borderColor: 'divider' }}
             >
               Cancelar
             </Button>
+
             <Button
-              onClick={() => run('inhabilitar', onInhabilitar)}
-              disabled={Boolean(loadingAction)}
+              onClick={run}
+              disabled={loadingAction}
               variant="outlined"
-              color="warning"
+              color={estaActivo ? 'warning' : 'success'}
             >
-              {loadingAction === 'inhabilitar'
+              {loadingAction
                 ? 'Procesando...'
                 : errorText
-                ? 'Reintentar'
-                : estaActivo
-                ? 'Inhabilitar'
-                : 'Reactivar'}
+                  ? 'Reintentar'
+                  : estaActivo
+                    ? 'Inhabilitar'
+                    : 'Reactivar'}
             </Button>
           </>
         )}
