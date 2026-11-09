@@ -1,3 +1,4 @@
+
 import { useState } from 'react'
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -17,19 +18,24 @@ import { BRAND } from '@shared/utils/colors'
 
 const EMPTY_FORM = { email: '', telefono: '' }
 
-function FieldLabel({ children }) {
-  return (
-    <Typography sx={{
-      fontSize: 11,
-      fontWeight: 600,
-      letterSpacing: 0.5,
-      color: 'text.secondary',
-      textTransform: 'uppercase',
-      mb: 0.5,
-    }}>
-      {children}
-    </Typography>
-  )
+const validar = (campo, valor) => {
+  const texto = valor.trim()
+
+  if (!texto) return 'Este campo es obligatorio'
+
+  if (campo === 'email') {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(texto)
+      ? ''
+      : 'Ingresa un correo electrónico válido'
+  }
+
+  if (campo === 'telefono') {
+    return /^3\d{9}$/.test(texto)
+      ? ''
+      : 'Ingresa un celular válido de 10 dígitos'
+  }
+
+  return ''
 }
 
 const inputSx = {
@@ -37,6 +43,23 @@ const inputSx = {
     bgcolor: 'action.hover',
     borderRadius: 2,
   },
+}
+
+function FieldLabel({ children }) {
+  return (
+    <Typography
+      sx={{
+        fontSize: 11,
+        fontWeight: 600,
+        letterSpacing: 0.5,
+        color: 'text.secondary',
+        textTransform: 'uppercase',
+        mb: 0.5,
+      }}
+    >
+      {children}
+    </Typography>
+  )
 }
 
 export default function EditarPerfilDialog({
@@ -47,89 +70,143 @@ export default function EditarPerfilDialog({
   submitting,
 }) {
   const [form, setForm] = useState(EMPTY_FORM)
-  const [touched, setTouched] = useState(false)
+  const [errores, setErrores] = useState({})
   const [prevOpen, setPrevOpen] = useState(open)
 
   if (open !== prevOpen) {
     setPrevOpen(open)
+
     if (open) {
       setForm({
         email: initialData?.email ?? '',
         telefono: initialData?.telefono ?? '',
       })
-      setTouched(false)
+      setErrores({})
     }
   }
 
-  const set = (field) => (e) =>
-    setForm(prev => ({ ...prev, [field]: e.target.value }))
+  const set = (campo) => (event) => {
+    let valor = event.target.value
 
-  const emailValido =
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())
+    if (campo === 'telefono') {
+      valor = valor.replace(/\D/g, '').slice(0, 10)
+    }
 
-  const telefonoValido =
-    /^[0-9+\s()-]{7,15}$/.test(form.telefono.trim())
+    if (campo === 'email') {
+      valor = valor.replace(/\s/g, '')
+    }
 
-  const isValid = emailValido && telefonoValido
+    setForm((prev) => ({ ...prev, [campo]: valor }))
+
+    if (Object.prototype.hasOwnProperty.call(errores, campo)) {
+      setErrores((prev) => ({
+        ...prev,
+        [campo]: validar(campo, valor),
+      }))
+    }
+  }
+
+  const validarCampo = (campo) => {
+    const error = validar(campo, form[campo])
+
+    setErrores((prev) => ({
+      ...prev,
+      [campo]: error,
+    }))
+
+    return !error
+  }
+
+  const handleTab = (campo) => (event) => {
+    if (event.key !== 'Tab') return
+
+    if (!validarCampo(campo)) {
+      event.preventDefault()
+    }
+  }
 
   const handleSubmit = () => {
-    setTouched(true)
-    if (!isValid) return
+    const nuevosErrores = {
+      email: validar('email', form.email),
+      telefono: validar('telefono', form.telefono),
+    }
+
+    setErrores(nuevosErrores)
+
+    if (Object.values(nuevosErrores).some(Boolean)) return
+
     onSubmit({
       email: form.email.trim(),
       telefono: form.telefono.trim(),
     })
   }
 
+  const handleClose = (event, reason) => {
+    if (submitting) return
+
+    if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
+      return
+    }
+
+    onClose()
+  }
+
   return (
     <Dialog
       open={open}
-      onClose={submitting ? undefined : onClose}
+      onClose={handleClose}
+      disableEscapeKeyDown
       fullWidth
       maxWidth="xs"
     >
-      <DialogTitle sx={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
-        pb: 0,
-      }}>
+      <DialogTitle
+        sx={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          pb: 0,
+        }}
+      >
         <Box>
           <Typography sx={{ fontWeight: 700, fontSize: 18 }}>
             Editar perfil
           </Typography>
-          <Typography sx={{
-            fontSize: 13,
-            color: 'text.secondary',
-          }}>
+
+          <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
             Actualiza tus datos de contacto
           </Typography>
         </Box>
 
-        <IconButton onClick={onClose} disabled={submitting} size="small">
+        <IconButton
+          onClick={onClose}
+          disabled={submitting}
+          size="small"
+        >
           <CloseIcon fontSize="small" />
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{
-        pt: 3,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 2,
-      }}>
+      <DialogContent
+        sx={{
+          pt: 3,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+        }}
+      >
         <Box>
           <FieldLabel>Correo electrónico</FieldLabel>
+
           <TextField
             type="email"
             value={form.email}
             onChange={set('email')}
+            onBlur={() => validarCampo('email')}
+            onKeyDown={handleTab('email')}
             placeholder="usuario@correo.com"
-            error={touched && !emailValido}
-            helperText={
-              touched && !emailValido
-                ? 'Ingresa un correo electrónico válido'
-                : ''
-            }
+            error={Boolean(errores.email)}
+            helperText={errores.email || ''}
+            disabled={submitting}
             fullWidth
             sx={inputSx}
             slotProps={{
@@ -149,19 +226,23 @@ export default function EditarPerfilDialog({
 
         <Box>
           <FieldLabel>Teléfono</FieldLabel>
+
           <TextField
             value={form.telefono}
             onChange={set('telefono')}
+            onBlur={() => validarCampo('telefono')}
+            onKeyDown={handleTab('telefono')}
             placeholder="Ej. 3001234567"
-            error={touched && !telefonoValido}
-            helperText={
-              touched && !telefonoValido
-                ? 'Ingresa un teléfono válido'
-                : ''
-            }
+            error={Boolean(errores.telefono)}
+            helperText={errores.telefono || ''}
+            disabled={submitting}
             fullWidth
             sx={inputSx}
             slotProps={{
+              htmlInput: {
+                inputMode: 'numeric',
+                maxLength: 10,
+              },
               input: {
                 startAdornment: (
                   <InputAdornment position="start">
@@ -178,9 +259,14 @@ export default function EditarPerfilDialog({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button onClick={onClose} disabled={submitting} color="inherit">
+        <Button
+          onClick={onClose}
+          disabled={submitting}
+          color="inherit"
+        >
           Cancelar
         </Button>
+
         <Button
           onClick={handleSubmit}
           variant="contained"

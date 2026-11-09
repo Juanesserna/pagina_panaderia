@@ -27,6 +27,42 @@ const EMPTY_FORM = {
   confirmar: '',
 }
 
+const EMPTY_MOSTRAR = {
+  actual: false,
+  nueva: false,
+  confirmar: false,
+}
+
+const CAMPOS = [
+  { id: 'actual', label: 'Contraseña actual' },
+  { id: 'nueva', label: 'Nueva contraseña' },
+  { id: 'confirmar', label: 'Confirmar nueva contraseña' },
+]
+
+function validarCampo(campo, form) {
+  const valor = form[campo]
+
+  if (!valor.trim()) {
+    return 'Este campo es obligatorio'
+  }
+
+  if (campo === 'nueva') {
+    if (valor.length < 6) {
+      return 'La contraseña debe tener mínimo 6 caracteres'
+    }
+
+    if (valor === form.actual) {
+      return 'La nueva contraseña debe ser diferente a la actual'
+    }
+  }
+
+  if (campo === 'confirmar' && valor !== form.nueva) {
+    return 'Las contraseñas no coinciden'
+  }
+
+  return ''
+}
+
 export default function CambiarPasswordDialog({
   open,
   onClose,
@@ -34,30 +70,63 @@ export default function CambiarPasswordDialog({
   submitting,
 }) {
   const [form, setForm] = useState(EMPTY_FORM)
-  const [mostrar, setMostrar] = useState({
-    actual: false,
-    nueva: false,
-    confirmar: false,
-  })
-  const [touched, setTouched] = useState(false)
+  const [mostrar, setMostrar] = useState(EMPTY_MOSTRAR)
+  const [errores, setErrores] = useState({})
+  const [intentandoGuardar, setIntentandoGuardar] = useState(false)
 
   useEffect(() => {
     if (open) {
-      setForm(EMPTY_FORM)
-      setMostrar({
-        actual: false,
-        nueva: false,
-        confirmar: false,
-      })
-      setTouched(false)
+      setForm({ ...EMPTY_FORM })
+      setMostrar({ ...EMPTY_MOSTRAR })
+      setErrores({})
+      setIntentandoGuardar(false)
     }
   }, [open])
 
   const handleChange = (campo) => (event) => {
-    setForm((prev) => ({
+    const valor = event.target.value
+    const siguiente = { ...form, [campo]: valor }
+
+    setForm(siguiente)
+
+    setErrores((prev) => {
+      const nuevos = { ...prev }
+
+      if (Object.prototype.hasOwnProperty.call(prev, campo)) {
+        nuevos[campo] = validarCampo(campo, siguiente)
+      }
+
+      // Actualizar errores dependientes cuando cambian
+      // la contraseña actual o la nueva.
+      if (campo === 'actual' && 'nueva' in prev) {
+        nuevos.nueva = validarCampo('nueva', siguiente)
+      }
+
+      if (campo === 'nueva' && 'confirmar' in prev) {
+        nuevos.confirmar = validarCampo('confirmar', siguiente)
+      }
+
+      return nuevos
+    })
+  }
+
+  const validarUno = (campo) => {
+    const error = validarCampo(campo, form)
+
+    setErrores((prev) => ({
       ...prev,
-      [campo]: event.target.value,
+      [campo]: error,
     }))
+
+    return !error
+  }
+
+  const handleTab = (campo) => (event) => {
+    if (event.key !== 'Tab') return
+
+    if (!validarUno(campo)) {
+      event.preventDefault()
+    }
   }
 
   const toggleMostrar = (campo) => {
@@ -67,32 +136,51 @@ export default function CambiarPasswordDialog({
     }))
   }
 
-  const isValid =
-    form.actual.trim().length > 0 &&
-    form.nueva.length >= 6 &&
-    form.nueva === form.confirmar
-
   const handleSubmit = () => {
-    setTouched(true)
+    if (submitting || intentandoGuardar) return
 
-    if (!isValid) return
+    const nuevosErrores = Object.fromEntries(
+      CAMPOS.map(({ id }) => [id, validarCampo(id, form)])
+    )
 
-    onSubmit({
-      actual: form.actual,
-      nueva: form.nueva,
-    })
+    setErrores(nuevosErrores)
+
+    if (Object.values(nuevosErrores).some(Boolean)) return
+
+    setIntentandoGuardar(true)
+
+    Promise.resolve()
+      .then(() =>
+        onSubmit({
+          actual: form.actual,
+          nueva: form.nueva,
+        })
+      )
+      .catch(() => {
+        // El componente padre gestiona el mensaje de error.
+      })
+      .finally(() => {
+        setIntentandoGuardar(false)
+      })
   }
 
-  const campos = [
-    { id: 'actual', label: 'Contraseña actual' },
-    { id: 'nueva', label: 'Nueva contraseña' },
-    { id: 'confirmar', label: 'Confirmar nueva contraseña' },
-  ]
+  const handleClose = (event, reason) => {
+    if (submitting || intentandoGuardar) return
+
+    if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
+      return
+    }
+
+    onClose()
+  }
+
+  const bloqueado = submitting || intentandoGuardar
 
   return (
     <Dialog
       open={open}
-      onClose={submitting ? undefined : onClose}
+      onClose={handleClose}
+      disableEscapeKeyDown
       fullWidth
       maxWidth="xs"
     >
@@ -108,15 +196,17 @@ export default function CambiarPasswordDialog({
           <Typography fontWeight={700} fontSize={18}>
             Cambiar contraseña
           </Typography>
+
           <Typography fontSize={13} color="text.secondary">
             Actualiza la contraseña de tu cuenta.
           </Typography>
         </Box>
 
         <IconButton
-          onClick={onClose}
-          disabled={submitting}
+          onClick={handleClose}
+          disabled={bloqueado}
           size="small"
+          aria-label="Cerrar formulario"
         >
           <CloseIcon fontSize="small" />
         </IconButton>
@@ -131,92 +221,86 @@ export default function CambiarPasswordDialog({
         }}
       >
         <Stack spacing={2}>
-          {campos.map(({ id, label }) => {
-            const error =
-              touched &&
-              (
-                (id === 'actual' && !form.actual.trim()) ||
-                (id === 'nueva' && form.nueva.length < 6) ||
-                (id === 'confirmar' && form.confirmar !== form.nueva)
-              )
+          {CAMPOS.map(({ id, label }) => (
+            <Box key={id}>
+              <Typography
+                sx={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: 0.5,
+                  color: 'text.secondary',
+                  mb: 0.5,
+                }}
+              >
+                {label.toUpperCase()}
+              </Typography>
 
-            const helperText =
-              error && id === 'actual'
-                ? 'Ingresa tu contraseña actual'
-                : error && id === 'nueva'
-                  ? 'Mínimo 6 caracteres'
-                  : error && id === 'confirmar'
-                    ? 'Las contraseñas no coinciden'
-                    : ''
-
-            return (
-              <Box key={id}>
-                <Typography
-                  sx={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    letterSpacing: 0.5,
-                    color: 'text.secondary',
-                    mb: 0.5,
-                  }}
-                >
-                  {label.toUpperCase()}
-                </Typography>
-
-                <TextField
-                  fullWidth
-                  size="small"
-                  type={mostrar[id] ? 'text' : 'password'}
-                  value={form[id]}
-                  onChange={handleChange(id)}
-                  placeholder={`Ingresa ${label.toLowerCase()}`}
-                  error={error}
-                  helperText={helperText}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      bgcolor: 'action.hover',
-                      borderRadius: 2,
-                    },
-                  }}
-                  slotProps={{
-                    input: {
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <LockOutlinedIcon
-                            fontSize="small"
-                            sx={{ color: 'text.secondary' }}
-                          />
-                        </InputAdornment>
-                      ),
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton
-                            size="small"
-                            edge="end"
-                            onClick={() => toggleMostrar(id)}
-                            disabled={submitting}
-                          >
-                            {mostrar[id] ? (
-                              <VisibilityOff fontSize="small" />
-                            ) : (
-                              <Visibility fontSize="small" />
-                            )}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    },
-                  }}
-                />
-              </Box>
-            )
-          })}
+              <TextField
+                fullWidth
+                size="small"
+                type={mostrar[id] ? 'text' : 'password'}
+                value={form[id]}
+                onChange={handleChange(id)}
+                onBlur={() => validarUno(id)}
+                onKeyDown={handleTab(id)}
+                placeholder={`Ingresa ${label.toLowerCase()}`}
+                error={Boolean(errores[id])}
+                helperText={errores[id] || ''}
+                disabled={bloqueado}
+                autoComplete={
+                  id === 'actual'
+                    ? 'current-password'
+                    : 'new-password'
+                }
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    bgcolor: 'action.hover',
+                    borderRadius: 2,
+                  },
+                }}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LockOutlinedIcon
+                          fontSize="small"
+                          sx={{ color: 'text.secondary' }}
+                        />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          size="small"
+                          edge="end"
+                          onClick={() => toggleMostrar(id)}
+                          disabled={bloqueado}
+                          aria-label={
+                            mostrar[id]
+                              ? 'Ocultar contraseña'
+                              : 'Mostrar contraseña'
+                          }
+                        >
+                          {mostrar[id] ? (
+                            <VisibilityOff fontSize="small" />
+                          ) : (
+                            <Visibility fontSize="small" />
+                          )}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+              />
+            </Box>
+          ))}
         </Stack>
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
         <Button
-          onClick={onClose}
-          disabled={submitting}
+          onClick={handleClose}
+          disabled={bloqueado}
           color="inherit"
         >
           Cancelar
@@ -225,7 +309,7 @@ export default function CambiarPasswordDialog({
         <Button
           onClick={handleSubmit}
           variant="contained"
-          disabled={submitting || (touched && !isValid)}
+          disabled={bloqueado}
           sx={{
             bgcolor: BRAND.orange,
             '&:hover': {
@@ -233,7 +317,7 @@ export default function CambiarPasswordDialog({
             },
           }}
         >
-          {submitting ? 'Guardando...' : 'Actualizar contraseña'}
+          {bloqueado ? 'Guardando...' : 'Actualizar contraseña'}
         </Button>
       </DialogActions>
     </Dialog>
