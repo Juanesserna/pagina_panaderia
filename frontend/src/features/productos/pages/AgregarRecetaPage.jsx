@@ -21,7 +21,7 @@ export default function AgregarRecetaPage() {
   const location = useLocation()
   const producto = location.state?.producto
 
-  const codigo = producto?.codigo ?? 'PR-000'
+  const codigo = producto?.codigo ?? `PR-${producto?.productoId ?? '000'}`
   const nombre = producto?.nombre ?? 'Producto sin nombre'
 
   const [insumos, setInsumos] = useState([])

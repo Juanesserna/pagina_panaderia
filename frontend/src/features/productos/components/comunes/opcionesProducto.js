@@ -1,6 +1,3 @@
-// Categorías disponibles para los productos
-export const CATEGORIAS_PRODUCTO = ['Pan Artesanal', 'Pastelería', 'Tortas', 'Bebidas']
-
 // Estados disponibles para los productos
 export const ESTADOS_PRODUCTO = ['Activo', 'Agotado']
 

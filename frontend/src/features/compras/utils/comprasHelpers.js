@@ -41,20 +41,18 @@ export const derivarCategoria = (items, insumos) => {
 
 // ---------- Reglas de negocio ----------
 
-// Pendiente puede ir a cualquiera; Parcial solo avanza a Recibida o se cancela (no retrocede);
-// Recibida solo se cancela; Cancelada es definitiva.
+// Pendiente puede pasar a Recibida; Recibida es final (no cambia de estado).
 export const esTransicionValida = (actual, nuevo) => {
   if (actual === nuevo) return true
-  if (actual === ESTADO.CANCELADA) return false
-  if (actual === ESTADO.RECIBIDA) return nuevo === ESTADO.CANCELADA
-  if (actual === ESTADO.PARCIAL) return nuevo === ESTADO.RECIBIDA || nuevo === ESTADO.CANCELADA
-  return true // actual === PENDIENTE
+  if (actual === ESTADO.RECIBIDA) return false
+  return actual === ESTADO.PENDIENTE && nuevo === ESTADO.RECIBIDA
 }
 
 export const opcionesEstadoParaFila = (actual) => estadoOptions.filter((o) => esTransicionValida(actual, o.value))
 
-// Subtotal de las líneas del formulario (cantidad × valor unitario)
-export const calcularSubtotal = (items) => items.reduce((suma, i) => suma + i.cantidad * i.precioUnitario, 0)
+// Subtotal de las líneas del formulario: aplica primero el descuento por ítem (si existe) y luego suma
+export const calcularSubtotal = (items) =>
+  items.reduce((suma, i) => suma + i.cantidad * i.precioUnitario * (1 - (i.descuentoProducto || 0) / 100), 0)
 
 export const calcularTotal = (subtotal, descuento = 0) => Math.round(subtotal * (1 - descuento / 100))
 
@@ -102,6 +100,7 @@ export const crearItemVacio = (insumos) => {
     cantidad: 1,
     unidad: base?.unidad ?? 'kg',
     precioUnitario: 0,
+    descuentoProducto: 0,
     lote: generarNumeroLote(),
     fechaVencimiento: '',
   }
@@ -121,7 +120,7 @@ export const construirCompra = ({ id, fecha, proveedorId, estado, solicitante, d
     nombre: i.nombre,
     cantidad: i.cantidad,
     unidad: i.unidad,
-    subtotal: i.cantidad * i.precioUnitario,
+    subtotal: Math.round(i.cantidad * i.precioUnitario * (1 - (i.descuentoProducto || 0) / 100)),
     lote: i.lote,
     fechaVencimiento: i.fechaVencimiento,
     cantidadDisponible: i.cantidad,

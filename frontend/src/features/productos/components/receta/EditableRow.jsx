@@ -1,24 +1,23 @@
-// Importa los componentes de MUI que usa la fila editable
+import { useState } from 'react'
 import {
   Box,
-  FormControl,
   IconButton,
-  MenuItem,
-  Select,
   TableCell,
   TableRow,
   TextField,
   Typography,
   useTheme,
 } from '@mui/material'
-// Importa los iconos de confirmar y cancelar
 import { IconCheck, IconX } from '@tabler/icons-react'
-// Importa la fuente definida en el tema de la app
-import { fonts } from '@app/theme/colors'
-// Importa el estilo compartido de las celdas
 import { CELL_SX } from '../comunes/tablaEstilos'
+import SelectorReceta from './SelectorReceta'
 
-// Fila editable: sirve para agregar un insumo nuevo o editar uno existente
+// MUI puede entregar el elemento hijo en vez del valor: toma el valor real
+const valorSeleccionado = (value) =>
+  value && typeof value === 'object' && 'props' in value ? value.props.value : value
+
+// Fila editable: sirve para agregar un insumo nuevo o editar uno existente.
+// "insumosUsados" son los ids de insumos que ya están en la receta (no se pueden repetir).
 export default function EditableRow({
   fila,
   onChange,
@@ -29,191 +28,138 @@ export default function EditableRow({
   loading,
   showActions,
   isNew,
+  insumosUsados = [],
 }) {
-  // Obtiene el tema actual (claro u oscuro)
   const theme = useTheme()
+  // La cantidad solo muestra error después de salir del campo
+  const [cantidadTocada, setCantidadTocada] = useState(false)
 
-  // Se ejecuta cuando el usuario elige un insumo en el selector
+  // Al elegir un insumo guarda su id y nombre, y autocompleta su unidad por defecto (editable)
   const handleInsumoChange = (event, value) => {
-    // MUI entrega el elemento hijo; si es así, toma su valor real
-    const valorReal = value && typeof value === 'object' && 'props' in value
-      ? value.props.value
-      : value
-    // Convierte el valor a texto para compararlo
-    const insumoId = String(valorReal)
-    // Busca el insumo elegido dentro del catálogo
+    const insumoId = String(valorSeleccionado(value))
     const insumoSeleccionado = insumosCatalogo.find((i) => String(i.id) === insumoId)
-    // Si el insumo existe en el catálogo
-    if (insumoSeleccionado) {
-      // Guarda el id del insumo en la fila
-      onChange('insumoId', insumoSeleccionado.id)
-      // Guarda el nombre del insumo en la fila
-      onChange('insumoNombre', insumoSeleccionado.nombre)
-      // Si el insumo trae una unidad de medida por defecto
-      if (insumoSeleccionado.idUnidadMedida) {
-        // Busca esa unidad en la lista de unidades
-        const unidad = unidadesMedida.find((u) => u.id === insumoSeleccionado.idUnidadMedida)
-        // Si la unidad existe
-        if (unidad) {
-          // Autocompleta el id de la unidad
-          onChange('unidadId', String(unidad.id))
-          // Autocompleta la abreviatura de la unidad
-          onChange('unidadNombre', unidad.abreviatura)
-        }
-      }
-    } else {
-      // Si no hay insumo válido, limpia el id
+    if (!insumoSeleccionado) {
       onChange('insumoId', '')
-      // Y limpia el nombre
       onChange('insumoNombre', '')
+      return
+    }
+    onChange('insumoId', insumoSeleccionado.id)
+    onChange('insumoNombre', insumoSeleccionado.nombre)
+    if (insumoSeleccionado.idUnidadMedida) {
+      const unidad = unidadesMedida.find(
+        (u) => String(u.id) === String(insumoSeleccionado.idUnidadMedida)
+      )
+      if (unidad) {
+        onChange('unidadId', String(unidad.id))
+        onChange('unidadNombre', unidad.abreviatura)
+      }
     }
   }
 
-  // Se ejecuta cuando el usuario elige una unidad de medida
+  // Al elegir una unidad guarda su id y su abreviatura
   const handleUnidadChange = (event, value) => {
-    // MUI entrega el elemento hijo; si es así, toma su valor real
-    const valorReal = value && typeof value === 'object' && 'props' in value
-      ? value.props.value
-      : value
-    // Convierte el valor a texto para compararlo
-    const unidadId = String(valorReal)
-    // Busca la unidad elegida en la lista
+    const unidadId = String(valorSeleccionado(value))
     const unidad = unidadesMedida.find((u) => String(u.id) === unidadId)
-    // Si la unidad existe
     if (unidad) {
-      // Guarda el id de la unidad en la fila
       onChange('unidadId', String(unidad.id))
-      // Guarda la abreviatura de la unidad en la fila
       onChange('unidadNombre', unidad.abreviatura)
     }
   }
 
-  // Se ejecuta cuando el usuario escribe la cantidad
+  // Solo acepta vacío o un número positivo (sin signo negativo)
   const handleCantidadChange = (e) => {
-    // Toma el texto escrito
-    const value = e.target.value
-    // Solo acepta vacío o un número válido
-    if (value === '' || /^-?\d*\.?\d*$/.test(value)) {
-      // Guarda la cantidad en la fila
+    const { value } = e.target
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
       onChange('cantidad', value)
     }
   }
 
-  // La fila es válida si hay insumo elegido y la cantidad es mayor que cero
-  const isValid = fila.insumoId && Number(fila.cantidad) > 0
+  const cantidadValida = Number(fila.cantidad) > 0
+  const esDuplicado = insumosUsados.includes(String(fila.insumoId))
+  // La fila es válida si hay insumo (no repetido), unidad y una cantidad mayor que cero
+  const isValid =
+    Boolean(fila.insumoId) && Boolean(fila.unidadId) && cantidadValida && !esDuplicado
+  const mostrarErrorCantidad = Boolean(fila.unidadId) && cantidadTocada && !cantidadValida
+
+  const opcionesInsumo = insumosCatalogo.map((i) => ({
+    value: String(i.id),
+    etiqueta: i.nombre,
+    disabled: insumosUsados.includes(String(i.id)),
+  }))
+  // Si el insumo de la fila ya no está activo, se muestra igual para no dejar el selector vacío
+  if (
+    !loading &&
+    fila.insumoId &&
+    !opcionesInsumo.some((o) => o.value === String(fila.insumoId))
+  ) {
+    opcionesInsumo.unshift({
+      value: String(fila.insumoId),
+      etiqueta: `${fila.insumoNombre || fila.insumoId} (inactivo)`,
+      disabled: false,
+    })
+  }
+  const opcionesUnidad = unidadesMedida.map((u) => ({
+    value: String(u.id),
+    etiqueta: `${u.nombre} (${u.abreviatura})`,
+    disabled: false,
+  }))
 
   return (
-    // Fila con el color de fondo del papel del tema
     <TableRow sx={{ backgroundColor: theme.palette.background.paper }}>
-      {/* Columna: id del producto (o NUEVO si es fila nueva sin id) */}
+      {/* Id (o NUEVO si es fila nueva sin id) */}
       <TableCell sx={CELL_SX}>
-        <Typography sx={{ fontFamily: fonts.sans, fontSize: 13, color: theme.palette.text.primary, fontWeight: 500 }}>
+        <Typography variant="subtitle1" component="p" sx={{ color: theme.palette.text.primary }}>
           {isNew ? (fila.idTemp || 'NUEVO') : fila.id}
         </Typography>
       </TableCell>
-      {/* Columna: selector de insumo */}
+      {/* Selector de insumo (los ya usados salen deshabilitados) */}
       <TableCell sx={CELL_SX}>
-        <FormControl
-          fullWidth
-          size="small"
-          variant="outlined"
-          sx={{ minWidth: 200 }}
-        >
-          <Select
-            value={String(fila.insumoId || '')}
-            onChange={handleInsumoChange}
-            displayEmpty
-            disabled={loading}
-            sx={{
-              '& .MuiInputBase-input': {
-                fontFamily: fonts.sans,
-                fontSize: 13,
-              },
-            }}
-          >
-            {/* Opción vacía que sirve de texto guía */}
-            <MenuItem value="" disabled>
-              <Typography sx={{ fontFamily: fonts.sans, fontSize: 13, color: theme.palette.text.secondary }}>
-                Seleccionar insumo
-              </Typography>
-            </MenuItem>
-            {/* Mientras carga muestra "Cargando...", luego la lista de insumos */}
-            {loading ? (
-              <MenuItem disabled>
-                <Typography sx={{ fontFamily: fonts.sans, fontSize: 13, color: theme.palette.text.secondary }}>
-                  Cargando...
-                </Typography>
-              </MenuItem>
-            ) : (
-              insumosCatalogo.map((insumo) => (
-                <MenuItem key={insumo.id} value={String(insumo.id)}>
-                  {insumo.nombre}
-                </MenuItem>
-              ))
-            )}
-          </Select>
-        </FormControl>
+        <SelectorReceta
+          valor={String(fila.insumoId || '')}
+          onChange={handleInsumoChange}
+          opciones={opcionesInsumo}
+          placeholder="Seleccionar insumo"
+          minWidth={200}
+          disabled={loading}
+          cargando={loading}
+        />
       </TableCell>
-      {/* Columna: cantidad alineada a la derecha */}
+      {/* Selector de unidad de medida (va antes que la cantidad) */}
+      <TableCell sx={CELL_SX}>
+        <SelectorReceta
+          valor={String(fila.unidadId || '')}
+          onChange={handleUnidadChange}
+          opciones={opcionesUnidad}
+          placeholder="Unidad"
+          minWidth={120}
+          disabled={loading}
+        />
+      </TableCell>
+      {/* Cantidad alineada a la derecha; se habilita al elegir la unidad */}
       <TableCell sx={{ ...CELL_SX, textAlign: 'right' }}>
         <TextField
           size="small"
           type="number"
           value={fila.cantidad || ''}
           onChange={handleCantidadChange}
+          onBlur={() => setCantidadTocada(true)}
           variant="outlined"
-          inputProps={{ inputMode: 'decimal', min: 0.01, step: '0.01' }}
+          disabled={!fila.unidadId}
+          title={fila.unidadId ? undefined : 'Elige primero la unidad'}
+          placeholder={fila.unidadId ? '0' : '—'}
+          error={mostrarErrorCantidad}
+          helperText={mostrarErrorCantidad ? 'Debe ser mayor a 0' : ' '}
+          inputProps={{ inputMode: 'decimal', min: 0.01, step: '0.01', 'aria-label': 'Cantidad' }}
           sx={{
             width: '100%',
-            '& .MuiInputBase-input': {
-              fontFamily: fonts.sans,
-              fontSize: 13,
-              textAlign: 'right',
-            },
+            '& .MuiInputBase-input': { textAlign: 'right' },
           }}
         />
       </TableCell>
-      {/* Columna: selector de unidad de medida */}
-      <TableCell sx={CELL_SX}>
-        <FormControl
-          fullWidth
-          size="small"
-          variant="outlined"
-          sx={{ minWidth: 120 }}
-        >
-          <Select
-            value={String(fila.unidadId || '')}
-            onChange={handleUnidadChange}
-            displayEmpty
-            disabled={loading}
-            sx={{
-              '& .MuiInputBase-input': {
-                fontFamily: fonts.sans,
-                fontSize: 13,
-              },
-            }}
-          >
-            {/* Opción vacía que sirve de texto guía */}
-            <MenuItem value="" disabled>
-              <Typography sx={{ fontFamily: fonts.sans, fontSize: 13, color: theme.palette.text.secondary }}>
-                Unidad
-              </Typography>
-            </MenuItem>
-            {/* Lista de unidades de medida disponibles */}
-            {unidadesMedida.map((unidad) => (
-              <MenuItem key={unidad.id} value={String(unidad.id)}>
-                {unidad.nombre} ({unidad.abreviatura})
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </TableCell>
-      {/* Columna de acciones, solo si showActions es true */}
+      {/* Acciones: confirmar y cancelar */}
       {showActions && (
         <TableCell sx={{ ...CELL_SX, textAlign: 'right' }}>
-          {/* Contenedor de los botones de confirmar y cancelar */}
           <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.25 }}>
-            {/* Botón confirmar: deshabilitado si la fila no es válida o está cargando */}
             <IconButton
               size="small"
               onClick={onConfirm}
@@ -226,7 +172,6 @@ export default function EditableRow({
             >
               <IconCheck size={18} />
             </IconButton>
-            {/* Botón cancelar */}
             <IconButton
               size="small"
               onClick={onCancel}

@@ -3,15 +3,24 @@ import { useFormularioCategoria } from '../hooks/useFormularioCategoria'
 import FormularioCategoria from './formulario/FormularioCategoria'
 
 export default function NuevaCategoriaModal({ open, onClose, onSubmit }) {
-  const { valores, cambiar, reiniciar } = useFormularioCategoria()
+  const { valores, cambiar, reiniciar, validar, tocarUrl } = useFormularioCategoria()
+  const { esValido, errorUrl } = validar()
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (valores.nombre.trim()) {
-      onSubmit({ nombre: valores.nombre.trim(), tipo: valores.tipo, estado: valores.estado })
-      reiniciar()
-      onClose()
+    const validacion = validar()
+    if (!validacion.esValido) {
+      tocarUrl()
+      return
     }
+    onSubmit({
+      nombre: valores.nombre.trim(),
+      tipo: valores.tipo,
+      estado: valores.estado,
+      urlImagen: valores.urlImagen.trim(),
+    })
+    reiniciar()
+    onClose()
   }
 
   return (
@@ -22,6 +31,9 @@ export default function NuevaCategoriaModal({ open, onClose, onSubmit }) {
         onSubmit={handleSubmit}
         onCancelar={onClose}
         textoGuardar="Crear categoría"
+        esValido={esValido}
+        errorUrl={errorUrl}
+        onTocarUrl={tocarUrl}
       />
     </Modal>
   )

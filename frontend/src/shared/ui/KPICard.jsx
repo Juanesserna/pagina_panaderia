@@ -14,8 +14,9 @@ const paletteKey = {
  * Tarjeta de KPI para la parte superior de cada módulo del panel
  * (ej: "Órdenes completadas", "Retrasadas", "Ventas del día", etc).
  * variant: 'accent' | 'success' | 'warning' | 'danger' | 'info'
+ * subtitle: texto pequeño opcional bajo la cifra (ej: "Actualizado hace 2 min").
  */
-export function KPICard({ title, value, icon, variant = 'accent' }) {
+export function KPICard({ title, value, subtitle, icon, variant = 'accent' }) {
   const key = paletteKey[variant] ?? paletteKey.accent
   return (
     <Box
@@ -50,9 +51,16 @@ export function KPICard({ title, value, icon, variant = 'accent' }) {
           </Box>
         )}
       </Box>
-      <Typography variant="metric" component="div" sx={{ color: 'text.primary' }}>
-        {value}
-      </Typography>
+      <Box>
+        <Typography variant="metric" component="div" sx={{ color: 'text.primary' }}>
+          {value}
+        </Typography>
+        {subtitle && (
+          <Typography variant="caption" component="div" sx={{ mt: 0.75 }}>
+            {subtitle}
+          </Typography>
+        )}
+      </Box>
     </Box>
   )
 }

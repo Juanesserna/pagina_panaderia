@@ -7,18 +7,31 @@ import {
   TableRow,
   Typography,
 } from '@mui/material'
+import { Button } from '@shared/ui'
 import HeaderLabel from './comunes/HeaderLabel'
 import { HEADER_SX, EMPTY_STATE_SX } from './comunes/tablaEstilos'
 import FilaCategoria from './FilaCategoria'
 
 const COLUMNAS = [
+  { titulo: 'CÓDIGO', ancho: 90 },
+  { titulo: 'IMAGEN', ancho: 100 },
   { titulo: 'CATEGORÍA', ancho: 280 },
   { titulo: 'TIPO', ancho: 200 },
-  { titulo: 'CREADA', ancho: 130 },
   { titulo: 'ESTADO', ancho: 120 },
 ]
 
-export default function CategoriasTable({ categorias, onCambiarEstado, onEditar, onEliminar }) {
+export default function CategoriasTable({
+  categorias,
+  totalCategorias,
+  onCambiarEstado,
+  onEditar,
+  onEliminar,
+  onCrear,
+  onLimpiarFiltros,
+}) {
+  const hayCategorias = totalCategorias > 0
+  const estaVacio = categorias.length === 0
+
   return (
     <TableContainer sx={{ width: '100%' }}>
       <Table size="small" sx={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -33,12 +46,30 @@ export default function CategoriasTable({ categorias, onCambiarEstado, onEditar,
           </TableRow>
         </TableHead>
         <TableBody>
-          {categorias.length === 0 ? (
+          {estaVacio && !hayCategorias ? (
             <TableRow>
-              <TableCell colSpan={5} sx={EMPTY_STATE_SX}>
-                <Typography variant="body1" color="text.secondary">
-                  No se encontraron categorías.
+              <TableCell colSpan={6} sx={EMPTY_STATE_SX}>
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+                  Aún no hay categorías
                 </Typography>
+                <Button size="small" variant="primary" onClick={onCrear}>
+                  Crear categoría
+                </Button>
+              </TableCell>
+            </TableRow>
+          ) : estaVacio ? (
+            <TableRow>
+              <TableCell colSpan={6} sx={EMPTY_STATE_SX}>
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+                  No se encontraron categorías
+                </Typography>
+                <Button
+                  size="small"
+                  variant="ghost"
+                  onClick={onLimpiarFiltros}
+                >
+                  Limpiar filtros
+                </Button>
               </TableCell>
             </TableRow>
           ) : (

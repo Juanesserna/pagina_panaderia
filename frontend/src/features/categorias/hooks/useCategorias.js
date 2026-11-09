@@ -1,28 +1,16 @@
-import { useState, useCallback, useMemo } from 'react'
-import { categorias as categoriasIniciales } from '../services/categorias.service'
+import { useCallback, useMemo, useState } from 'react'
+import { useCategoriasContext } from '../context/useCategoriasContext'
 import { FILTRO_TODOS_TIPOS, FILTRO_TODAS_ESTADOS } from '../components/comunes/opcionesCategoria'
-import { COLOR_CATEGORIA_NUEVA } from '../constants/coloresCategoria'
-
-let categoriaIdCounter = 0
 
 const filtrosIniciales = {
   tipo: FILTRO_TODOS_TIPOS,
   estado: FILTRO_TODAS_ESTADOS,
 }
 
-const crearId = () => {
-  const cryptoApi = globalThis.crypto
-  if (typeof cryptoApi?.randomUUID === 'function') {
-    return cryptoApi.randomUUID()
-  }
-  categoriaIdCounter += 1
-  return `categoria-${Date.now()}-${categoriaIdCounter}`
-}
-
 export function useCategorias() {
-  const [categorias, setCategorias] = useState(() =>
-    categoriasIniciales.map((categoria) => ({ ...categoria }))
-  )
+  const { categorias: todas, crear: crearContexto, editar: editarContexto, eliminar: eliminarContexto } =
+    useCategoriasContext()
+
   const [searchTerm, setSearchTerm] = useState('')
   const [filtros, setFiltros] = useState(() => ({ ...filtrosIniciales }))
   const [paginaActual, setPaginaActual] = useState(1)
@@ -30,7 +18,7 @@ export function useCategorias() {
 
   const filteredCategorias = useMemo(() => {
     const busqueda = searchTerm.trim().toLowerCase()
-    return categorias.filter((categoria) => {
+    const resultado = todas.filter((categoria) => {
       const coincideBusqueda =
         !busqueda || categoria.nombre.toLowerCase().includes(busqueda)
       const coincideTipo =
@@ -41,7 +29,11 @@ export function useCategorias() {
 
       return coincideBusqueda && coincideTipo && coincideEstado
     })
-  }, [categorias, searchTerm, filtros])
+    // Orden alfabético por nombre sobre una copia (no mutar el estado)
+    return [...resultado].sort((a, b) =>
+      a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })
+    )
+  }, [todas, searchTerm, filtros])
 
   const totalRegistros = filteredCategorias.length
   const totalPaginas = Math.max(1, Math.ceil(totalRegistros / porPagina))
@@ -67,6 +59,7 @@ export function useCategorias() {
 
   const limpiarFiltros = useCallback(() => {
     setFiltros({ ...filtrosIniciales })
+    setSearchTerm('')
     setPaginaActual(1)
   }, [])
 
@@ -74,36 +67,27 @@ export function useCategorias() {
     setPaginaActual(nuevaPagina)
   }, [])
 
-  const crear = useCallback((nuevaCategoria) => {
-    const categoria = {
-      id: crearId(),
-      color: COLOR_CATEGORIA_NUEVA,
-      productosCount: 0,
-      insumosCount: 0,
-      ...nuevaCategoria,
-      creada: new Date().toLocaleDateString('es-CO'),
-    }
-    setCategorias((prev) => [categoria, ...prev])
-    setSearchTerm('')
-    setFiltros({ ...filtrosIniciales })
-    setPaginaActual(1)
-  }, [])
+  const crear = useCallback(
+    (nuevaCategoria) => {
+      crearContexto(nuevaCategoria)
+      setSearchTerm('')
+      setFiltros({ ...filtrosIniciales })
+      setPaginaActual(1)
+    },
+    [crearContexto]
+  )
 
   const editar = useCallback((id, cambios) => {
-    setCategorias((prev) =>
-      prev.map((categoria) =>
-        categoria.id === id ? { ...categoria, ...cambios } : categoria
-      )
-    )
-  }, [])
+    editarContexto(id, cambios)
+  }, [editarContexto])
 
   const eliminar = useCallback((id) => {
-    setCategorias((prev) => prev.filter((categoria) => categoria.id !== id))
-  }, [])
+    eliminarContexto(id)
+  }, [eliminarContexto])
 
   return {
     categorias: paginatedCategorias,
-    allCategorias: categorias,
+    allCategorias: todas,
     searchTerm,
     handleSearch,
     filtros,
