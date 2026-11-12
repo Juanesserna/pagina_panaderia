@@ -1,1 +1,0 @@
-import{d as e}from"./index-Bx4qrUax.js";var t=e(`outline`,`minus`,`Minus`,[[`path`,{d:`M5 12l14 0`,key:`svg-0`}]]),n=e(`outline`,`toggle-right`,`ToggleRight`,[[`path`,{d:`M14 12a2 2 0 1 0 4 0a2 2 0 1 0 -4 0`,key:`svg-0`}],[`path`,{d:`M2 12a6 6 0 0 1 6 -6h8a6 6 0 0 1 6 6a6 6 0 0 1 -6 6h-8a6 6 0 0 1 -6 -6`,key:`svg-1`}]]);export{t as n,n as t};
