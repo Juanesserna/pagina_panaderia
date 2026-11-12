@@ -123,7 +123,7 @@ export function LotesCard({ lotes, unidad = '' }) {
       >
         <IconCalculator size={13} />
         <Typography variant="caption">
-          El stock actual y el costo promedio los recalcula la BD automáticamente al recibir un lote.
+          El stock actual y el costo máximo los recalcula la BD automáticamente al recibir un lote.
         </Typography>
       </Stack>
     </Box>

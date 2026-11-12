@@ -26,7 +26,7 @@ export const initialInsumos = [
     idUnidadMedida: 1,
     stockActual: 8,
     stockMinimo: 50,
-    costoPromedio: 2.35,
+    costoMaximo: 2.35,
     estado: true,
     lotes: [
       {
@@ -57,7 +57,7 @@ export const initialInsumos = [
     idUnidadMedida: 1,
     stockActual: 65,
     stockMinimo: 20,
-    costoPromedio: 6.4,
+    costoMaximo: 6.4,
     estado: true,
     lotes: [
       {
@@ -79,7 +79,7 @@ export const initialInsumos = [
     idUnidadMedida: 1,
     stockActual: 180,
     stockMinimo: 30,
-    costoPromedio: 1.8,
+    costoMaximo: 1.8,
     estado: true,
     lotes: [],
   },
@@ -91,7 +91,7 @@ export const initialInsumos = [
     idUnidadMedida: 1,
     stockActual: 0,
     stockMinimo: 5,
-    costoPromedio: 0,
+    costoMaximo: 0,
     estado: false,
     lotes: [],
   },
@@ -103,7 +103,7 @@ export const initialInsumos = [
     idUnidadMedida: 4,
     stockActual: 890,
     stockMinimo: 200,
-    costoPromedio: 0.35,
+    costoMaximo: 0.35,
     estado: true,
     lotes: [],
   },

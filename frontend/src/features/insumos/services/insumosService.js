@@ -37,7 +37,7 @@ export function createInsumo(data) {
     idUnidadMedida: Number(data.idUnidadMedida),
     stockActual: 0,
     stockMinimo: Number(data.stockMinimo) || 0,
-    costoPromedio: 0,
+    costoMaximo: 0,
     estado: data.estado,
     lotes: [],
   }

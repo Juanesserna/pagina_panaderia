@@ -48,10 +48,10 @@ export function InsumosTable({ rows, sortKey, sortDir, onSort, onVer, onEditar, 
       accessor: (r) => <Typography variant="body2">{r.stockMinimo}</Typography>,
     },
     {
-      key: 'costoPromedio',
-      header: 'Costo prom.',
+      key: 'costoMaximo',
+      header: 'Costo máx.',
       align: 'right',
-      accessor: (r) => <Typography variant="body2">{formatoMoneda(r.costoPromedio)}</Typography>,
+      accessor: (r) => <Typography variant="body2">{formatoMoneda(r.costoMaximo)}</Typography>,
     },
     {
       key: 'estado',

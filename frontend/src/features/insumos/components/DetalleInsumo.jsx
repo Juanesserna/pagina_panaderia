@@ -40,7 +40,7 @@ export function DetalleInsumo({ open, insumo, onEditar, onCerrar }) {
             <CampoInfo label="Unidad de medida" value={unidad} />
             <CampoInfo label="Stock actual" value={`${insumo.stockActual} ${unidad}`} />
             <CampoInfo label="Stock mínimo" value={`${insumo.stockMinimo} ${unidad}`} />
-            <CampoInfo label="Costo promedio" value={`${formatoMoneda(insumo.costoPromedio)} / ${unidad}`} />
+            <CampoInfo label="Costo máximo" value={`${formatoMoneda(insumo.costoMaximo)} / ${unidad}`} />
           </Box>
         </Box>
 

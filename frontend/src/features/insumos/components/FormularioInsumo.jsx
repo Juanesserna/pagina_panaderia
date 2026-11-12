@@ -118,8 +118,8 @@ function CuerpoFormulario({ modo, insumo, onGuardar, onCancelar }) {
 
         {modo === 'editar' && insumo && (
           <Typography variant="body2" sx={{ color: 'text.dim' }}>
-            Stock actual: <b>{insumo.stockActual} {unidadAbrev(insumo.idUnidadMedida)}</b> y costo promedio{' '}
-            <b>{formatoMoneda(insumo.costoPromedio)}</b> — ambos los recalcula la BD al recibir compras, no se editan aquí.
+            Stock actual: <b>{insumo.stockActual} {unidadAbrev(insumo.idUnidadMedida)}</b> y costo máximo{' '}
+            <b>{formatoMoneda(insumo.costoMaximo)}</b> — ambos los recalcula la BD al recibir compras, no se editan aquí.
           </Typography>
         )}
       </Box>
