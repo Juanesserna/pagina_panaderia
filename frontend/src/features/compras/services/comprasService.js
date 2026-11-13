@@ -7,6 +7,8 @@ import { esTransicionValida, siguienteIdCompra } from '../utils/comprasHelpers'
 const clonar = (valor) => structuredClone(valor)
 
 let comprasDB = clonar(initialCompras)
+let proveedoresDB = clonar(PROVEEDORES)
+let insumosDB = clonar(INSUMOS)
 
 export const comprasService = {
   async obtenerCompras() {
@@ -14,7 +16,27 @@ export const comprasService = {
   },
 
   async obtenerCatalogos() {
-    return clonar({ proveedores: PROVEEDORES, insumos: INSUMOS })
+    return clonar({ proveedores: proveedoresDB, insumos: insumosDB })
+  },
+
+  async crearProveedor(datos) {
+    const maxNum = proveedoresDB.reduce((max, p) => Math.max(max, parseInt(String(p.id).replace(/\D/g, ''), 10) || 0), 0)
+    const nuevo = {
+      id: `PROV-${String(maxNum + 1).padStart(3, '0')}`,
+      nombre: datos.nombre,
+    }
+    proveedoresDB = [...proveedoresDB, nuevo]
+    return clonar(nuevo)
+  },
+
+  async crearInsumo(datos) {
+    const nuevo = {
+      nombre: datos.nombre,
+      unidad: datos.unidad,
+      categoria: datos.categoria,
+    }
+    insumosDB = [...insumosDB, nuevo]
+    return clonar(nuevo)
   },
 
   // El id lo asigna el servicio (en la API real lo asigna el backend)
@@ -22,12 +44,6 @@ export const comprasService = {
     const nueva = { ...clonar(datos), id: siguienteIdCompra(comprasDB) }
     comprasDB = [nueva, ...comprasDB]
     return clonar(nueva)
-  },
-
-  async actualizarCompra(compra) {
-    if (!comprasDB.some((c) => c.id === compra.id)) throw new Error(`La orden ${compra.id} no existe`)
-    comprasDB = comprasDB.map((c) => (c.id === compra.id ? clonar(compra) : c))
-    return clonar(compra)
   },
 
   async cambiarEstado(id, nuevoEstado) {

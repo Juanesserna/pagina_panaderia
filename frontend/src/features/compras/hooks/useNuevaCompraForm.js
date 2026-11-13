@@ -18,9 +18,13 @@ export function useNuevaCompraForm({ compras, proveedores, insumos, solicitanteI
   const [meta] = useState(() => ({ id: siguienteIdCompra(compras), fecha: fechaHoyFormateada() }))
 
   const [form, setForm] = useState(() => ({
-    estado: ESTADO.PENDIENTE,
+    estado: ESTADO.REGISTRADA,
     proveedorId: proveedores[0]?.id ?? '',
     descuento: 0,
+    numeroFactura: '',
+    horaFacturacion: '',
+    fechaFactura: '',
+    ivaTotal: 0,
     solicitante: solicitanteInicial,
     items: [crearItemVacio(insumos)],
   }))
@@ -68,6 +72,8 @@ export function useNuevaCompraForm({ compras, proveedores, insumos, solicitanteI
 
   const construir = () => construirCompra({ ...meta, ...form, insumos })
 
+  const seleccionarInsumoCreado = (idx, nombre) => cambiarItem(idx, 'nombre', nombre)
+
   return {
     meta,
     form,
@@ -80,6 +86,7 @@ export function useNuevaCompraForm({ compras, proveedores, insumos, solicitanteI
     agregarItem,
     quitarItem,
     alternarLote,
+    seleccionarInsumoCreado,
     construir,
   }
 }

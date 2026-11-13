@@ -1,28 +1,79 @@
 import { Box, IconButton, Typography } from '@mui/material'
-import { IconCalendar, IconChevronDown, IconChevronUp, IconHash, IconX } from '@tabler/icons-react'
+import { IconCalendar, IconChevronDown, IconChevronUp, IconHash, IconPlus, IconX } from '@tabler/icons-react'
 import { Input, Select } from '@shared/ui'
 import { formatearMoneda, opcionesInsumo } from '../utils/comprasHelpers'
 import { Campo } from './Campo'
 
 // Una línea de "Productos solicitados": insumo, cantidad, unidad (heredada), valor
 // y, plegable, la trazabilidad del lote (n.º de lote, vencimiento, cantidad disponible).
-export function ItemCompraForm({ item, insumos, lotesAbierto, puedeQuitar, onChange, onQuitar, onAlternarLote }) {
+export function ItemCompraForm({ item, insumos, lotesAbierto, puedeQuitar, onChange, onQuitar, onAlternarLote, onNuevoInsumo }) {
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 2, borderRadius: 2, bgcolor: 'background.alt', position: 'relative' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        p: 2.25,
+        borderRadius: 2.5,
+        bgcolor: 'background.alt',
+        border: '1px solid',
+        borderColor: 'divider',
+        position: 'relative',
+        minWidth: 0,
+        boxSizing: 'border-box',
+      }}
+    >
       {puedeQuitar && (
         <IconButton
           size="small"
           onClick={onQuitar}
           aria-label="Eliminar insumo"
-          sx={{ position: 'absolute', top: 6, right: 6, color: 'text.dim', '&:hover': { color: 'error.main' } }}
+          sx={{ position: 'absolute', top: 8, right: 8, color: 'text.dim', '&:hover': { color: 'error.main', bgcolor: 'action.hover' } }}
         >
-          <IconX size={14} />
+          <IconX size={15} />
         </IconButton>
       )}
 
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1.4fr 0.6fr 0.6fr 0.85fr 0.65fr 0.9fr', gap: 1.5 }}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',
+            sm: 'repeat(2, minmax(0, 1fr))',
+            md: 'repeat(3, minmax(0, 1fr))',
+            lg: 'minmax(180px, 1.45fr) repeat(5, minmax(0, 0.72fr))',
+          },
+          gap: 1.75,
+          alignItems: 'start',
+          pr: puedeQuitar ? 3.5 : 0,
+          minWidth: 0,
+          '& > *': { minWidth: 0 },
+        }}
+      >
         <Campo label="Insumo">
-          <Select options={opcionesInsumo(insumos)} value={item.nombre} onChange={(e) => onChange('nombre', e.target.value)} />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Select options={opcionesInsumo(insumos)} value={item.nombre} onChange={(e) => onChange('nombre', e.target.value)} />
+            </Box>
+            {onNuevoInsumo && (
+              <IconButton
+                size="small"
+                onClick={onNuevoInsumo}
+                title="Nuevo insumo"
+                sx={{
+                  color: 'primary.main',
+                  bgcolor: 'background.paper',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1.5,
+                  flexShrink: 0,
+                  '&:hover': { bgcolor: 'action.hover', borderColor: 'primary.main' },
+                }}
+              >
+                <IconPlus size={16} />
+              </IconButton>
+            )}
+          </Box>
         </Campo>
         <Campo label="Cantidad">
           <Input
@@ -55,15 +106,12 @@ export function ItemCompraForm({ item, insumos, lotesAbierto, puedeQuitar, onCha
           />
         </Campo>
         <Campo label="Subtotal ($)">
-          <Input
-            disabled
-            value={formatearMoneda(Math.round(item.cantidad * item.precioUnitario * (1 - (item.descuentoProducto || 0) / 100)))}
-          />
+          <Input disabled value={formatearMoneda(Math.round(item.cantidad * item.precioUnitario * (1 - (item.descuentoProducto || 0) / 100)))} />
         </Campo>
       </Box>
 
       {/* Trazabilidad del lote: subgrupo plegable */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 1.5, borderTop: '1px dashed', borderColor: 'divider' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 1.75, borderTop: '1px dashed', borderColor: 'divider' }}>
         <Box
           component="button"
           type="button"
@@ -81,7 +129,7 @@ export function ItemCompraForm({ item, insumos, lotesAbierto, puedeQuitar, onCha
             color: 'text.secondary',
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
             <IconHash size={12} style={{ opacity: 0.5 }} />
             <Typography variant="overline">Trazabilidad del lote</Typography>
             <Typography variant="mono" sx={{ color: 'text.dim' }}>
@@ -92,7 +140,7 @@ export function ItemCompraForm({ item, insumos, lotesAbierto, puedeQuitar, onCha
         </Box>
 
         {lotesAbierto && (
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2.5 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' }, gap: 2 }}>
             <Campo label="N.º de lote" ayuda="Automático · no editable">
               <Input value={item.lote} disabled leftIcon={<IconHash size={11} />} />
             </Campo>

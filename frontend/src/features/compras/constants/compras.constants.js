@@ -7,27 +7,27 @@ export const PAGE_SIZE = 8
 export const NOTIF_DURATION = 3000
 
 // ---------- Estados de la orden ----------
-// Solo se manejan dos estados: Pendiente y Recibida.
+// Solo se manejan dos estados: Registrada y Anulado.
 export const ESTADO = {
-  PENDIENTE: 'Pendiente',
-  RECIBIDA: 'Recibida',
+  REGISTRADA: 'Registrada',
+  ANULADO: 'Anulado',
 }
 
 // Variante de <StatusBadge> según el estado de la orden
 export const estadoVariant = {
-  [ESTADO.RECIBIDA]: 'success',
-  [ESTADO.PENDIENTE]: 'warning',
+  [ESTADO.REGISTRADA]: 'success',
+  [ESTADO.ANULADO]: 'danger',
 }
 
 // Color del puntito de cada estado (nombre del tema, sirve directo en sx: bgcolor: estadoDotColor[estado])
 export const estadoDotColor = {
-  [ESTADO.RECIBIDA]: 'success.main',
-  [ESTADO.PENDIENTE]: 'warning.main',
+  [ESTADO.REGISTRADA]: 'success.main',
+  [ESTADO.ANULADO]: 'error.main',
 }
 
 export const estadoOptions = [
-  { value: ESTADO.PENDIENTE, label: 'Pendiente' },
-  { value: ESTADO.RECIBIDA, label: 'Recibida' },
+  { value: ESTADO.REGISTRADA, label: 'Registrada' },
+  { value: ESTADO.ANULADO, label: 'Anulado' },
 ]
 
 // ---------- Categorías ----------
