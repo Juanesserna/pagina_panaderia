@@ -3,24 +3,31 @@ import { useState, useEffect } from 'react'
 // Importa las funciones que traen el catálogo de insumos y las unidades de medida
 import { fetchInsumos, getUnidadesMedida } from '@features/insumos'
 
-// Hook con toda la lógica de la tabla de receta: estados, catálogos y handlers
-export default function useRecetaTabla({ onAgregarInsumo, onEditInsumo, codigoProducto }) {
+// Un insumo está activo si su estado es true (datos de ejemplo) o 'Activo' (formularios)
+const estaActivo = (insumo) => insumo.estado === true || insumo.estado === 'Activo'
+
+// Fila vacía para agregar un insumo nuevo
+const filaVacia = () => ({
+  idTemp: null,
+  insumoId: '',
+  insumoNombre: '',
+  cantidad: '',
+  unidadId: '',
+  unidadNombre: '',
+})
+
+// Hook con toda la lógica de la tabla de receta: estados, catálogos y handlers.
+// "insumos" son los insumos que ya tiene la receta (para evitar repetidos).
+export default function useRecetaTabla({ insumos = [], onAgregarInsumo, onEditInsumo, codigoProducto }) {
   // Indica si se está mostrando la fila para agregar un insumo nuevo
   const [agregandoFila, setAgregandoFila] = useState(false)
   // Guarda el id del insumo que se está editando (null si ninguno)
   const [editandoFilaId, setEditandoFilaId] = useState(null)
   // Datos de la fila nueva que se está llenando
-  const [nuevaFila, setNuevaFila] = useState({
-    idTemp: null,
-    insumoId: '',
-    insumoNombre: '',
-    cantidad: 0,
-    unidadId: '',
-    unidadNombre: '',
-  })
+  const [nuevaFila, setNuevaFila] = useState(filaVacia)
   // Datos de la fila que se está editando
   const [filaEditando, setFilaEditando] = useState(null)
-  // Catálogo de insumos disponibles
+  // Catálogo de insumos disponibles (solo activos)
   const [insumosCatalogo, setInsumosCatalogo] = useState([])
   // Lista de unidades de medida disponibles
   const [unidadesMedida, setUnidadesMedida] = useState([])
@@ -29,98 +36,83 @@ export default function useRecetaTabla({ onAgregarInsumo, onEditInsumo, codigoPr
 
   // Al montar, carga los catálogos de insumos y unidades
   useEffect(() => {
-    // Función asíncrona que trae ambos catálogos a la vez
     const cargarCatalogos = async () => {
       try {
-        // Espera el catálogo de insumos y las unidades de medida
         const [insumosData, unidadesData] = await Promise.all([
           fetchInsumos(),
           Promise.resolve(getUnidadesMedida()),
         ])
-        // Guarda el catálogo de insumos
-        setInsumosCatalogo(insumosData)
-        // Guarda las unidades de medida
+        // Solo se pueden agregar insumos activos
+        setInsumosCatalogo(insumosData.filter(estaActivo))
         setUnidadesMedida(unidadesData)
       } catch (error) {
-        // Si falla, lo muestra en la consola
         console.error('Error cargando catálogos:', error)
       } finally {
-        // Siempre termina el estado de carga
         setLoading(false)
       }
     }
-    // Ejecuta la carga
     cargarCatalogos()
   }, [])
 
+  // Ids de insumos que ya están en la receta (sin contar la fila que se está editando)
+  const insumosUsados = insumos
+    .filter((i) => i.id !== editandoFilaId)
+    .map((i) => String(i.idInsumo))
+
   // Se ejecuta al pulsar "Agregar insumo": prepara una fila nueva vacía
   const handleAgregarClick = () => {
-    setNuevaFila({
-      idTemp: Date.now(),
-      insumoId: '',
-      insumoNombre: '',
-      cantidad: 0,
-      unidadId: '',
-      unidadNombre: '',
-    })
-    // Muestra la fila nueva
+    setNuevaFila({ ...filaVacia(), idTemp: Date.now() })
     setAgregandoFila(true)
   }
 
   // Se ejecuta al pulsar el lápiz de un insumo: prepara la fila para editar
   const handleEditarClick = (insumo) => {
-    // Busca el insumo en el catálogo
-    const insumoSeleccionado = insumosCatalogo.find((i) => i.id === insumo.idInsumo)
-    // Busca la unidad según la abreviatura guardada
-    const unidad = insumoSeleccionado ? unidadesMedida.find((u) => u.abreviatura === insumo.unidad) : null
+    // La unidad se busca por abreviatura entre todas las unidades (no depende del catálogo de insumos)
+    const unidad = unidadesMedida.find(
+      (u) => String(u.abreviatura).toLowerCase() === String(insumo.unidad).toLowerCase()
+    )
 
-    // Carga los datos del insumo en la fila de edición
     setFilaEditando({
       id: insumo.id,
       idTemp: insumo.id,
       insumoId: insumo.idInsumo,
       insumoNombre: insumo.insumo,
       cantidad: insumo.cantidad,
-      unidadId: unidad?.id || '',
+      unidadId: unidad?.id ?? '',
       unidadNombre: insumo.unidad,
     })
-    // Marca cuál fila se está editando
     setEditandoFilaId(insumo.id)
   }
 
   // Actualiza un campo de la fila que se está editando o agregando
   const handleChange = (campo, valor) => {
-    // Si hay una fila en edición, actualiza esa
     if (editandoFilaId !== null) {
       setFilaEditando((prev) => ({ ...prev, [campo]: valor }))
     } else {
-      // Si no, actualiza la fila nueva
       setNuevaFila((prev) => ({ ...prev, [campo]: valor }))
     }
   }
 
   // Confirma la fila (nueva o editada) y avisa al componente padre
   const handleConfirmar = () => {
-    // Elige la fila activa según el modo
     const fila = editandoFilaId !== null ? filaEditando : nuevaFila
 
-    // No continúa si falta el insumo o la cantidad no es mayor que cero
-    if (!fila.insumoId || Number(fila.cantidad) <= 0) return
+    // No continúa si falta el insumo o la unidad, o la cantidad no es mayor que cero
+    if (!fila.insumoId || !fila.unidadId || Number(fila.cantidad) <= 0) return
+    // No permite repetir un insumo que ya está en la receta
+    if (insumosUsados.includes(String(fila.insumoId))) return
 
-    // Modo edición
     if (editandoFilaId !== null) {
-      // Arma los datos actualizados del insumo
+      // Modo edición: arma los datos actualizados y avisa al padre
       const datosActualizados = {
         idInsumo: fila.insumoId,
         insumo: fila.insumoNombre,
         cantidad: Number(fila.cantidad),
         unidad: fila.unidadNombre,
       }
-      // Avisa al padre del cambio
       if (onEditInsumo) {
         onEditInsumo(editandoFilaId, datosActualizados)
       }
-      // Sale del modo edición
       setEditandoFilaId(null)
       setFilaEditando(null)
     } else {
@@ -133,12 +125,9 @@ export default function useRecetaTabla({ onAgregarInsumo, onEditInsumo, codigoPr
         cantidad: Number(fila.cantidad),
         unidad: fila.unidadNombre,
       }
-
-      // Avisa al padre del nuevo insumo
       if (onAgregarInsumo) {
         onAgregarInsumo(filaFinal)
       }
-      // Oculta la fila nueva
       setAgregandoFila(false)
     }
   }
@@ -146,11 +135,9 @@ export default function useRecetaTabla({ onAgregarInsumo, onEditInsumo, codigoPr
   // Cancela la edición o la fila nueva sin guardar
   const handleCancelar = () => {
     if (editandoFilaId !== null) {
-      // Sale del modo edición
       setEditandoFilaId(null)
       setFilaEditando(null)
     } else {
-      // Oculta la fila nueva
       setAgregandoFila(false)
     }
   }
@@ -163,6 +150,7 @@ export default function useRecetaTabla({ onAgregarInsumo, onEditInsumo, codigoPr
     filaEditando,
     insumosCatalogo,
     unidadesMedida,
+    insumosUsados,
     loading,
     handleAgregarClick,
     handleEditarClick,

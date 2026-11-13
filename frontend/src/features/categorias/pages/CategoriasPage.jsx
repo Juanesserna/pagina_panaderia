@@ -15,6 +15,7 @@ export default function CategoriasPage() {
     handleSearch,
     filtros,
     aplicarFiltros,
+    limpiarFiltros,
     paginaActual,
     totalRegistros,
     porPagina,
@@ -66,9 +67,12 @@ export default function CategoriasPage() {
 
         <CategoriasTable
           categorias={categorias}
+          totalCategorias={allCategorias.length}
           onCambiarEstado={gestion.abrirCambioEstado}
           onEditar={gestion.abrirEditar}
           onEliminar={gestion.abrirEliminar}
+          onCrear={gestion.abrirNueva}
+          onLimpiarFiltros={limpiarFiltros}
         />
 
         <Pagination

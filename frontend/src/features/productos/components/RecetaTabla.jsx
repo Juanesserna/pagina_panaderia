@@ -10,7 +10,6 @@ import {
   useTheme,
 } from '@mui/material'
 import { IconPlus } from '@tabler/icons-react'
-import { fonts } from '@app/theme/colors'
 // Botón estándar del panel
 import { Button } from '@shared/ui'
 // Hook con la lógica de la tabla de receta
@@ -42,52 +41,51 @@ export default function RecetaTabla({
     filaEditando,
     insumosCatalogo,
     unidadesMedida,
+    insumosUsados,
     loading,
     handleAgregarClick,
     handleEditarClick,
     handleChange,
     handleConfirmar,
     handleCancelar,
-  } = useRecetaTabla({ onAgregarInsumo, onEditInsumo, codigoProducto })
+  } = useRecetaTabla({ insumos, onAgregarInsumo, onEditInsumo, codigoProducto })
+
+  // Props comunes de la fila editable (sea nueva o de edición)
+  const propsFilaEditable = {
+    onChange: handleChange,
+    onConfirm: handleConfirmar,
+    onCancel: handleCancelar,
+    insumosCatalogo,
+    unidadesMedida,
+    insumosUsados,
+    loading,
+    showActions,
+  }
 
   return (
     <>
       {mostrarEncabezado && (
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 2,
-          mb: 3,
-        }}
-      >
-        <Box>
-          <Typography
-            sx={{
-              fontFamily: fonts.sans,
-              fontSize: 20,
-              fontWeight: 700,
-              color: theme.palette.text.primary,
-              mb: 0.5,
-            }}
-          >
-            Receta del Producto
-          </Typography>
-          <Typography
-            sx={{
-              fontFamily: fonts.sans,
-              fontSize: 13,
-              color: theme.palette.text.secondary,
-            }}
-          >
-            Insumos necesarios para la elaboración de este producto
-          </Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: 2,
+            mb: 3,
+          }}
+        >
+          <Box>
+            <Typography variant="h5" component="p" sx={{ mb: 0.5 }}>
+              Receta del Producto
+            </Typography>
+            <Typography variant="body1" component="p" sx={{ color: theme.palette.text.secondary }}>
+              Insumos necesarios para la elaboración de este producto
+            </Typography>
+          </Box>
+          <Button leftIcon={<IconPlus size={16} />} onClick={handleAgregarClick}>
+            Agregar insumo
+          </Button>
         </Box>
-        <Button leftIcon={<IconPlus size={16} />} onClick={handleAgregarClick}>
-          Agregar insumo
-        </Button>
-      </Box>
       )}
 
       <TableContainer
@@ -107,11 +105,11 @@ export default function RecetaTabla({
               <TableCell sx={HEADER_SX} style={{ width: 160 }}>
                 <HeaderLabel>ID INSUMO / INSUMO</HeaderLabel>
               </TableCell>
-              <TableCell sx={{ ...HEADER_SX, textAlign: 'right' }} style={{ width: 100 }}>
-                <HeaderLabel>CANTIDAD</HeaderLabel>
-              </TableCell>
               <TableCell sx={HEADER_SX} style={{ width: 140 }}>
                 <HeaderLabel>UNIDAD DE MEDIDA</HeaderLabel>
+              </TableCell>
+              <TableCell sx={{ ...HEADER_SX, textAlign: 'right' }} style={{ width: 100 }}>
+                <HeaderLabel>CANTIDAD</HeaderLabel>
               </TableCell>
               {showActions && (
                 <TableCell sx={{ ...HEADER_SX, textAlign: 'right' }} style={{ width: 100 }}>
@@ -124,35 +122,16 @@ export default function RecetaTabla({
             {insumos.length === 0 && !agregandoFila && editandoFilaId === null ? (
               <TableRow>
                 <TableCell colSpan={showActions ? 5 : 4} align="center" sx={{ ...CELL_SX, py: 6 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Typography
-                      sx={{
-                        fontFamily: fonts.sans,
-                        fontSize: 13,
-                        color: theme.palette.text.secondary,
-                      }}
-                    >
-                      Aún no se han agregado insumos a la receta.
-                    </Typography>
-                  </Box>
+                  <Typography variant="body1" sx={{ color: theme.palette.text.secondary }}>
+                    Aún no se han agregado insumos a la receta.
+                  </Typography>
                 </TableCell>
               </TableRow>
             ) : (
               <>
-                {insumos.map((i) => (
+                {insumos.map((i) =>
                   editandoFilaId === i.id ? (
-                    <EditableRow
-                      key={i.id}
-                      fila={filaEditando}
-                      onChange={handleChange}
-                      onConfirm={handleConfirmar}
-                      onCancel={handleCancelar}
-                      insumosCatalogo={insumosCatalogo}
-                      unidadesMedida={unidadesMedida}
-                      loading={loading}
-                      showActions={showActions}
-                      isNew={false}
-                    />
+                    <EditableRow key={i.id} fila={filaEditando} isNew={false} {...propsFilaEditable} />
                   ) : (
                     <InsumoRow
                       key={i.id}
@@ -162,20 +141,8 @@ export default function RecetaTabla({
                       showActions={showActions}
                     />
                   )
-                ))}
-                {agregandoFila && (
-                  <EditableRow
-                    fila={nuevaFila}
-                    onChange={handleChange}
-                    onConfirm={handleConfirmar}
-                    onCancel={handleCancelar}
-                    insumosCatalogo={insumosCatalogo}
-                    unidadesMedida={unidadesMedida}
-                    loading={loading}
-                    showActions={showActions}
-                    isNew={true}
-                  />
                 )}
+                {agregandoFila && <EditableRow fila={nuevaFila} isNew {...propsFilaEditable} />}
               </>
             )}
           </TableBody>

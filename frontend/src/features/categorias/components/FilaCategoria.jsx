@@ -15,6 +15,29 @@ export default function FilaCategoria({ categoria, index, onCambiarEstado, onEdi
       }}
     >
       <TableCell sx={CELL_SX}>
+        <Typography variant="body1" color="text.primary">
+          {categoria.codigo}
+        </Typography>
+      </TableCell>
+      <TableCell sx={CELL_SX}>
+        <Box sx={{ width: 48, height: 48, borderRadius: 1, overflow: 'hidden', flexShrink: 0, border: '1px solid', borderColor: 'divider' }}>
+          {categoria.urlImagen ? (
+            <Box
+              component="img"
+              src={categoria.urlImagen}
+              alt={`Imagen de ${categoria.nombre}`}
+              sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          ) : (
+            <Box sx={{ width: '100%', height: '100%', backgroundColor: categoria.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Typography variant="caption" sx={{ color: '#FFFFFF', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {categoria.nombre.charAt(0)}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      </TableCell>
+      <TableCell sx={CELL_SX}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
           <Box
             sx={{
@@ -36,11 +59,6 @@ export default function FilaCategoria({ categoria, index, onCambiarEstado, onEdi
           productosCount={categoria.productosCount}
           insumosCount={categoria.insumosCount}
         />
-      </TableCell>
-      <TableCell sx={CELL_SX}>
-        <Typography variant="body1" color="text.secondary">
-          {categoria.creada}
-        </Typography>
       </TableCell>
       <TableCell sx={CELL_SX}>
         <EstadoCategoria categoria={categoria} onCambiarEstado={onCambiarEstado} />

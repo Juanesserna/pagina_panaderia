@@ -1,35 +1,45 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, Component } from 'react'
 import { Box, Typography, IconButton } from '@mui/material'
-import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
+import { IconChevronLeft, IconChevronRight, IconPhoto } from '@tabler/icons-react'
 import { fonts } from '@app/theme/colors'
+import { useCategorias } from '@features/categorias'
 
-const categories = [
-  {
-    name: 'Pan Artesanal',
-    img: 'https://images.unsplash.com/photo-1587912001191-0cd4f14fd89e?w=600&h=600&fit=crop&auto=format',
-    alt: 'Pan artesanal recién horneado',
-  },
-  {
-    name: 'Pastelería',
-    img: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=600&h=600&fit=crop&auto=format',
-    alt: 'Croissants y pastelería fina',
-  },
-  {
-    name: 'Tortas Personalizadas',
-    img: 'https://images.unsplash.com/photo-1604413191066-4dd20bedf486?w=600&h=600&fit=crop&auto=format',
-    alt: 'Tortas de celebración personalizadas',
-  },
-  {
-    name: 'Bebidas Calientes',
-    img: 'https://images.unsplash.com/photo-1515823662972-da6a2e4d3002?w=600&h=600&fit=crop&auto=format',
-    alt: 'Café artesanal',
-  },
-]
+class ErrorBoundary extends Component {
+  state = { hasError: false, error: null }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Box component="section" id="carta" sx={{ bgcolor: '#FAF5EE', py: { xs: 8, md: 12.5 } }}>
+          <Box sx={{ maxWidth: 1200, mx: 'auto', px: 3, textAlign: 'center', py: 4 }}>
+            <Typography sx={{ fontFamily: fonts.sans, fontSize: 14, color: '#2E1810', fontWeight: 500 }}>
+              Error al cargar categorías
+            </Typography>
+            <Typography sx={{ fontFamily: fonts.sans, fontSize: 13, color: 'rgba(46,24,16,0.6)', mt: 1 }}>
+              {this.state.error?.message}
+            </Typography>
+          </Box>
+        </Box>
+      )
+    }
+    return this.props.children
+  }
+}
 
 const GAP = 24 // gap: 3 en MUI = 24px
 const AUTOPLAY_MS = 5000
 
-export function Categories({ isDark }) {
+function CategoriesInner({ isDark }) {
+  const { allCategorias: todas } = useCategorias()
+
+  const categories = todas.filter(
+    (c) => c.estado === 'Activa' && (c.tipo === 'Producto' || c.tipo === 'Ambos')
+  )
+
   const [hovered, setHovered] = useState(null)
   const [active, setActive] = useState(0)
   const [maxIndex, setMaxIndex] = useState(0)
@@ -92,6 +102,18 @@ export function Categories({ isDark }) {
     border: '1px solid #C08552',
     boxShadow: '0 4px 16px rgba(46,24,16,0.18)',
     '&:hover': { bgcolor: '#C08552', color: '#FAF5EE' },
+  }
+
+  if (categories.length === 0) {
+    return (
+      <Box component="section" id="carta" sx={{ bgcolor: isDark ? '#1A0D07' : '#FAF5EE', py: { xs: 8, md: 12.5 } }}>
+        <Box sx={{ maxWidth: 1200, mx: 'auto', px: 3, textAlign: 'center', py: 4 }}>
+          <Typography sx={{ fontFamily: fonts.sans, fontSize: 14, color: isDark ? 'rgba(243,233,220,0.5)' : 'rgba(46,24,16,0.55)' }}>
+            No hay categorías disponibles en este momento.
+          </Typography>
+        </Box>
+      </Box>
+    )
   }
 
   return (
@@ -159,7 +181,7 @@ export function Categories({ isDark }) {
           >
             {categories.map((cat, i) => (
               <Box
-                key={cat.name}
+                key={cat.id}
                 onMouseEnter={() => setHovered(i)}
                 onMouseLeave={() => setHovered(null)}
                 sx={{
@@ -178,11 +200,11 @@ export function Categories({ isDark }) {
                   transition: 'box-shadow 0.25s, border-color 0.25s',
                 }}
               >
-                <Box sx={{ aspectRatio: '1/1', overflow: 'hidden' }}>
+                <Box sx={{ aspectRatio: '1/1', overflow: 'hidden', position: 'relative' }}>
                   <Box
                     component="img"
-                    src={cat.img}
-                    alt={cat.alt}
+                    src={cat.urlImagen}
+                    alt={cat.nombre}
                     draggable={false}
                     sx={{
                       width: '100%',
@@ -191,6 +213,22 @@ export function Categories({ isDark }) {
                       display: 'block',
                       transition: 'transform 0.4s ease',
                       transform: hovered === i ? 'scale(1.04)' : 'scale(1)',
+                    }}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none'
+                      const placeholder = e.currentTarget.parentElement?.querySelector('svg')
+                      if (placeholder) placeholder.style.display = 'block'
+                    }}
+                  />
+                  <IconPhoto
+                    size={32}
+                    color={isDark ? 'rgba(243,233,220,0.3)' : 'rgba(46,24,16,0.3)'}
+                    style={{
+                      display: 'none',
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
                     }}
                   />
                 </Box>
@@ -203,7 +241,7 @@ export function Categories({ isDark }) {
                       letterSpacing: '0.01em',
                     }}
                   >
-                    {cat.name}
+                    {cat.nombre}
                   </Typography>
                 </Box>
               </Box>
@@ -233,5 +271,13 @@ export function Categories({ isDark }) {
         )}
       </Box>
     </Box>
+  )
+}
+
+export function Categories({ isDark }) {
+  return (
+    <ErrorBoundary>
+      <CategoriesInner isDark={isDark} />
+    </ErrorBoundary>
   )
 }

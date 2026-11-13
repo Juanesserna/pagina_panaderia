@@ -9,8 +9,10 @@ import { IconCheck } from '@tabler/icons-react'
 import { Button, Modal } from '@shared/ui'
 // Bloque de campos compartido por los formularios de producto
 import CamposProducto from './formulario/CamposProducto'
+// Hook de validación del formulario de producto
+import { useValidacionProducto } from '../hooks/useValidacionProducto'
 
-const valoresIniciales = {
+const VALORES_INICIALES = {
   nombre: '',
   categoria: '',
   precioVenta: '',
@@ -28,45 +30,84 @@ export default function NuevoProductoModal({
   onGuardar,
 }) {
   const theme = useTheme()
-  const [formulario, setFormulario] = useState(valoresIniciales)
+  const {
+    valores: formulario,
+    cambiar,
+    touched,
+    tocar,
+    validar,
+    reiniciar,
+  } = useValidacionProducto(VALORES_INICIALES)
+  const [errorServidor, setErrorServidor] = useState(null)
+  const [guardando, setGuardando] = useState(false)
 
   const handleChange = (campo) => (e) => {
     const { value } = e.target
-    setFormulario((prev) => ({ ...prev, [campo]: value }))
+    cambiar(campo, value)
+    tocar(campo)
   }
 
   const handleNumber = (campo) => (e) => {
     const { value } = e.target
     if (value === '' || /^-?\d*\.?\d*$/.test(value)) {
-      setFormulario((prev) => ({ ...prev, [campo]: value }))
+      cambiar(campo, value)
     }
+    tocar(campo)
   }
 
-  const handleSwitch = (e) => {
-    setFormulario((prev) => ({ ...prev, activo: e.target.checked }))
+  const handleSwitch = (e, checked) => {
+    cambiar('activo', checked ?? e.target.checked)
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    const datos = {
-      ...formulario,
-      precioVenta: Number(formulario.precioVenta) || 0,
-      stockActual: Number(formulario.stockActual) || 0,
-      stockMinimo: Number(formulario.stockMinimo) || 0,
-      cantMinimaProduccion: Number(formulario.cantMinimaProduccion) || 0,
-      cantMaximaProduccion: Number(formulario.cantMaximaProduccion) || 0,
+    setErrorServidor(null)
+    const errores = validar()
+    if (Object.keys(errores).length > 0) {
+      Object.keys(formulario).forEach((campo) => tocar(campo))
+      return
     }
-    onGuardar(datos)
+    setGuardando(true)
+    try {
+      const datos = {
+        ...formulario,
+        precioVenta: Number(formulario.precioVenta) || 0,
+        stockActual: Number(formulario.stockActual) || 0,
+        stockMinimo: Number(formulario.stockMinimo) || 0,
+        cantMinimaProduccion: Number(formulario.cantMinimaProduccion) || 0,
+        cantMaximaProduccion: Number(formulario.cantMaximaProduccion) || 0,
+      }
+      await onGuardar(datos)
+    } catch (err) {
+      setErrorServidor(err.message || 'Error al guardar el producto')
+    } finally {
+      setGuardando(false)
+    }
   }
 
   const handleClose = () => {
-    setFormulario(valoresIniciales)
+    reiniciar()
+    setErrorServidor(null)
     onClose()
   }
 
   return (
     <Modal open={open} onClose={handleClose} title="Nuevo Producto" size="lg" showDivider>
       <form onSubmit={handleSubmit}>
+        {errorServidor && (
+          <Typography
+            variant="body2"
+            sx={{
+              color: theme.palette.error.main,
+              mb: 2,
+              backgroundColor: theme.palette.error.light,
+              p: 1,
+              borderRadius: 1,
+            }}
+          >
+            {errorServidor}
+          </Typography>
+        )}
         <Typography
           variant="body1"
           sx={{
@@ -77,13 +118,25 @@ export default function NuevoProductoModal({
           Completa los campos para registrar un nuevo producto
         </Typography>
 
-        <CamposProducto formulario={formulario} handleChange={handleChange} handleNumber={handleNumber} handleSwitch={handleSwitch} />
+        <CamposProducto
+          formulario={formulario}
+          handleChange={handleChange}
+          handleNumber={handleNumber}
+          handleSwitch={handleSwitch}
+          errores={validar()}
+          touched={touched}
+          tocar={tocar}
+        />
         <Stack direction="row" spacing={1.5} sx={{ justifyContent: 'flex-end', mt: 3 }}>
           <Button type="button" variant="secondary" onClick={handleClose}>
             Cancelar
           </Button>
-          <Button type="submit" leftIcon={<IconCheck size={16} />}>
-            Guardar Producto
+          <Button
+            type="submit"
+            leftIcon={<IconCheck size={16} />}
+            disabled={guardando}
+          >
+            {guardando ? 'Guardando...' : 'Guardar Producto'}
           </Button>
         </Stack>
       </form>
