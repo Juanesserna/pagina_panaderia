@@ -6,13 +6,13 @@ import { Box, Typography } from '@mui/material'
  */
 export function Campo({ label, ayuda, children }) {
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-      <Typography variant="overline" component="div">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 0, width: '100%' }}>
+      <Typography variant="overline" component="div" sx={{ lineHeight: 1.35, minWidth: 0, overflowWrap: 'break-word' }}>
         {label}
       </Typography>
-      {children}
+      <Box sx={{ minWidth: 0, width: '100%', '& > *': { minWidth: 0, maxWidth: '100%' } }}>{children}</Box>
       {ayuda && (
-        <Typography variant="caption" sx={{ color: 'text.dim' }}>
+        <Typography variant="caption" sx={{ color: 'text.dim', lineHeight: 1.35, minWidth: 0, overflowWrap: 'break-word' }}>
           {ayuda}
         </Typography>
       )}

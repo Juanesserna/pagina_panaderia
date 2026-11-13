@@ -38,12 +38,14 @@ export const usuarioAutenticado = {
 //  - la cantidad de ítems NO se guarda: es detalle.length
 export const initialCompras = [
   {
-    id: 'OC-045',
+    id: 45,
     fecha: '22/06/2026',
     proveedorId: 'PROV-001',
     categoria: 'Materias primas',
-    estado: 'Recibida',
+    estado: 'Registrada',
     solicitante: 'Ana M.',
+    numeroFactura: 'FAC-001',
+    horaFacturacion: '08:30',
     descuento: 0,
     total: 45000,
     detalle: [
@@ -53,27 +55,31 @@ export const initialCompras = [
     notas: 'Entrega verificada en bodega central.',
   },
   {
-    id: 'OC-044',
+    id: 44,
     fecha: '20/06/2026',
     proveedorId: 'PROV-002',
     categoria: 'Lácteos',
-    estado: 'Parcial',
+    estado: 'Registrada',
     solicitante: 'Luis R.',
+    numeroFactura: 'FAC-002',
+    horaFacturacion: '14:15',
     descuento: 0,
     total: 32000,
     detalle: [
       { nombre: 'Mantequilla', cantidad: 8, unidad: 'kg', subtotal: 20000, lote: 'LOTE-INIT-0003', fechaVencimiento: '2026-08-20', cantidadDisponible: 8 },
       { nombre: 'Leche entera', cantidad: 10, unidad: 'lt', subtotal: 12000, lote: 'LOTE-INIT-0004', fechaVencimiento: '2026-07-25', cantidadDisponible: 10 },
     ],
-    notas: 'Pendiente confirmación del proveedor.',
+    notas: 'Confirmación del proveedor.',
   },
   {
-    id: 'OC-043',
+    id: 43,
     fecha: '18/06/2026',
     proveedorId: 'PROV-003',
     categoria: 'Empaque',
-    estado: 'Recibida',
+    estado: 'Registrada',
     solicitante: 'Ana M.',
+    numeroFactura: 'FAC-003',
+    horaFacturacion: '10:00',
     descuento: 0,
     total: 58000,
     detalle: [
