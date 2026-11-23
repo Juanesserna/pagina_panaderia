@@ -4,7 +4,7 @@ import { Box, Typography } from '@mui/material'
 // TODO: si otros módulos lo necesitan, proponer FormField en shared/ui con PR aparte.
 //
 // error: mensaje de validación en tiempo real. Si viene con texto, el campo se
-//        marca en rojo (etiqueta, borde) y el mensaje se muestra debajo.
+//      marca en rojo (etiqueta, borde) y el mensaje se muestra debajo.
 //        El color sale del tema (error.main); el Input/Select compartidos no se tocan.
 // onBlur: se dispara cuando el foco sale del campo (para marcarlo como "tocado").
 export function Campo({ label, required = false, error = '', onBlur, children, sx }) {
