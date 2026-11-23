@@ -31,8 +31,8 @@ export function DetalleCompraModal({ open, compra, proveedores, onClose }) {
                 </StatusBadge>
               </Box>
             </Campo>
-            <Campo label="Solicitante">
-              <Typography variant="subtitle1">{compra.solicitante}</Typography>
+            <Campo label="Número de factura">
+              <Typography variant="subtitle1">{compra.numeroFactura || '—'}</Typography>
             </Campo>
             <Campo label="Total facturado">
               <Typography variant="subtitle1">{formatearMoneda(compra.total)}</Typography>

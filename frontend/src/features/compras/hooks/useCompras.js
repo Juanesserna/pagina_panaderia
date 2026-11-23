@@ -4,7 +4,7 @@ import { comprasService } from '../services/comprasService'
 import { calcularKpis, contarFiltrosActivos, filtrarCompras, ordenarCompras } from '../utils/comprasHelpers'
 
 // Todo el estado y la lógica de la lista de compras: carga, búsqueda, filtros, orden, paginación,
-// KPIs y operaciones (crear / editar / cambiar estado / eliminar). La pantalla solo dibuja.
+// KPIs y operaciones (crear / cambiar estado / eliminar). La pantalla solo dibuja.
 export function useCompras() {
   const [compras, setCompras] = useState([])
   const [catalogos, setCatalogos] = useState({ proveedores: [], insumos: [] })
@@ -81,12 +81,6 @@ export function useCompras() {
     return nueva
   }
 
-  const actualizar = async (compra) => {
-    const guardada = await comprasService.actualizarCompra(compra)
-    setCompras((prev) => prev.map((c) => (c.id === guardada.id ? guardada : c)))
-    return guardada
-  }
-
   const cambiarEstado = async (id, nuevoEstado) => {
     const guardada = await comprasService.cambiarEstado(id, nuevoEstado)
     setCompras((prev) => prev.map((c) => (c.id === guardada.id ? guardada : c)))
@@ -96,6 +90,18 @@ export function useCompras() {
   const eliminar = async (id) => {
     await comprasService.eliminarCompra(id)
     setCompras((prev) => prev.filter((c) => c.id !== id))
+  }
+
+  const crearProveedor = async (datos) => {
+    const nuevo = await comprasService.crearProveedor(datos)
+    setCatalogos((prev) => ({ ...prev, proveedores: [...prev.proveedores, nuevo] }))
+    return nuevo
+  }
+
+  const crearInsumo = async (datos) => {
+    const nuevo = await comprasService.crearInsumo(datos)
+    setCatalogos((prev) => ({ ...prev, insumos: [...prev.insumos, nuevo] }))
+    return nuevo
   }
 
   return {
@@ -120,8 +126,9 @@ export function useCompras() {
     setPage,
     // operaciones
     crear,
-    actualizar,
     cambiarEstado,
     eliminar,
+    crearProveedor,
+    crearInsumo,
   }
 }

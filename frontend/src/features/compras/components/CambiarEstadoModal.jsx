@@ -4,9 +4,9 @@ import { ESTADO, estadoDotColor, estadoVariant } from '../constants/compras.cons
 import { opcionesEstadoParaFila } from '../utils/comprasHelpers'
 
 // Solo ofrece los estados a los que la orden puede pasar (ver esTransicionValida en utils/).
-// Una orden recibida es final: no se puede cambiar su estado.
+// Una orden anulada es final: no se puede cambiar su estado.
 export function CambiarEstadoModal({ open, compra, onClose, onSeleccionar }) {
-  const recibida = compra?.estado === ESTADO.RECIBIDA
+  const anulada = compra?.estado === ESTADO.ANULADO
   return (
     <Modal open={open} onClose={onClose} title="Cambiar estado" size="sm" showDivider>
       {compra && (
@@ -18,10 +18,10 @@ export function CambiarEstadoModal({ open, compra, onClose, onSeleccionar }) {
             </StatusBadge>
           </Box>
 
-          {recibida ? (
+          {anulada ? (
             <Box sx={{ bgcolor: 'dangerDim', color: 'error.main', borderRadius: 1.5, px: 1.5, py: 1.25, border: '1px solid', borderColor: 'error.dim' }}>
               <Typography variant="body2">
-                Esta orden ya está recibida y su estado es definitivo: no se puede cambiar.
+                Esta orden está anulada y su estado es definitivo: no se puede cambiar.
               </Typography>
             </Box>
           ) : (
