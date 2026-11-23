@@ -9,8 +9,8 @@ compras/
 ├── pages/ComprasPage.jsx          SOLO arma la pantalla (hooks + components). Sin lógica de negocio
 ├── components/                    piezas visuales; todo viene de '@shared/ui', nada de copias locales
 │   ├── ComprasKpis · ComprasToolbar · FiltrosComprasPanel · ComprasTable
-│   ├── NuevaCompraModal (+ ItemCompraForm) · EditarCompraModal · DetalleCompraModal
-│   ├── CambiarEstadoModal · EliminarCompraModal
+│   ├── NuevaCompraModal (+ ItemCompraForm) · DetalleCompraModal
+│   ├── CambiarEstadoModal · ExportarComprasModal · EliminarCompraModal
 │   └── Campo (etiqueta + control) · CompraNotificaciones (toasts)
 ├── hooks/
 │   ├── useCompras.js              carga, búsqueda, filtros, orden, paginación, KPIs y operaciones

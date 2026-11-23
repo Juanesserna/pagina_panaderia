@@ -1,10 +1,10 @@
 import { Box, IconButton, Stack, Typography } from '@mui/material'
-import { IconEye, IconPencil, IconToggleLeft, IconTrash } from '@tabler/icons-react'
+import { IconEye, IconTrash } from '@tabler/icons-react'
 import { DataTable, StatusBadge } from '@shared/ui'
 import { ESTADO, estadoVariant } from '../constants/compras.constants'
 import { etiquetaProveedor, formatearMoneda } from '../utils/comprasHelpers'
 
-const MENSAJE_CANCELADA = 'Una orden cancelada no se puede modificar'
+const MENSAJE_ANULADA = 'Una orden anulada no se puede modificar'
 
 function AccionFila({ titulo, icono, onClick, disabled, color = 'text.secondary' }) {
   return (
@@ -22,9 +22,7 @@ export function ComprasTable({
   onOrdenar,
   mensajeVacio,
   onVer,
-  onEditar,
   onCambiarEstado,
-  onEliminar,
 }) {
   const columns = [
     {
@@ -72,19 +70,19 @@ export function ComprasTable({
       accessor: (r) => <Typography variant="subtitle1">{formatearMoneda(r.total)}</Typography>,
     },
     {
-      key: 'solicitante',
-      header: 'Solicitante',
-      accessor: (r) => <Typography variant="body2">{r.solicitante}</Typography>,
+      key: 'numeroFactura',
+      header: 'Número de factura',
+      accessor: (r) => <Typography variant="body2">{r.numeroFactura || '—'}</Typography>,
     },
     {
       key: 'estado',
       header: 'Estado',
       accessor: (r) => {
-        const bloqueado = r.estado === ESTADO.CANCELADA
+        const bloqueado = r.estado === ESTADO.ANULADO
         return (
           <Box
             onClick={() => !bloqueado && onCambiarEstado(r)}
-            title={bloqueado ? MENSAJE_CANCELADA : 'Cambiar estado'}
+            title={bloqueado ? MENSAJE_ANULADA : 'Cambiar estado'}
             sx={{ display: 'inline-flex', cursor: bloqueado ? 'not-allowed' : 'pointer', opacity: bloqueado ? 0.5 : 1 }}
           >
             <StatusBadge variant={estadoVariant[r.estado]} dot>
@@ -99,22 +97,17 @@ export function ComprasTable({
         header: '',
         align: 'right',
         accessor: (r) => {
-          const recibida = r.estado === ESTADO.RECIBIDA
+          const anulada = r.estado === ESTADO.ANULADO
           return (
             <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', justifyContent: 'flex-end' }}>
               <AccionFila titulo="Ver detalle" icono={<IconEye size={15} />} onClick={() => onVer(r)} />
-              {!recibida && (
-                <AccionFila titulo="Editar orden" icono={<IconPencil size={15} />} onClick={() => onEditar(r)} />
-              )}
-              {!recibida && (
+              {!anulada && (
                 <AccionFila
-                  titulo="Cambiar estado"
-                  icono={<IconToggleLeft size={15} />}
+                  titulo="Anular orden"
+                  icono={<IconTrash size={15} />}
+                  color="error.main"
                   onClick={() => onCambiarEstado(r)}
                 />
-              )}
-              {!recibida && (
-                <AccionFila titulo="Eliminar orden" icono={<IconTrash size={15} />} color="error.main" onClick={() => onEliminar(r)} />
               )}
             </Stack>
           )

@@ -9,16 +9,23 @@ const maxWidthBySize = { sm: 'xs', md: 'sm', lg: 'md' }
  * showDivider: muestra una línea entre el título y el contenido (por defecto no).
  * sx: estilos opcionales para el Paper del diálogo (ancho/alto propios de una instancia puntual).
  */
-export function Modal({ open, onClose, title, size = 'md', children, sx, showDivider = false }) {
+export function Modal({ open, onClose, title, size = 'md', children, sx, contentSx, showDivider = false }) {
   return (
     <Dialog
       open={open}
       onClose={onClose}
       maxWidth={maxWidthBySize[size] || 'sm'}
       fullWidth
-      PaperProps={{ sx: { borderRadius: 2.5, bgcolor: 'background.paper', ...sx } }}
+      PaperProps={{
+        sx: {
+          borderRadius: 2.5,
+          bgcolor: 'background.paper',
+          overflow: 'hidden',
+          ...sx,
+        },
+      }}
     >
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1.5 }}>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1.5, flexShrink: 0 }}>
         <Box component="span" sx={{ typography: 'h6', color: 'text.primary' }}>
           {title}
         </Box>
@@ -27,7 +34,7 @@ export function Modal({ open, onClose, title, size = 'md', children, sx, showDiv
         </IconButton>
       </DialogTitle>
       {showDivider && <Divider />}
-      <DialogContent sx={{ pb: 3 }}>{children}</DialogContent>
+      <DialogContent sx={{ pb: 3, overflowX: 'hidden', overflowY: 'auto', ...contentSx }}>{children}</DialogContent>
     </Dialog>
   )
 }

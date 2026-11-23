@@ -41,11 +41,11 @@ export const derivarCategoria = (items, insumos) => {
 
 // ---------- Reglas de negocio ----------
 
-// Pendiente puede pasar a Recibida; Recibida es final (no cambia de estado).
+// Registrada puede pasar a Anulado; Anulado es final (no cambia de estado).
 export const esTransicionValida = (actual, nuevo) => {
   if (actual === nuevo) return true
-  if (actual === ESTADO.RECIBIDA) return false
-  return actual === ESTADO.PENDIENTE && nuevo === ESTADO.RECIBIDA
+  if (actual === ESTADO.ANULADO) return false
+  return actual === ESTADO.REGISTRADA && nuevo === ESTADO.ANULADO
 }
 
 export const opcionesEstadoParaFila = (actual) => estadoOptions.filter((o) => esTransicionValida(actual, o.value))
@@ -67,10 +67,10 @@ export const itemsSonValidos = (items) => items.every((i) => i.nombre && i.canti
 
 // ---------- Ids, lotes y fechas ----------
 
-// Siguiente id disponible a partir de las compras existentes ("OC-045" → "OC-046")
+// Siguiente id disponible a partir de las compras existentes (id numérico puro)
 export const siguienteIdCompra = (compras) => {
-  const maxNum = compras.reduce((max, c) => Math.max(max, parseInt(c.id.replace('OC-', ''), 10) || 0), 0)
-  return `OC-${String(maxNum + 1).padStart(3, '0')}`
+  const maxNum = compras.reduce((max, c) => Math.max(max, Number(c.id) || 0), 0)
+  return maxNum + 1
 }
 
 export const generarNumeroLote = () => {
@@ -107,13 +107,17 @@ export const crearItemVacio = (insumos) => {
 }
 
 // Arma la orden que se guarda a partir de lo que el usuario llenó en el formulario
-export const construirCompra = ({ id, fecha, proveedorId, estado, solicitante, descuento, items, insumos }) => ({
+export const construirCompra = ({ id, fecha, proveedorId, estado, solicitante, descuento, numeroFactura, horaFacturacion, fechaFactura, ivaTotal, items, insumos }) => ({
   id,
   fecha,
   proveedorId,
   categoria: derivarCategoria(items, insumos),
   estado,
   solicitante,
+  numeroFactura,
+  horaFacturacion,
+  fechaFactura,
+  ivaTotal: Number(ivaTotal) || 0,
   descuento,
   total: calcularTotal(calcularSubtotal(items), descuento),
   detalle: items.map((i) => ({
@@ -156,7 +160,7 @@ export const filtrarCompras = (compras, { busqueda, filtros, proveedores }) => {
 
 // Cada columna ordenable (misma "key" que la columna de la tabla) sabe extraer el valor comparable.
 const accesoresOrden = {
-  id: (c) => parseInt(c.id.replace(/\D/g, ''), 10) || 0,
+  id: (c) => Number(c.id) || 0,
   fecha: (c) => parseFechaCompra(c).getTime(),
   proveedor: (c) => c.proveedorId, // el id va primero en la etiqueta, así que ordena igual que antes
   total: (c) => c.total,
@@ -174,7 +178,7 @@ export const ordenarCompras = (compras, key, dir) => {
   })
 }
 
-// "Compras del mes" suma las órdenes del mes de `hoy`. Pendientes y Recibidas cuentan todas las órdenes
+// "Compras del mes" suma las órdenes del mes de `hoy`. Registradas y Anuladas cuentan todas las órdenes
 // (igual que antes). Los porcentajes de tendencia ya no existen: el KPICard de shared/ui no los muestra.
 export const calcularKpis = (compras, hoy = new Date()) => {
   const delMes = compras.filter((c) => {
@@ -183,7 +187,7 @@ export const calcularKpis = (compras, hoy = new Date()) => {
   })
   return {
     totalMes: delMes.reduce((suma, c) => suma + c.total, 0),
-    pendientes: compras.filter((c) => c.estado === ESTADO.PENDIENTE).length,
-    recibidas: compras.filter((c) => c.estado === ESTADO.RECIBIDA).length,
+    registradas: compras.filter((c) => c.estado === ESTADO.REGISTRADA).length,
+    anuladas: compras.filter((c) => c.estado === ESTADO.ANULADO).length,
   }
 }
