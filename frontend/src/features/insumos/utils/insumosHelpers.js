@@ -8,10 +8,6 @@ export function nombreCategoria(id) {
   return getCategorias().find((c) => c.id === id)?.nombre ?? '—'
 }
 
-export function formatoCodigo(id) {
-  return `INS-${String(id).padStart(3, '0')}`
-}
-
 export function formatoMoneda(valor) {
   return valor.toLocaleString('es-CO', {
     style: 'currency',

@@ -1,7 +1,6 @@
 import { IconButton, Stack, Typography } from '@mui/material'
 import { IconEye, IconPencil, IconTrash } from '@tabler/icons-react'
 import { DataTable } from '@shared/ui'
-import { formatoCodigo } from '../utils/proveedoresHelpers'
 import { EstadoSwitch } from './EstadoSwitch'
 
 const accionSx = { color: 'text.secondary', '&:hover': { color: 'primary.main' } }
@@ -11,9 +10,9 @@ export function ProveedoresTable({ rows, sortKey, sortDir, onSort, onVer, onEdit
   const columns = [
     {
       key: 'id',
-      header: 'Código',
+      header: 'ID',
       sortable: true,
-      accessor: (r) => <Typography variant="mono">{formatoCodigo(r.id)}</Typography>,
+      accessor: (r) => <Typography variant="subtitle2">{r.id}</Typography>,
     },
     {
       key: 'nombre',
@@ -24,16 +23,16 @@ export function ProveedoresTable({ rows, sortKey, sortDir, onSort, onVer, onEdit
     {
       key: 'nit',
       header: 'NIT',
-      accessor: (r) => <Typography variant="mono">{r.nit}</Typography>,
+      accessor: (r) => (
+        <Typography variant="mono" sx={{ whiteSpace: 'nowrap' }}>
+          {r.nit}
+        </Typography>
+      ),
     },
     {
       key: 'nombreContacto',
       header: 'Contacto',
-      accessor: (r) => (
-        <Typography variant="body1" sx={{ whiteSpace: 'nowrap' }}>
-          {r.nombreContacto}
-        </Typography>
-      ),
+      accessor: (r) => <Typography variant="body1">{r.nombreContacto}</Typography>,
     },
     {
       key: 'telefono',
@@ -48,7 +47,8 @@ export function ProveedoresTable({ rows, sortKey, sortDir, onSort, onVer, onEdit
       key: 'email',
       header: 'Correo',
       accessor: (r) => (
-        <Typography variant="body1" sx={{ color: 'primary.main' }}>
+        // overflowWrap 'anywhere': un correo largo se parte en vez de ensanchar la tabla.
+        <Typography variant="body1" sx={{ color: 'primary.main', overflowWrap: 'anywhere' }}>
           {r.email}
         </Typography>
       ),
