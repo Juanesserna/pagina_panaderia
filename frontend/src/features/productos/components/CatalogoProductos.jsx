@@ -17,14 +17,30 @@ import { ESTADOS_PRODUCTO } from './comunes/opcionesProducto'
 // Valor que representa "sin filtro" en los selectores del catálogo
 const TODAS = 'todas'
 
+const OPCIONES_TIPO = [
+  { value: TODAS, label: 'Todos los tipos' },
+  { value: 'TERMINADO', label: 'Terminado' },
+  { value: 'INTERMEDIO', label: 'Intermedio' },
+]
+
+const OPCIONES_VENDIBLE = [
+  { value: TODAS, label: 'Todos' },
+  { value: 'true', label: 'Vendible' },
+  { value: 'false', label: 'No vendible' },
+]
+
 export default function CatalogoProductos({
   onBuscar,
   onNuevoClick,
   onFiltrarClick,
   onFiltroCategoriaChange,
   onFiltroEstadoChange,
+  onFiltroTipoChange,
+  onFiltroVendibleChange,
   filtroCategoria = '',
   filtroEstado = '',
+  filtroTipo = '',
+  filtroVendible = '',
 }) {
   const theme = useTheme()
   const [mostrarFiltros, setMostrarFiltros] = useState(false)
@@ -127,6 +143,48 @@ export default function CatalogoProductos({
               value={filtroEstado || TODAS}
               onChange={(e) => onFiltroEstadoChange?.(e.target.value === TODAS ? '' : e.target.value)}
               options={[{ value: TODAS, label: 'Todos los estados' }, ...ESTADOS_PRODUCTO.map((s) => ({ value: s, label: s }))]}
+            />
+          </Box>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 200 }}>
+            <Typography
+              component="label"
+              sx={{
+                fontFamily: fonts.sans,
+                fontSize: 11,
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                color: theme.palette.text.secondary,
+              }}
+            >
+              Tipo
+            </Typography>
+            <Select
+              value={filtroTipo || TODAS}
+              onChange={(e) => onFiltroTipoChange?.(e.target.value === TODAS ? '' : e.target.value)}
+              options={OPCIONES_TIPO}
+            />
+          </Box>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, minWidth: 200 }}>
+            <Typography
+              component="label"
+              sx={{
+                fontFamily: fonts.sans,
+                fontSize: 11,
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                color: theme.palette.text.secondary,
+              }}
+            >
+              Vendible
+            </Typography>
+            <Select
+              value={filtroVendible || TODAS}
+              onChange={(e) => onFiltroVendibleChange?.(e.target.value === TODAS ? '' : e.target.value)}
+              options={OPCIONES_VENDIBLE}
             />
           </Box>
         </Box>

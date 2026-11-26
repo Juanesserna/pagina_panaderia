@@ -1,5 +1,5 @@
-import { Box, Stack, Card, Alert } from '@mui/material'
-import { useState } from 'react'
+import { Box, Stack, Card, Alert, Typography } from '@mui/material'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IconBox, IconBread } from '@tabler/icons-react'
 import { ROUTES } from '@app/router/routes'
@@ -16,7 +16,19 @@ import { useProductos } from '../hooks/useProductos'
 
 export default function ProductosPage() {
   const navigate = useNavigate()
-  const { productos, crearProducto, editarProducto, eliminarProducto, cambiarEstado } = useProductos()
+  const {
+    productos,
+    cargando,
+    error,
+    filtros,
+    setFiltros,
+    paginacion,
+    conteos,
+    crearProducto,
+    editarProducto,
+    eliminarProducto,
+    cambiarEstado,
+  } = useProductos()
   const [nuevoProductoModal, setNuevoProductoModal] = useState(false)
   const [editarProductoModal, setEditarProductoModal] = useState(false)
   const [productoEditar, setProductoEditar] = useState(null)
@@ -25,10 +37,8 @@ export default function ProductosPage() {
   const [eliminarProductoModal, setEliminarProductoModal] = useState(false)
   const [productoAEliminar, setProductoAEliminar] = useState(null)
   const [productoEstado, setProductoEstado] = useState(null)
-  const [busqueda, setBusqueda] = useState('')
-  const [filtroCategoria, setFiltroCategoria] = useState('')
-  const [filtroEstado, setFiltroEstado] = useState('')
   const [errorServidor, setErrorServidor] = useState(null)
+  const temporizadorBusqueda = useRef(null)
 
   const handleNuevoProducto = () => {
     setErrorServidor(null)
@@ -46,27 +56,20 @@ export default function ProductosPage() {
     setDetalleProductoModal(true)
   }
 
+  // Los errores del servidor los muestra el propio modal (su catch los atrapa)
   const handleGuardarProducto = async (datos) => {
-    try {
-      const productoCreado = await crearProducto(datos)
-      setNuevoProductoModal(false)
-      navigate(ROUTES.AGREGAR_RECETA, {
-        state: { productoId: productoCreado.id, producto: productoCreado },
-      })
-    } catch (error) {
-      setErrorServidor(error.message || 'Error al crear el producto')
-    }
+    const productoCreado = await crearProducto(datos)
+    setNuevoProductoModal(false)
+    navigate(ROUTES.AGREGAR_RECETA, {
+      state: { productoId: productoCreado.id, producto: productoCreado },
+    })
   }
 
   const handleGuardarEdicion = async (datos) => {
     if (!productoEditar?.id) return
-    try {
-      await editarProducto(productoEditar.id, datos)
-      setEditarProductoModal(false)
-      setProductoEditar(null)
-    } catch (error) {
-      setErrorServidor(error.message || 'Error al editar el producto')
-    }
+    await editarProducto(productoEditar.id, datos)
+    setEditarProductoModal(false)
+    setProductoEditar(null)
   }
 
   const handleEliminarProducto = (producto) => {
@@ -74,8 +77,8 @@ export default function ProductosPage() {
     setEliminarProductoModal(true)
   }
 
-  const handleConfirmarEliminar = () => {
-    eliminarProducto(productoAEliminar.id)
+  const handleConfirmarEliminar = async () => {
+    await eliminarProducto(productoAEliminar.id)
     setEliminarProductoModal(false)
     setProductoAEliminar(null)
   }
@@ -84,36 +87,45 @@ export default function ProductosPage() {
     setProductoEstado(producto)
   }
 
-  const handleConfirmarEstado = (estado) => {
-    cambiarEstado(productoEstado.id, estado)
+  const handleConfirmarEstado = async (estado) => {
+    const producto = productoEstado
     setProductoEstado(null)
+    try {
+      await cambiarEstado(producto.id, estado)
+    } catch (error) {
+      setErrorServidor(error.message || 'Error al cambiar el estado')
+    }
   }
 
   const handleBuscar = (e) => {
-    setBusqueda(e.target.value)
+    const valor = e.target.value.trim()
+    clearTimeout(temporizadorBusqueda.current)
+    temporizadorBusqueda.current = setTimeout(() => setFiltros({ buscar: valor }), 500)
   }
 
   const handleFiltroCategoriaChange = (valor) => {
-    setFiltroCategoria(valor)
+    setFiltros({ categoria: valor })
   }
 
   const handleFiltroEstadoChange = (valor) => {
-    setFiltroEstado(valor)
+    setFiltros({ estado: valor })
   }
 
-  const productosFiltrados = productos.filter((p) => {
-    const coincideBusqueda =
-      !busqueda ||
-      p.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      p.codigo.toLowerCase().includes(busqueda.toLowerCase())
-    const coincideCategoria = !filtroCategoria || p.categoria === filtroCategoria
-    const coincideEstado = !filtroEstado || p.estado === filtroEstado
-    return coincideBusqueda && coincideCategoria && coincideEstado
-  })
+  const handleFiltroTipoChange = (valor) => {
+    setFiltros({ tipo: valor })
+  }
+
+  const handleFiltroVendibleChange = (valor) => {
+    setFiltros({ esVendible: valor })
+  }
 
   const limpiarErrorServidor = () => {
     setErrorServidor(null)
   }
+
+  useEffect(() => {
+    return () => clearTimeout(temporizadorBusqueda.current)
+  }, [])
 
   return (
     <Box
@@ -134,16 +146,21 @@ export default function ProductosPage() {
           {errorServidor}
         </Alert>
       )}
+      {error && (
+        <Alert severity="error">
+          {error}
+        </Alert>
+      )}
       <Stack direction="row" spacing={2}>
         <StatsCard
           label="PRODUCTOS ACTIVOS"
-          value={productos.filter((p) => p.estado === 'Activo').length}
+          value={conteos.activos}
           icon={<IconBread size={20} />}
           iconBgColor="success"
         />
         <StatsCard
           label="AGOTADOS"
-          value={productos.filter((p) => p.estado === 'Agotado').length}
+          value={conteos.agotados}
           icon={<IconBox size={20} />}
           iconBgColor="error"
         />
@@ -162,17 +179,35 @@ export default function ProductosPage() {
           onBuscar={handleBuscar}
           onFiltroCategoriaChange={handleFiltroCategoriaChange}
           onFiltroEstadoChange={handleFiltroEstadoChange}
-          filtroCategoria={filtroCategoria}
-          filtroEstado={filtroEstado}
+          onFiltroTipoChange={handleFiltroTipoChange}
+          onFiltroVendibleChange={handleFiltroVendibleChange}
+          filtroCategoria={filtros.categoria}
+          filtroEstado={filtros.estado}
+          filtroTipo={filtros.tipo}
+          filtroVendible={filtros.esVendible}
         />
-        <ProductosTable
-          productos={productosFiltrados}
-          onEdit={handleEditarProducto}
-          onVer={handleVerDetalle}
-          onEliminar={handleEliminarProducto}
-          onCambiarEstado={handleCambiarEstado}
+        {!cargando && !error && productos.length === 0 ? (
+          <Box sx={{ py: 6, textAlign: 'center' }}>
+            <Typography variant="body2" color="text.secondary">
+              Sin productos encontrados
+            </Typography>
+          </Box>
+        ) : (
+          <ProductosTable
+            productos={productos}
+            onEdit={handleEditarProducto}
+            onVer={handleVerDetalle}
+            onEliminar={handleEliminarProducto}
+            onCambiarEstado={handleCambiarEstado}
+          />
+        )}
+        <PaginacionProductos
+          paginaActual={paginacion.pagina}
+          totalRegistros={paginacion.total}
+          porPagina={filtros.limite}
+          totalPaginas={paginacion.totalPaginas}
+          onCambiarPagina={(pagina) => setFiltros({ pagina })}
         />
-        <PaginacionProductos totalRegistros={6} />
       </Card>
 
       <NuevoProductoModal
@@ -201,15 +236,18 @@ export default function ProductosPage() {
         }}
         producto={productoDetalle}
       />
-      <EliminarProductoModal
-        open={eliminarProductoModal}
-        onClose={() => {
-          setEliminarProductoModal(false)
-          setProductoAEliminar(null)
-        }}
-        onConfirm={handleConfirmarEliminar}
-        nombreProducto={productoAEliminar?.nombre}
-      />
+      {productoAEliminar && (
+        <EliminarProductoModal
+          key={productoAEliminar.id}
+          open={eliminarProductoModal}
+          onClose={() => {
+            setEliminarProductoModal(false)
+            setProductoAEliminar(null)
+          }}
+          onConfirm={handleConfirmarEliminar}
+          nombreProducto={productoAEliminar.nombre}
+        />
+      )}
       {productoEstado && (
         <CambiarEstadoModal
           key={productoEstado.id}
