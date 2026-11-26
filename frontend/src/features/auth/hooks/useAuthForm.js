@@ -92,6 +92,18 @@ export default function useAuthForm({
     }))
   }
 
+  // Impide avanzar con TAB o Shift + TAB
+  // cuando el campo contiene información inválida.
+  const handleFieldKeyDown = (event, name) => {
+    if (event.key !== 'Tab' || submittingRef.current) return
+
+    touch(name)
+
+    if (validarCampo(name, form, mode)) {
+      event.preventDefault()
+    }
+  }
+
   const touchAll = () => {
     setTouched((prev) => ({
       ...prev,
@@ -192,6 +204,7 @@ export default function useAuthForm({
     setNotice,
     updateField,
     touch,
+    handleFieldKeyDown,
     handleSubmit,
     resetForm,
     resetValidation,

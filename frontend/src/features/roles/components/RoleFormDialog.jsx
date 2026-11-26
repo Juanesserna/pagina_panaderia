@@ -32,7 +32,6 @@ import {
   validarNombreRol,
 } from '../services/rolesService'
 import ModulosGrid from './ModulosGrid'
-
 // Obtiene únicamente los privilegios reconocidos por el sistema.
 function obtenerPermisos(privilegios = {}) {
   return Object.fromEntries(
@@ -44,7 +43,6 @@ function obtenerPermisos(privilegios = {}) {
     ]).filter(([, ids]) => ids.length > 0)
   )
 }
-
 function obtenerValores(rol) {
   return {
     nombre: rol?.nombre ?? '',
@@ -52,7 +50,6 @@ function obtenerValores(rol) {
     privilegios: obtenerPermisos(rol?.privilegios),
   }
 }
-
 function crearSnapshot(datos) {
   return JSON.stringify({
     nombre: normalizarNombreRol(datos.nombre),
@@ -60,7 +57,6 @@ function crearSnapshot(datos) {
     privilegios: obtenerPermisos(datos.privilegios),
   })
 }
-
 const campoSx = {
   '& .MuiInputBase-root': {
     minHeight: 40,
@@ -70,7 +66,6 @@ const campoSx = {
     mx: 0,
   },
 }
-
 function Confirmar({
   open,
   tipo,
@@ -81,21 +76,17 @@ function Confirmar({
   const esSalida = tipo === 'salir'
   const esRestaurar = tipo === 'restaurar'
   const esAdvertencia = esSalida || esRestaurar
-
   const titulo = esSalida
     ? '¿Deseas abandonar el formulario?'
     : esRestaurar
       ? '¿Deseas descartar los cambios?'
       : '¿Deseas guardar los cambios?'
-
   const mensaje = esSalida
     ? 'Si sales del formulario, perderás la información que has ingresado.'
     : esRestaurar
       ? 'Se descartarán los cambios realizados en el formulario.'
       : 'Los cambios en los privilegios afectarán a los usuarios que tengan asignado este rol. Si lo desactivas, no estará disponible para nuevas asignaciones ni para reactivar usuarios asociados.'
-
   const Icono = esAdvertencia ? AlertTriangle : CheckCircle2
-
   return (
     <Dialog
       open={open}
@@ -123,19 +114,16 @@ function Confirmar({
           >
             <Icono size={22} />
           </Box>
-
           <Typography fontWeight={700}>
             {titulo}
           </Typography>
         </Box>
       </DialogTitle>
-
       <DialogContent>
         <Typography variant="body2" color="text.secondary">
           {mensaje}
         </Typography>
       </DialogContent>
-
       <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
         {esAdvertencia ? (
           <>
@@ -147,7 +135,6 @@ function Confirmar({
             >
               {esSalida ? 'Salir del formulario' : 'Descartar cambios'}
             </Button>
-
             <Button
               variant="contained"
               onClick={onCancel}
@@ -166,7 +153,6 @@ function Confirmar({
             >
               Seguir editando
             </Button>
-
             <Button
               variant="contained"
               onClick={onConfirm}
@@ -180,7 +166,6 @@ function Confirmar({
     </Dialog>
   )
 }
-
 export default function RoleFormDialog({
   open,
   mode = 'create',
@@ -194,53 +179,40 @@ export default function RoleFormDialog({
   const protegido = !isCreate && esRolSistema(initialData)
   const esGerente = !isCreate && Number(initialData?.id) === GERENTE_ID
   const tieneUsuariosActivos = (initialData?.usuariosActivos ?? 0) > 0
-
   const [datos, setDatos] = useState(() => obtenerValores())
   const [touched, setTouched] = useState(false)
   const [intentoGuardar, setIntentoGuardar] = useState(false)
   const [confirmacion, setConfirmacion] = useState(null)
-
   const inicial = useRef(obtenerValores())
   const nombreRef = useRef(null)
   const enviando = useRef(false)
-
   useEffect(() => {
     if (!open) return
-
     const valores = obtenerValores(isCreate ? null : initialData)
-
     inicial.current = valores
     setDatos(valores)
     setTouched(false)
     setIntentoGuardar(false)
     setConfirmacion(null)
   }, [open, initialData, isCreate])
-
   const actualizar = (campo, valor) => {
     setDatos(prev => ({ ...prev, [campo]: valor }))
   }
-
   const permisos = obtenerPermisos(datos.privilegios)
   const modulos = Object.keys(permisos)
-
   const errorNombre = validarNombreRol(
     datos.nombre,
     isCreate ? null : initialData?.id
   )
-
   const hayCambios =
     crearSnapshot(datos) !== crearSnapshot(inicial.current)
-
   const errorPermisos = !modulos.length
     ? 'Selecciona al menos un privilegio.'
     : ''
-
   // Conserva los permisos esenciales incluso al deseleccionar todos.
   const cambiarPrivilegios = nuevos => {
     if (submitting) return
-
     const resultado = obtenerPermisos(nuevos)
-
     if (esGerente) {
       Object.entries(PRIVILEGIOS_PROTEGIDOS_GERENTE)
         .forEach(([modulo, ids]) => {
@@ -252,35 +224,28 @@ export default function RoleFormDialog({
           ]
         })
     }
-
     actualizar('privilegios', resultado)
   }
-
   function validarFormulario() {
     setTouched(true)
     setIntentoGuardar(true)
-
     if (errorNombre) {
       onError?.(errorNombre)
       nombreRef.current?.focus()
       return false
     }
-
     if (errorPermisos) {
       onError?.(errorPermisos)
       return false
     }
-
     if (!ESTADOS.includes(datos.estado)) {
       onError?.('Selecciona un estado válido.')
       return false
     }
-
     if (esGerente) {
       onError?.('El rol Gerente no se puede modificar.')
       return false
     }
-
     if (
       protegido &&
       normalizarNombreRol(datos.nombre) !== initialData.nombre
@@ -288,7 +253,6 @@ export default function RoleFormDialog({
       onError?.('El nombre de este rol está protegido.')
       return false
     }
-
     if (
       esGerente &&
       Object.entries(PRIVILEGIOS_PROTEGIDOS_GERENTE)
@@ -299,17 +263,13 @@ export default function RoleFormDialog({
       onError?.('Los privilegios esenciales del Gerente están protegidos.')
       return false
     }
-
     return true
   }
-
   async function guardar() {
     if (submitting || enviando.current) return
     if (!validarFormulario()) return
-
     enviando.current = true
     setConfirmacion(null)
-
     try {
       await onSubmit({
         nombre: normalizarNombreRol(datos.nombre),
@@ -321,39 +281,32 @@ export default function RoleFormDialog({
       enviando.current = false
     }
   }
-
   function handleSubmit() {
     if (submitting || enviando.current) return
     if (!isCreate && !hayCambios) return
     if (!validarFormulario()) return
-
     if (isCreate) {
       guardar()
     } else {
       setConfirmacion('guardar')
     }
   }
-
   function handleCancel() {
     if (submitting || enviando.current) return
-
     if (hayCambios) {
       setConfirmacion('salir')
     } else {
       onClose()
     }
   }
-
   function restaurar() {
     setDatos(obtenerValores(inicial.current))
     setTouched(false)
     setIntentoGuardar(false)
     setConfirmacion(null)
   }
-
   function confirmarAccion() {
     if (submitting || enviando.current) return
-
     if (confirmacion === 'salir') {
       setConfirmacion(null)
       onClose()
@@ -363,14 +316,14 @@ export default function RoleFormDialog({
       guardar()
     }
   }
-
   const IconoTitulo = isCreate ? Plus : Pencil
-
   return (
     <>
       <Dialog
         open={open}
-        onClose={() => { }}
+        onClose={(_, reason) => {
+          if (reason === 'escapeKeyDown' && !confirmacion) handleCancel()
+        }}
         maxWidth={false}
         slotProps={{
           paper: {
@@ -401,17 +354,14 @@ export default function RoleFormDialog({
             >
               <IconoTitulo size={21} />
             </Box>
-
             <Box sx={{ flex: 1 }}>
               <Typography fontWeight={700}>
                 {isCreate ? 'Crear rol' : 'Editar rol'}
               </Typography>
-
               <Typography variant="caption" color="text.secondary">
                 Configura la información y los permisos de acceso.
               </Typography>
             </Box>
-
             {protegido && (
               <Chip
                 size="small"
@@ -422,7 +372,6 @@ export default function RoleFormDialog({
             )}
           </Box>
         </DialogTitle>
-
         <DialogContent dividers sx={{ p: 2, overflowY: 'auto' }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {/* Información general */}
@@ -439,7 +388,6 @@ export default function RoleFormDialog({
               <Typography fontWeight={600} fontSize={14} sx={{ mb: 2 }}>
                 Información del rol
               </Typography>
-
               <Box
                 sx={{
                   display: 'grid',
@@ -459,7 +407,6 @@ export default function RoleFormDialog({
                   fullWidth
                   sx={campoSx}
                 />
-
                 <TextField
                   label="Nombre del rol"
                   required
@@ -469,6 +416,11 @@ export default function RoleFormDialog({
                   onBlur={() => {
                     actualizar('nombre', normalizarNombreRol(datos.nombre))
                     setTouched(true)
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key !== 'Tab' || protegido || submitting) return
+                    setTouched(true)
+                    if (errorNombre) event.preventDefault()
                   }}
                   disabled={protegido || submitting}
                   placeholder="Ej. Auxiliar administrativo"
@@ -487,7 +439,6 @@ export default function RoleFormDialog({
                   fullWidth
                   sx={campoSx}
                 />
-
                 <TextField
                   select
                   label="Estado"
@@ -526,7 +477,6 @@ export default function RoleFormDialog({
                 </TextField>
               </Box>
             </Box>
-
             {protegido && (
               <Alert severity="info" icon={<Lock size={19} />}>
                 {esGerente
@@ -534,13 +484,11 @@ export default function RoleFormDialog({
                   : 'El nombre de este rol está protegido. Puedes modificar sus privilegios y cambiar su estado según los usuarios asociados.'}
               </Alert>
             )}
-
             {intentoGuardar && errorPermisos && (
               <Alert severity="error">
                 {errorPermisos}
               </Alert>
             )}
-
             <Box
               sx={{
                 pointerEvents: submitting ? 'none' : 'auto',
@@ -559,7 +507,6 @@ export default function RoleFormDialog({
             </Box>
           </Box>
         </DialogContent>
-
         <DialogActions
           sx={{
             px: 2.5,
@@ -576,9 +523,7 @@ export default function RoleFormDialog({
           >
             {isCreate ? 'Limpiar formulario' : 'Restaurar valores'}
           </Button>
-
           <Box sx={{ flex: 1 }} />
-
           <Button
             color="inherit"
             onClick={handleCancel}
@@ -586,12 +531,10 @@ export default function RoleFormDialog({
           >
             Cancelar
           </Button>
-
           <Button
             variant="contained"
             onClick={handleSubmit}
             disabled={submitting || (!isCreate && !hayCambios)}
-
           >
             {submitting
               ? 'Guardando...'
@@ -601,7 +544,6 @@ export default function RoleFormDialog({
           </Button>
         </DialogActions>
       </Dialog>
-
       <Confirmar
         open={Boolean(confirmacion)}
         tipo={confirmacion}

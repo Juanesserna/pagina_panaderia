@@ -94,6 +94,12 @@ export function ForgotPasswordModal({ open, onClose, isDark }) {
         submitting={auth.submitting}>
         <Box key={step} component={step === 'success' ? 'div' : 'form'}
           onSubmit={step === 'success' ? undefined : handleSubmit} noValidate
+          onKeyDown={(event) => {
+            if (event.key === 'Escape' && !event.defaultPrevented) {
+              event.preventDefault()
+              requestClose()
+            }
+          }}
           sx={{ display: 'flex', flexDirection: 'column', gap: 2,
             animation: 'recoveryEnter 300ms ease-out both',
             '@keyframes recoveryEnter': { from: { opacity: 0, transform: 'translateY(8px)' }, to: { opacity: 1, transform: 'translateY(0)' } },

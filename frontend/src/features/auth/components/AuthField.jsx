@@ -49,6 +49,13 @@ export default function AuthField({
         auth.updateField(name, event.target.value)
       }
       onBlur={() => auth.touch(name)}
+      onKeyDownCapture={(event) => {
+        if (isDisabled || event.key !== 'Tab') return
+        const target = event.target
+        if (target.tagName !== 'INPUT' && target.getAttribute('role') !== 'combobox') return
+        if (target.getAttribute('aria-expanded') === 'true') return
+        auth.handleFieldKeyDown(event, name)
+      }}
       error={Boolean(error)}
       helperText={error || ''}
       disabled={isDisabled}

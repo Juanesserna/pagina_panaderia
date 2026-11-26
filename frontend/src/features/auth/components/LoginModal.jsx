@@ -22,24 +22,20 @@ import {
 } from '@tabler/icons-react'
 import { getColors, fonts } from '@app/theme/colors'
 import { NotificacionesContainer, useNotificaciones } from '@shared/notifications'
-
 import useAuthForm, {
   LOGIN_FIELDS,
   REGISTER_FIELDS,
 } from '../hooks/useAuthForm'
-
 import {
   DOC_TYPES,
   NUMERIC_DOCS,
   EMAIL_MAX_LENGTH,
 } from '../utils/authValidations'
-
 import AuthLayout from './AuthLayout'
 import AuthField from './AuthField'
 import PasswordRequirements from './PasswordRequirements'
 import TermsDialog from './TermsDialog'
 import { ForgotPasswordModal } from './ForgotPasswordModal'
-
 const grid2 = {
   display: 'grid',
   gridTemplateColumns: {
@@ -48,7 +44,6 @@ const grid2 = {
   },
   gap: 1,
 }
-
 const CONSENTS = [
   {
     name: 'acceptTerms',
@@ -63,7 +58,6 @@ const CONSENTS = [
     type: 'privacy',
   },
 ]
-
 export function LoginModal({
   isOpen,
   onClose,
@@ -75,33 +69,26 @@ export function LoginModal({
   const [documentOpen, setDocumentOpen] = useState(null)
   const [pendingAction, setPendingAction] = useState(null)
   const [formVersion, setFormVersion] = useState(0)
-
   const register = mode === 'register'
   const c = getColors(isDark)
-
   const auth = useAuthForm({
     fields: register ? REGISTER_FIELDS : LOGIN_FIELDS,
     mode,
   })
-
   const { notificaciones, mostrarNotificacion } = useNotificaciones()
   const { notice, setNotice } = auth
-
   // Reutiliza las notificaciones del aplicativo y consume cada aviso.
   useEffect(() => {
     if (!notice) return
     mostrarNotificacion('error', 'Verifica la información', notice)
     setNotice('')
   }, [notice, setNotice, mostrarNotificacion])
-
   const warningColor = isDark ? '#FFB74D' : '#986000'
   const textColor = isDark ? '#F2E9DD' : '#4A2E17'
   const mutedColor = isDark ? '#C4B5A6' : '#796655'
   const paperBg = isDark ? '#2A1D16' : '#FFFCF8'
   const primaryColor = isDark ? c.brand : '#A65B2B'
-
   const fieldProps = { auth, isDark }
-
   const linkSx = {
     color: primaryColor,
     fontFamily: fonts.sans,
@@ -116,39 +103,31 @@ export function LoginModal({
       textDecoration: 'underline',
     },
   }
-
   // Ejecuta una acción después de descartar el formulario.
   const executeAction = (action) => {
     auth.resetForm()
     setFormVersion((prev) => prev + 1)
     setPendingAction(null)
-
     if (action === 'close') {
       onClose()
       return
     }
-
     if (action === 'recovery') {
       setRecoveryOpen(true)
       return
     }
-
     setRecoveryOpen(false)
     setMode(action)
   }
-
   // Solicita confirmación únicamente si existen cambios.
   const requestAction = (action, dirty = auth.isDirty) => {
     if (auth.submitting || (!recoveryOpen && action === mode)) return
-
     if (dirty) {
       setPendingAction(action)
       return
     }
-
     executeAction(action)
   }
-
   const handleSubmit = (event) => {
     return auth.handleSubmit(event, async () => {
       // Flujo simulado existente.
@@ -158,10 +137,8 @@ export function LoginModal({
       } else {
         onClose()
       }
-
     })
   }
-
   return (
     <>
       <AuthLayout
@@ -186,6 +163,12 @@ export function LoginModal({
           component="form"
           noValidate
           onSubmit={handleSubmit}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape' && !event.defaultPrevented && !documentOpen && !pendingAction) {
+              event.preventDefault()
+              requestAction('close')
+            }
+          }}
           sx={{
             display: 'flex',
             flexDirection: 'column',
@@ -217,7 +200,6 @@ export function LoginModal({
                     </MenuItem>
                   ))}
                 </AuthField>
-
                 <AuthField
                   {...fieldProps}
                   name="documentNumber"
@@ -233,7 +215,6 @@ export function LoginModal({
                   }}
                 />
               </Box>
-
               <Box sx={grid2}>
                 <AuthField
                   {...fieldProps}
@@ -243,7 +224,6 @@ export function LoginModal({
                   autoComplete="name"
                   inputProps={{ maxLength: 80 }}
                 />
-
                 <AuthField
                   {...fieldProps}
                   name="phone"
@@ -259,7 +239,6 @@ export function LoginModal({
               </Box>
             </>
           )}
-
           {/* Credenciales compartidas */}
           <AuthField
             {...fieldProps}
@@ -270,7 +249,6 @@ export function LoginModal({
             autoComplete={register ? 'email' : 'username'}
             inputProps={{ maxLength: EMAIL_MAX_LENGTH }}
           />
-
           <Box
             sx={
               register
@@ -289,7 +267,6 @@ export function LoginModal({
                   : 'current-password'
               }
             />
-
             {register && (
               <AuthField
                 {...fieldProps}
@@ -300,20 +277,17 @@ export function LoginModal({
               />
             )}
           </Box>
-
           {register ? (
             <>
               <PasswordRequirements
                 password={auth.form.password}
                 isDark={isDark}
               />
-
               {/* Autorizaciones independientes */}
               <Box>
                 {CONSENTS.map(({ name, text, link, type }) => {
                   const error =
                     auth.touched[name] && auth.errors[name]
-
                   return (
                     <FormControl
                       key={name}
@@ -348,7 +322,6 @@ export function LoginModal({
                             },
                           }}
                         />
-
                         <Box sx={{ pt: 0.5 }}>
                           <Typography
                             component="label"
@@ -362,7 +335,6 @@ export function LoginModal({
                           >
                             {text}{' '}
                           </Typography>
-
                           <Button
                             type="button"
                             onClick={() => setDocumentOpen(type)}
@@ -379,7 +351,6 @@ export function LoginModal({
                           </Button>
                         </Box>
                       </Box>
-
                       {error && (
                         <FormHelperText sx={{ ml: 4.5 }}>
                           {error}
@@ -402,7 +373,6 @@ export function LoginModal({
               </Button>
             </Box>
           )}
-
           {/* Acción principal */}
           <Button
             type="submit"
@@ -432,7 +402,6 @@ export function LoginModal({
                 ? 'Crear cuenta'
                 : 'Iniciar sesión'}
           </Button>
-
           <Typography
             sx={{
               fontFamily: fonts.sans,
@@ -445,7 +414,6 @@ export function LoginModal({
             {register
               ? '¿Ya tienes una cuenta?'
               : '¿Todavía no tienes una cuenta?'}{' '}
-
             <Button
               type="button"
               disabled={auth.submitting}
@@ -459,7 +427,6 @@ export function LoginModal({
           </Typography>
         </Box>
       </AuthLayout>
-
       {/* Consulta de documentos sin perder el formulario */}
       <TermsDialog
         open={Boolean(documentOpen)}
@@ -467,7 +434,6 @@ export function LoginModal({
         onClose={() => setDocumentOpen(null)}
         isDark={isDark}
       />
-
       {/* Confirmación de cambios sin guardar */}
       <Dialog
         open={Boolean(pendingAction)}
@@ -504,7 +470,6 @@ export function LoginModal({
           />
           ¿Deseas abandonar el formulario?
         </DialogTitle>
-
         <DialogContent>
           <DialogContentText
             id="auth-discard-description"
@@ -518,7 +483,6 @@ export function LoginModal({
             Si sales del formulario, perderás la información que has ingresado.
           </DialogContentText>
         </DialogContent>
-
         <DialogActions sx={{ px: 3, pb: 2.5, flexWrap: 'wrap' }}>
           <Button
             onClick={() => executeAction(pendingAction)}
@@ -536,7 +500,6 @@ export function LoginModal({
           >
             Salir del formulario
           </Button>
-
           <Button
             autoFocus
             onClick={() => setPendingAction(null)}
@@ -556,7 +519,6 @@ export function LoginModal({
           </Button>
         </DialogActions>
       </Dialog>
-
       {isOpen && recoveryOpen && (
         <ForgotPasswordModal
           open
@@ -564,7 +526,6 @@ export function LoginModal({
           isDark={isDark}
         />
       )}
-
       {/* Notificaciones globales de validación */}
       <NotificacionesContainer notificaciones={notificaciones} />
     </>
