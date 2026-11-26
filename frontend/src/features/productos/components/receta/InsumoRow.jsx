@@ -1,25 +1,29 @@
 import { Box, IconButton, TableCell, TableRow, Typography, useTheme } from '@mui/material'
 import { IconPencil, IconTrash } from '@tabler/icons-react'
 import { CELL_SX } from '../comunes/tablaEstilos'
+import { etiquetaOrigen } from './recetaUtils'
 
 // Fila de solo lectura que muestra un insumo de la receta
 export default function InsumoRow({ insumo, onEdit, onDelete, showActions }) {
   const theme = useTheme()
   const textoSx = { color: theme.palette.text.primary }
   const botonSx = { width: 28, height: 28 }
+  const origen = insumo.origen ?? 'INSUMO'
+  const idComp = insumo.idComponente ?? insumo.idInsumo
+  const nombre = insumo.nombre ?? insumo.insumo
 
   return (
     <TableRow sx={{ '&:hover': { bgcolor: theme.palette.action.hover } }}>
-      {/* ID del producto */}
+      {/* Origen */}
       <TableCell sx={CELL_SX}>
         <Typography variant="body1" sx={textoSx}>
-          {insumo.idProducto}
+          {etiquetaOrigen(origen)}
         </Typography>
       </TableCell>
-      {/* ID del insumo y nombre */}
+      {/* ID del componente y nombre */}
       <TableCell sx={CELL_SX}>
         <Typography variant="body1" sx={textoSx}>
-          {`${insumo.idInsumo} / ${insumo.insumo}`}
+          {`${idComp} / ${nombre}`}
         </Typography>
       </TableCell>
       {/* Unidad de medida (va antes que la cantidad) */}

@@ -9,7 +9,8 @@ import TarjetaDetalle from './detalle/TarjetaDetalle'
 import HistorialProducto from './detalle/HistorialProducto'
 import RecetaColapsable from './detalle/RecetaColapsable'
 import { gridCamposSx } from './detalle/estilos'
-import { insumosEjemplo, historialEjemplo } from './detalle/datosEjemplo'
+import { historialEjemplo } from './detalle/datosEjemplo'
+import { filasDesdeApi } from './receta/recetaUtils'
 import { formatPrice } from '../services/productos.service'
 
 export default function DetalleProductoModal({ open, onClose, producto }) {
@@ -25,7 +26,7 @@ export default function DetalleProductoModal({ open, onClose, producto }) {
   const codigoProducto = producto?.codigo ?? '—'
   const estado = producto?.estado ?? 'Activo'
 
-  const insumos = Array.isArray(producto?.insumos) ? producto.insumos : insumosEjemplo(codigoProducto)
+  const insumos = filasDesdeApi(producto?.receta)
   const historial = Array.isArray(producto?.historial) ? producto.historial : historialEjemplo(producto?.estado)
 
   return (
