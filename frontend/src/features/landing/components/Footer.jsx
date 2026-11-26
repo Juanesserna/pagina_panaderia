@@ -2,7 +2,7 @@ import { Box, Typography, IconButton } from '@mui/material'
 import { IconBrandInstagram, IconBrandFacebook, IconBrandX, IconMapPin, IconPhone, IconMail, IconClock } from '@tabler/icons-react'
 import { ImageWithFallback } from '@shared/components/ImageWithFallback'
 import { fonts } from '@app/theme/colors'
-import logoImg from '@assets/img/logo_claro.png'
+import logoImg from '@assets/img/logo_claro.webp'
 
 const navLinks = ['Carta', 'Nosotros', 'Pedidos', 'Eventos especiales', 'Blog']
 

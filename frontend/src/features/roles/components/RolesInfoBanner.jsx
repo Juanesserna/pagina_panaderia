@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
-import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined'
+import { ShieldCheck } from 'lucide-react'
+import { alpha } from '@mui/material/styles'
 
 export default function RolesInfoBanner() {
   return (
@@ -10,33 +11,50 @@ export default function RolesInfoBanner() {
         alignItems: 'center',
         gap: 1,
         px: 2,
-        py: 1.5,
-        my: 0,
-        bgcolor: 'background.paper',
-        borderLeft: '1px solid',
-        borderRight: '1px solid',
-        borderBottom: '1px solid',
+        py: 1,
+        borderBottom: 1,
         borderColor: 'divider',
-        borderRadius: 0,
-        borderTopLeftRadius: 12,
-        borderTopRightRadius: 12,
+        bgcolor: theme =>
+          alpha(theme.palette.primary.main, 0.035),
       }}
     >
-      <TuneOutlinedIcon
+      <Box
         sx={{
-          color: 'primary.main',
+          width: 28,
+          height: 28,
           flexShrink: 0,
+          display: 'grid',
+          placeItems: 'center',
+          borderRadius: 1.5,
+          color: 'primary.main',
+          bgcolor: theme =>
+            alpha(theme.palette.primary.main, 0.1),
         }}
-      />
+      >
+        <ShieldCheck size={17} />
+      </Box>
 
       <Typography
-        variant="body2"
+        component="div"
         sx={{
+          fontSize: 12,
+          lineHeight: 1.5,
           color: 'text.secondary',
         }}
       >
-        Un rol desactivado deja de aparecer como opción al crear o editar usuarios, pero los
-        usuarios que ya lo tienen asignado conservan su rol y sus módulos.
+        <Box
+          component="span"
+          sx={{
+            fontWeight: 600,
+            color: 'text.primary',
+          }}
+        >
+          Roles protegidos:
+        </Box>
+        {' '}
+        Los roles predeterminados no se pueden eliminar
+        ni desactivar. Los roles personalizados están
+        sujetos a sus usuarios asignados.
       </Typography>
     </Box>
   )

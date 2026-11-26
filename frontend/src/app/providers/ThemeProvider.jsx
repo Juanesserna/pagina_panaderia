@@ -30,7 +30,7 @@ export default function ThemeProvider({ children }) {
   const favicon = document.querySelector('link[rel="icon"]')
 
   if (favicon) {
-    favicon.href = mode === 'dark' ? '/logo_oscuro.png' : '/logo_claro.png'
+    favicon.href = mode === 'dark' ? '/favicon_oscuro.png' : '/favicon_claro.png'
   }
   }, [mode])
 

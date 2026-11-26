@@ -12,7 +12,7 @@ import {
 import { ImageWithFallback } from '@shared/components/ImageWithFallback'
 import { getColors, fonts } from '@app/theme/colors'
 import { ROUTES } from '@app/router/routes' // ← ajusta esta ruta
-import logoImg from '@assets/img/logo_claro.png'
+import logoImg from '@assets/img/logo_claro.webp'
 
 const links = [
   { label: 'Catálogo', to: ROUTES.CATALOGO },

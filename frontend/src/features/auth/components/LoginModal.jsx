@@ -1,247 +1,533 @@
-// src/features/auth/components/LoginModal.jsx
-import { useState } from 'react'
-import { Dialog, Box, Typography, IconButton, TextField, InputAdornment, Button, Tabs, Tab } from '@mui/material'
-import { IconX, IconUserCircle, IconLock, IconMail, IconEye, IconEyeOff, IconId, IconPhone } from '@tabler/icons-react'
-import { ImageWithFallback } from '@shared/components/ImageWithFallback'
+import { useEffect, useState } from 'react'
+import {
+  Box,
+  Typography,
+  Button,
+  MenuItem,
+  Checkbox,
+  FormControl,
+  FormHelperText,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+} from '@mui/material'
+import {
+  IconUserCircle,
+  IconMail,
+  IconId,
+  IconPhone,
+  IconAlertTriangle,
+} from '@tabler/icons-react'
 import { getColors, fonts } from '@app/theme/colors'
-import logoImg from '@assets/img/logo_claro.png'
-
-export function LoginModal({ isOpen, onClose, onSuccess, isDark }) {
+import { NotificacionesContainer, useNotificaciones } from '@shared/notifications'
+import useAuthForm, {
+  LOGIN_FIELDS,
+  REGISTER_FIELDS,
+} from '../hooks/useAuthForm'
+import {
+  DOC_TYPES,
+  NUMERIC_DOCS,
+  EMAIL_MAX_LENGTH,
+} from '../utils/authValidations'
+import AuthLayout from './AuthLayout'
+import AuthField from './AuthField'
+import PasswordRequirements from './PasswordRequirements'
+import TermsDialog from './TermsDialog'
+import { ForgotPasswordModal } from './ForgotPasswordModal'
+const grid2 = {
+  display: 'grid',
+  gridTemplateColumns: {
+    xs: 'minmax(0, 1fr)',
+    sm: 'repeat(2, minmax(0, 1fr))',
+  },
+  gap: 1,
+}
+const CONSENTS = [
+  {
+    name: 'acceptTerms',
+    text: 'He leído y acepto los',
+    link: 'términos y condiciones.',
+    type: 'terms',
+  },
+  {
+    name: 'acceptPrivacy',
+    text: 'Autorizo el tratamiento de mis datos conforme a la',
+    link: 'política de tratamiento de datos personales.',
+    type: 'privacy',
+  },
+]
+export function LoginModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  isDark,
+}) {
   const [mode, setMode] = useState('login')
-  const [showPwd, setShowPwd] = useState(false)
-  const [showConfirmPwd, setShowConfirmPwd] = useState(false)
-  const [form, setForm] = useState({
-    nitCedula: '',
-    name: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: '',
-  })
-
+  const [recoveryOpen, setRecoveryOpen] = useState(false)
+  const [documentOpen, setDocumentOpen] = useState(null)
+  const [pendingAction, setPendingAction] = useState(null)
+  const [formVersion, setFormVersion] = useState(0)
+  const register = mode === 'register'
   const c = getColors(isDark)
-  const isRegister = mode === 'register'
-
+  const auth = useAuthForm({
+    fields: register ? REGISTER_FIELDS : LOGIN_FIELDS,
+    mode,
+  })
+  const { notificaciones, mostrarNotificacion } = useNotificaciones()
+  const { notice, setNotice } = auth
+  // Reutiliza las notificaciones del aplicativo y consume cada aviso.
+  useEffect(() => {
+    if (!notice) return
+    mostrarNotificacion('error', 'Verifica la información', notice)
+    setNotice('')
+  }, [notice, setNotice, mostrarNotificacion])
+  const warningColor = isDark ? '#FFB74D' : '#986000'
   const textColor = isDark ? '#F2E9DD' : '#4A2E17'
-  const mutedColor = isDark ? 'rgba(242,233,221,0.55)' : 'rgba(74,46,23,0.5)'
-  const paperBg = isDark ? '#2A1D16' : '#FFFFFF'
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    // TODO: conectar con el service real de auth (features/auth/services)
-    if (onSuccess) onSuccess()
-    else onClose()
-  }
-
-  // Inputs sin fondo, solo con línea inferior
-  const fieldSx = {
-    '& .MuiInputBase-root': {
-      fontFamily: fonts.sans,
-      fontSize: 14,
-      color: textColor,
+  const mutedColor = isDark ? '#C4B5A6' : '#796655'
+  const paperBg = isDark ? '#2A1D16' : '#FFFCF8'
+  const primaryColor = isDark ? c.brand : '#A65B2B'
+  const fieldProps = { auth, isDark }
+  const linkSx = {
+    color: primaryColor,
+    fontFamily: fonts.sans,
+    textTransform: 'none',
+    fontWeight: 600,
+    textDecoration: 'underline',
+    minWidth: 0,
+    p: 0,
+    verticalAlign: 'baseline',
+    '&:hover': {
       bgcolor: 'transparent',
-      '&:before': { borderBottom: `1px solid ${c.accentSoft}` },
-      '&:hover:not(.Mui-disabled):before': { borderBottom: `1px solid ${c.accent}` },
-      '&:after': { borderBottom: `2px solid ${c.accent}` },
+      textDecoration: 'underline',
     },
-    '& .MuiInputBase-input': {
-      py: 1,
-      '&::placeholder': { color: mutedColor, opacity: 0.7 },
-      // Evita el fondo azul/amarillo del autocompletado del navegador
-      '&:-webkit-autofill': {
-        WebkitBoxShadow: `0 0 0 100px ${paperBg} inset`,
-        WebkitTextFillColor: textColor,
-        caretColor: textColor,
-      },
-    },
-    '& .MuiInputLabel-root': { fontFamily: fonts.sans, fontSize: 14, color: mutedColor },
-    '& .MuiInputLabel-root.Mui-focused': { color: c.accent },
   }
-
+  // Ejecuta una acción después de descartar el formulario.
+  const executeAction = (action) => {
+    auth.resetForm()
+    setFormVersion((prev) => prev + 1)
+    setPendingAction(null)
+    if (action === 'close') {
+      onClose()
+      return
+    }
+    if (action === 'recovery') {
+      setRecoveryOpen(true)
+      return
+    }
+    setRecoveryOpen(false)
+    setMode(action)
+  }
+  // Solicita confirmación únicamente si existen cambios.
+  const requestAction = (action, dirty = auth.isDirty) => {
+    if (auth.submitting || (!recoveryOpen && action === mode)) return
+    if (dirty) {
+      setPendingAction(action)
+      return
+    }
+    executeAction(action)
+  }
+  const handleSubmit = (event) => {
+    return auth.handleSubmit(event, async () => {
+      // Flujo simulado existente.
+      // Pendiente de conexión con el backend.
+      if (onSuccess) {
+        await onSuccess()
+      } else {
+        onClose()
+      }
+    })
+  }
   return (
-    <Dialog
-      open={isOpen}
-      onClose={onClose}
-      maxWidth="xs"
-      fullWidth
-      PaperProps={{ sx: { bgcolor: paperBg, borderRadius: 1, border: `1px solid ${c.accentSoft}` } }}
-    >
-      <Box sx={{ height: 3, background: `linear-gradient(90deg, ${c.brand}, ${c.accent})` }} />
-
-      <Box sx={{ p: 4.5, pb: 4, position: 'relative' }}>
-        <IconButton
-          onClick={onClose}
-          sx={{ position: 'absolute', top: 12, right: 12, color: mutedColor, '&:hover': { color: c.accent } }}
-        >
-          <IconX size={18} stroke={1.5} />
-        </IconButton>
-
-        {/* Header */}
-        <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <Box sx={{ mx: 'auto', mb: 1.75, display: 'flex', justifyContent: 'center' }}>
-            <ImageWithFallback
-              src={logoImg}
-              alt="Al Horno"
-              style={{ height: 64, width: 'auto', objectFit: 'contain', borderRadius: '50%', boxShadow: '0 2px 12px rgba(23,17,13,0.15)' }}
-            />
-          </Box>
-          <Typography sx={{ fontFamily: fonts.serif, fontSize: 28, fontWeight: 300, color: textColor, mb: 0.75 }}>
-            {isRegister ? 'Crear cuenta' : 'Bienvenido de vuelta'}
-          </Typography>
-          <Typography sx={{ fontFamily: fonts.sans, fontSize: 13, fontWeight: 300, color: mutedColor }}>
-            {isRegister ? 'Únete a la familia Al Horno' : 'Accede a tu cuenta para gestionar pedidos'}
-          </Typography>
-        </Box>
-
-        {/* Tabs login / registro */}
-        <Tabs
-          value={mode}
-          onChange={(_, v) => setMode(v)}
-          variant="fullWidth"
+    <>
+      <AuthLayout
+        open={isOpen && !recoveryOpen}
+        onClose={() => requestAction('close')}
+        title={
+          register
+            ? 'Crea tu cuenta'
+            : 'Bienvenido de vuelta'
+        }
+        description={
+          register
+            ? 'Regístrate y disfruta de todo lo que Al Horno tiene para ti.'
+            : 'Ingresa tus credenciales para acceder a tu cuenta.'
+        }
+        isDark={isDark}
+        submitting={auth.submitting}
+        wide={register}
+      >
+        <Box
+          key={`${mode}-${formVersion}`}
+          component="form"
+          noValidate
+          onSubmit={handleSubmit}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape' && !event.defaultPrevented && !documentOpen && !pendingAction) {
+              event.preventDefault()
+              requestAction('close')
+            }
+          }}
           sx={{
-            mb: 3,
-            minHeight: 0,
-            bgcolor: isDark ? 'rgba(242,233,221,0.05)' : '#F0E8DC',
-            borderRadius: 1,
-            p: 0.4,
-            '& .MuiTabs-indicator': { display: 'none' },
-            '& .MuiTab-root': {
-              minHeight: 36,
-              borderRadius: 0.5,
-              fontFamily: fonts.sans,
-              fontSize: 12,
-              fontWeight: 500,
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
-              color: mutedColor,
+            display: 'flex',
+            flexDirection: 'column',
+            minWidth: 0,
+            gap: register ? 0.75 : 2,
+            animation: 'authEnter 300ms ease-out both',
+            '@keyframes authEnter': {
+              from: { opacity: 0, transform: 'translateY(8px)' },
+              to: { opacity: 1, transform: 'translateY(0)' },
             },
-            '& .Mui-selected': { bgcolor: c.brand, color: `${c.buttonText} !important` },
+            '@media (prefers-reduced-motion: reduce)': {
+              animation: 'none',
+            },
           }}
         >
-          <Tab value="login" label="Iniciar sesión" />
-          <Tab value="register" label="Registrarse" />
-        </Tabs>
-
-        {/* Formulario */}
-        <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          {isRegister && (
+          {/* Información personal del registro */}
+          {register && (
             <>
-              <TextField
-                variant="standard"
-                label="NIT / Cédula"
-                placeholder="Número de identificación"
-                value={form.nitCedula}
-                onChange={(e) => setForm({ ...form, nitCedula: e.target.value })}
-                sx={fieldSx}
-                InputProps={{ startAdornment: <InputAdornment position="start"><IconId size={16} stroke={1.5} color={c.accentSoft} /></InputAdornment> }}
-              />
-              <TextField
-                variant="standard"
-                label="Nombre completo"
-                placeholder="Tu nombre"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                sx={fieldSx}
-                InputProps={{ startAdornment: <InputAdornment position="start"><IconUserCircle size={16} stroke={1.5} color={c.accentSoft} /></InputAdornment> }}
-              />
+              <Box sx={grid2}>
+                <AuthField
+                  {...fieldProps}
+                  name="documentType"
+                  label="Tipo de documento"
+                  select
+                >
+                  {DOC_TYPES.map(([id, label]) => (
+                    <MenuItem key={id} value={id}>
+                      {label}
+                    </MenuItem>
+                  ))}
+                </AuthField>
+                <AuthField
+                  {...fieldProps}
+                  name="documentNumber"
+                  label="Número de documento"
+                  icon={IconId}
+                  disabled={!auth.form.documentType}
+                  inputProps={{
+                    inputMode: NUMERIC_DOCS.includes(
+                      auth.form.documentType
+                    )
+                      ? 'numeric'
+                      : 'text',
+                  }}
+                />
+              </Box>
+              <Box sx={grid2}>
+                <AuthField
+                  {...fieldProps}
+                  name="name"
+                  label="Nombre completo"
+                  icon={IconUserCircle}
+                  autoComplete="name"
+                  inputProps={{ maxLength: 80 }}
+                />
+                <AuthField
+                  {...fieldProps}
+                  name="phone"
+                  label="Celular"
+                  icon={IconPhone}
+                  type="tel"
+                  autoComplete="tel-national"
+                  inputProps={{
+                    inputMode: 'numeric',
+                    maxLength: 10,
+                  }}
+                />
+              </Box>
             </>
           )}
-
-          <TextField
-            variant="standard"
-            type="email"
+          {/* Credenciales compartidas */}
+          <AuthField
+            {...fieldProps}
+            name="email"
             label="Correo electrónico"
-            placeholder="tu@correo.com"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            sx={fieldSx}
-            InputProps={{ startAdornment: <InputAdornment position="start"><IconMail size={16} stroke={1.5} color={c.accentSoft} /></InputAdornment> }}
+            icon={IconMail}
+            type="email"
+            autoComplete={register ? 'email' : 'username'}
+            inputProps={{ maxLength: EMAIL_MAX_LENGTH }}
           />
-
-          {isRegister && (
-            <TextField
-              variant="standard"
-              type="tel"
-              label="Teléfono"
-              placeholder="+57 300 000 0000"
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              sx={fieldSx}
-              InputProps={{ startAdornment: <InputAdornment position="start"><IconPhone size={16} stroke={1.5} color={c.accentSoft} /></InputAdornment> }}
+          <Box
+            sx={
+              register
+                ? grid2
+                : { display: 'grid', gap: 1.5 }
+            }
+          >
+            <AuthField
+              {...fieldProps}
+              name="password"
+              label="Contraseña"
+              type="password"
+              autoComplete={
+                register
+                  ? 'new-password'
+                  : 'current-password'
+              }
             />
-          )}
-
-          <TextField
-            variant="standard"
-            type={showPwd ? 'text' : 'password'}
-            label="Contraseña"
-            placeholder="••••••••"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            sx={fieldSx}
-            InputProps={{
-              startAdornment: <InputAdornment position="start"><IconLock size={16} stroke={1.5} color={c.accentSoft} /></InputAdornment>,
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton size="small" onClick={() => setShowPwd(!showPwd)} sx={{ color: mutedColor }}>
-                    {showPwd ? <IconEyeOff size={16} stroke={1.5} /> : <IconEye size={16} stroke={1.5} />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-
-          {isRegister && (
-            <TextField
-              variant="standard"
-              type={showConfirmPwd ? 'text' : 'password'}
-              label="Confirmar contraseña"
-              placeholder="••••••••"
-              value={form.confirmPassword}
-              onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-              sx={fieldSx}
-              InputProps={{
-                startAdornment: <InputAdornment position="start"><IconLock size={16} stroke={1.5} color={c.accentSoft} /></InputAdornment>,
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => setShowConfirmPwd(!showConfirmPwd)} sx={{ color: mutedColor }}>
-                      {showConfirmPwd ? <IconEyeOff size={16} stroke={1.5} /> : <IconEye size={16} stroke={1.5} />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
-          )}
-
-          {!isRegister && (
-            <Box sx={{ textAlign: 'right', mt: -1 }}>
-              <Typography component="a" href="#" sx={{ fontFamily: fonts.sans, fontSize: 12, color: c.accent, textDecoration: 'none' }}>
+            {register && (
+              <AuthField
+                {...fieldProps}
+                name="confirmPassword"
+                label="Confirmar contraseña"
+                type="password"
+                autoComplete="new-password"
+              />
+            )}
+          </Box>
+          {register ? (
+            <>
+              <PasswordRequirements
+                password={auth.form.password}
+                isDark={isDark}
+              />
+              {/* Autorizaciones independientes */}
+              <Box>
+                {CONSENTS.map(({ name, text, link, type }) => {
+                  const error =
+                    auth.touched[name] && auth.errors[name]
+                  return (
+                    <FormControl
+                      key={name}
+                      error={Boolean(error)}
+                      fullWidth
+                    >
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: 0.5,
+                        }}
+                      >
+                        <Checkbox
+                          id={`auth-${name}`}
+                          checked={auth.form[name]}
+                          disabled={auth.submitting}
+                          onChange={(event) => {
+                            auth.updateField(
+                              name,
+                              event.target.checked
+                            )
+                            auth.touch(name)
+                          }}
+                          sx={{
+                            p: 0.5,
+                            color: error
+                              ? 'error.main'
+                              : mutedColor,
+                            '&.Mui-checked': {
+                              color: primaryColor,
+                            },
+                          }}
+                        />
+                        <Box sx={{ pt: 0.5 }}>
+                          <Typography
+                            component="label"
+                            htmlFor={`auth-${name}`}
+                            sx={{
+                              fontFamily: fonts.sans,
+                              fontSize: 12,
+                              lineHeight: 1.6,
+                              color: textColor,
+                            }}
+                          >
+                            {text}{' '}
+                          </Typography>
+                          <Button
+                            type="button"
+                            onClick={() => setDocumentOpen(type)}
+                            disabled={auth.submitting}
+                            sx={{
+                              ...linkSx,
+                              display: 'inline',
+                              fontSize: 12,
+                              lineHeight: 1.6,
+                              textAlign: 'left',
+                            }}
+                          >
+                            {link}
+                          </Button>
+                        </Box>
+                      </Box>
+                      {error && (
+                        <FormHelperText sx={{ ml: 4.5 }}>
+                          {error}
+                        </FormHelperText>
+                      )}
+                    </FormControl>
+                  )
+                })}
+              </Box>
+            </>
+          ) : (
+            <Box sx={{ textAlign: 'right' }}>
+              <Button
+                type="button"
+                disabled={auth.submitting}
+                onClick={() => requestAction('recovery')}
+                sx={{ ...linkSx, fontSize: 12 }}
+              >
                 ¿Olvidaste tu contraseña?
-              </Typography>
+              </Button>
             </Box>
           )}
-
+          {/* Acción principal */}
           <Button
             type="submit"
+            variant="contained"
             fullWidth
-            sx={{ mt: 1, bgcolor: c.accent, color: c.buttonText, py: 1.6, fontSize: 13, '&:hover': { bgcolor: c.brandHover } }}
+            disabled={auth.submitting}
+            sx={{
+              minHeight: 46,
+              borderRadius: 2,
+              bgcolor: primaryColor,
+              color: '#FFFFFF',
+              fontFamily: fonts.sans,
+              fontSize: 14,
+              fontWeight: 600,
+              textTransform: 'none',
+              boxShadow: 'none',
+              mt: register ? 0 : 0.5,
+              '&:hover': {
+                bgcolor: isDark ? c.brandHover : '#8C4821',
+                boxShadow: 'none',
+              },
+            }}
           >
-            {isRegister ? 'Crear cuenta' : 'Iniciar sesión'}
+            {auth.submitting
+              ? 'Procesando...'
+              : register
+                ? 'Crear cuenta'
+                : 'Iniciar sesión'}
           </Button>
-
-          <Typography sx={{ fontFamily: fonts.sans, fontSize: 12, color: mutedColor, textAlign: 'center' }}>
-            {isRegister ? '¿Ya tienes cuenta?' : '¿No tienes cuenta?'}{' '}
-            <Box
-              component="button"
+          <Typography
+            sx={{
+              fontFamily: fonts.sans,
+              fontSize: 12,
+              color: mutedColor,
+              textAlign: 'center',
+              mt: register ? 0 : 0.5,
+            }}
+          >
+            {register
+              ? '¿Ya tienes una cuenta?'
+              : '¿Todavía no tienes una cuenta?'}{' '}
+            <Button
               type="button"
-              onClick={() => setMode(isRegister ? 'login' : 'register')}
-              sx={{ background: 'none', border: 'none', cursor: 'pointer', color: c.accent, fontFamily: fonts.sans, fontSize: 12, p: 0, textDecoration: 'underline' }}
+              disabled={auth.submitting}
+              onClick={() =>
+                requestAction(register ? 'login' : 'register')
+              }
+              sx={{ ...linkSx, fontSize: 12 }}
             >
-              {isRegister ? 'Inicia sesión' : 'Regístrate'}
-            </Box>
+              {register ? 'Inicia sesión' : 'Regístrate'}
+            </Button>
           </Typography>
         </Box>
-      </Box>
-    </Dialog>
+      </AuthLayout>
+      {/* Consulta de documentos sin perder el formulario */}
+      <TermsDialog
+        open={Boolean(documentOpen)}
+        type={documentOpen ?? 'terms'}
+        onClose={() => setDocumentOpen(null)}
+        isDark={isDark}
+      />
+      {/* Confirmación de cambios sin guardar */}
+      <Dialog
+        open={Boolean(pendingAction)}
+        disableEscapeKeyDown
+        maxWidth="xs"
+        fullWidth
+        aria-labelledby="auth-discard-title"
+        aria-describedby="auth-discard-description"
+        slotProps={{
+          paper: {
+            sx: {
+              bgcolor: paperBg,
+              borderRadius: 3,
+              borderTop: '4px solid #ED9B25',
+            },
+          },
+        }}
+      >
+        <DialogTitle
+          id="auth-discard-title"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            color: textColor,
+            fontFamily: fonts.sans,
+            fontSize: 18,
+            fontWeight: 600,
+          }}
+        >
+          <IconAlertTriangle
+            size={25}
+            color={isDark ? '#FFB74D' : '#B76E00'}
+          />
+          ¿Deseas abandonar el formulario?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText
+            id="auth-discard-description"
+            sx={{
+              fontFamily: fonts.sans,
+              fontSize: 14,
+              lineHeight: 1.7,
+              color: mutedColor,
+            }}
+          >
+            Si sales del formulario, perderás la información que has ingresado.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5, flexWrap: 'wrap' }}>
+          <Button
+            onClick={() => executeAction(pendingAction)}
+            variant="outlined"
+            sx={{
+              color: warningColor,
+              borderColor: warningColor,
+              textTransform: 'none',
+              borderRadius: 2,
+              '&:hover': {
+                borderColor: warningColor,
+                bgcolor: isDark ? 'rgba(255,183,77,0.08)' : '#FFF4E2',
+              },
+            }}
+          >
+            Salir del formulario
+          </Button>
+          <Button
+            autoFocus
+            onClick={() => setPendingAction(null)}
+            variant="contained"
+            sx={{
+              bgcolor: primaryColor,
+              color: '#FFFFFF',
+              textTransform: 'none',
+              borderRadius: 2,
+              boxShadow: 'none',
+              '&:hover': {
+                bgcolor: isDark ? c.brandHover : '#8C4821',
+              },
+            }}
+          >
+            Permanecer aquí
+          </Button>
+        </DialogActions>
+      </Dialog>
+      {isOpen && recoveryOpen && (
+        <ForgotPasswordModal
+          open
+          onClose={(dirty) => requestAction('login', dirty)}
+          isDark={isDark}
+        />
+      )}
+      {/* Notificaciones globales de validación */}
+      <NotificacionesContainer notificaciones={notificaciones} />
+    </>
   )
 }

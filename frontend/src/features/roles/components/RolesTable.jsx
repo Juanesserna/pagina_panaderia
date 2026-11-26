@@ -1,216 +1,383 @@
-import { useState } from 'react'
-import Table from '@mui/material/Table'
-import TableHead from '@mui/material/TableHead'
-import TableBody from '@mui/material/TableBody'
-import TableRow from '@mui/material/TableRow'
-import TableCell from '@mui/material/TableCell'
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
-import IconButton from '@mui/material/IconButton'
-import Tooltip from '@mui/material/Tooltip'
-import Switch from '@mui/material/Switch'
-import Dialog from '@mui/material/Dialog'
-import DialogTitle from '@mui/material/DialogTitle'
-import DialogContent from '@mui/material/DialogContent'
-import DialogActions from '@mui/material/DialogActions'
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
-import { Pencil, Trash } from 'lucide-react'
-import { Button, StatusBadge } from '@shared/ui'
-import { AVATAR_PALETTE, colorFromName } from '@shared/utils/colors'
-import { esEliminable } from '../services/rolesService'
+import { useRef, useState } from 'react'
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
+  Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Tooltip,
+  Typography,
+} from '@mui/material'
 
-const ROLE_TEXT_COLORS = {
-  Gerente: AVATAR_PALETTE[0].color,
-  Panadero: AVATAR_PALETTE[2].color,
-  Cliente: AVATAR_PALETTE[1].color,
-  Vendedor: AVATAR_PALETTE[0].color,
-}
+import { Eye, Pencil, Trash2, SearchX } from 'lucide-react'
+import EstadoSwitch from '@shared/ui/EstadoSwitch'
 
-function colorForRole(nombre) {
-  return ROLE_TEXT_COLORS[nombre] ?? colorFromName(nombre).color
-}
+import {
+  GERENTE_ID,
+  esEliminable,
+  esRolSistema,
+  esDesactivable,
+} from '../services/rolesService'
+
+const columnas = [
+  { nombre: 'Rol', align: 'left' },
+  { nombre: 'Usuarios', align: 'center' },
+  { nombre: 'Estado', align: 'left' },
+  { nombre: 'Acciones', align: 'right' },
+]
 
 const headCellSx = {
-  typography: 'overline',
+  py: 1,
+  px: 2,
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: 0.5,
+  textTransform: 'uppercase',
   color: 'text.secondary',
+  bgcolor: 'action.hover',
+  whiteSpace: 'nowrap',
+}
+
+const cellSx = {
+  py: 0.85,
+  px: 2,
+  fontSize: 13,
+}
+
+// Botón de acción con descripción y soporte para estados bloqueados.
+function Accion({
+  titulo,
+  icono: Icono,
+  onClick,
+  disabled = false,
+  color = 'text.secondary',
+}) {
+  return (
+    <Tooltip title={titulo}>
+      <span>
+        <IconButton
+          size="small"
+          aria-label={titulo}
+          disabled={disabled}
+          onClick={onClick}
+          sx={{ color, width: 32, height: 32 }}
+        >
+          <Icono size={17} />
+        </IconButton>
+      </span>
+    </Tooltip>
+  )
+}
+
+// El Gerente permanece activo. Los demás roles pueden
+// cambiar de estado respetando sus usuarios asociados.
+function puedeCambiarEstado(rol) {
+  return Number(rol.id) !== GERENTE_ID &&
+    (rol.estado === 'Inactivo' || esDesactivable(rol))
 }
 
 export default function RolesTable({
-  roles,
-  loading,
+  roles = [],
+  loading = false,
+  submitting = false,
   onToggleEstado,
   onVer,
   onEditar,
   onEliminar,
 }) {
-  const [dialogoAbierto, setDialogoAbierto] = useState(false)
   const [rolPendiente, setRolPendiente] = useState(null)
-  const [nuevoEstado, setNuevoEstado] = useState(null)
+  const [procesando, setProcesando] = useState(false)
+  const [errorText, setErrorText] = useState('')
 
-  const handleSolicitarCambio = (rol, quedaraActivo) => {
+  const ejecutando = useRef(false)
+  const ocupado = submitting || procesando
+  const activando = rolPendiente?.estado === 'Inactivo'
+  const accion = activando ? 'Activar' : 'Desactivar'
+
+  function solicitarCambio(rol) {
+    if (ocupado || !puedeCambiarEstado(rol)) return
+
+    setErrorText('')
     setRolPendiente(rol)
-    setNuevoEstado(quedaraActivo)
-    setDialogoAbierto(true)
   }
 
-  const handleConfirmar = () => {
-    if (rolPendiente) {
-      onToggleEstado(rolPendiente.id)
+  function cancelarCambio() {
+    if (ocupado || ejecutando.current) return
+
+    setRolPendiente(null)
+    setErrorText('')
+  }
+
+  async function confirmarCambio() {
+    if (!rolPendiente || ocupado || ejecutando.current) return
+
+    const actual = roles.find(rol => rol.id === rolPendiente.id)
+
+    // Comprueba nuevamente las restricciones antes de guardar.
+    if (
+      !actual ||
+      actual.estado !== rolPendiente.estado ||
+      !puedeCambiarEstado(actual)
+    ) {
+      setErrorText(
+        'El rol cambió o ya no cumple las condiciones. Cancela e intenta nuevamente.'
+      )
+      return
     }
-    setDialogoAbierto(false)
-    setRolPendiente(null)
-    setNuevoEstado(null)
-  }
 
-  const handleCancelar = () => {
-    setDialogoAbierto(false)
-    setRolPendiente(null)
-    setNuevoEstado(null)
-  }
+    ejecutando.current = true
+    setProcesando(true)
+    setErrorText('')
 
-  if (!loading && roles.length === 0) {
-    return (
-      <Box sx={{ py: 6, textAlign: 'center' }}>
-        <Typography variant="body2" color="text.secondary">
-          No se encontraron roles con ese nombre.
-        </Typography>
-      </Box>
-    )
+    try {
+      await onToggleEstado(actual.id)
+      setRolPendiente(null)
+    } catch (error) {
+      setErrorText(
+        error.message || 'No se pudo cambiar el estado del rol.'
+      )
+    } finally {
+      ejecutando.current = false
+      setProcesando(false)
+    }
   }
 
   return (
     <>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell sx={headCellSx}>Rol</TableCell>
-            <TableCell sx={headCellSx}>Activo</TableCell>
-            <TableCell sx={headCellSx} align="right" />
-          </TableRow>
-        </TableHead>
-
-        <TableBody>
-          {roles.map((rol) => {
-            const eliminable = esEliminable(rol)
-            const nombreColor = colorForRole(rol.nombre)
-            const estaActivo = rol.estado === 'Activo'
-
-            return (
-              <TableRow
-                key={rol.id}
-                sx={{ '&:last-child td': { borderBottom: 0 } }}
-              >
-                <TableCell>
-                  <Typography
-                    variant="body1"
-                    sx={{ color: nombreColor }}
-                  >
-                    {rol.nombre}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {rol.codigo}
-                  </Typography>
+      <TableContainer sx={{ width: '100%', overflowX: 'auto', minHeight: 300 }}>
+        <Table
+          size="small"
+          aria-label="Listado de roles"
+          sx={{ minWidth: 560 }}
+        >
+          <TableHead>
+            <TableRow>
+              {columnas.map(({ nombre, align }) => (
+                <TableCell key={nombre} align={align} sx={headCellSx}>
+                  {nombre}
                 </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
 
-                <TableCell>
-                  <Switch
-                    checked={estaActivo}
-                    onChange={(e) =>
-                      handleSolicitarCambio(rol, e.target.checked)
-                    }
-                  />
-                </TableCell>
+          <TableBody>
+            {/* Indicadores de carga */}
+            {loading && Array.from({ length: 6 }, (_, index) => (
+              <TableRow key={`loading-${index}`}>
+                {columnas.map(({ nombre }) => (
+                  <TableCell key={nombre} sx={cellSx}>
+                    <Skeleton variant="rounded" height={28} width="80%" />
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
 
-                <TableCell align="right">
-                  <Tooltip title="Ver detalle">
-                    <IconButton
-                      size="small"
-                      onClick={() => onVer(rol)}
-                      sx={{ color: 'text.secondary' }}
-                    >
-                      <VisibilityOutlinedIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-
-                  <Tooltip title="Editar">
-                    <IconButton
-                      size="small"
-                      onClick={() => onEditar(rol)}
-                      sx={{ color: 'text.secondary' }}
-                    >
-                      <Pencil size={18} />
-                    </IconButton>
-                  </Tooltip>
-
-                  <Tooltip
-                    title={
-                      eliminable
-                        ? 'Eliminar rol'
-                        : 'No se puede eliminar: hay usuarios con este rol'
-                    }
+            {/* Estado vacío */}
+            {!loading && !roles.length && (
+              <TableRow>
+                <TableCell colSpan={4} sx={{ py: 4, textAlign: 'center' }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 1,
+                      color: 'text.secondary',
+                    }}
                   >
-                    <span>
-                      <IconButton
-                        size="small"
-                        disabled={!eliminable}
-                        onClick={() => onEliminar(rol)}
-                        sx={{
-                          color: eliminable ? 'error.main' : undefined,
-                        }}
-                      >
-                        <Trash size={18} />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
+                    <SearchX size={30} />
+                    <Typography fontWeight={600} fontSize={14}>
+                      No se encontraron roles
+                    </Typography>
+                    <Typography variant="caption">
+                      Intenta realizar otra búsqueda.
+                    </Typography>
+                  </Box>
                 </TableCell>
               </TableRow>
-            )
-          })}
-        </TableBody>
-      </Table>
+            )}
 
-      <Dialog open={dialogoAbierto} onClose={handleCancelar}>
-        <DialogTitle>
-          <Typography variant="h6">
-            Cambiar estado del rol
-          </Typography>
+            {!loading && roles.map(rol => {
+              const protegido = esRolSistema(rol)
+              const esGerente = rol.id === GERENTE_ID
+              const activo = rol.estado === 'Activo'
+              const eliminable = esEliminable(rol)
+              const estadoPermitido = puedeCambiarEstado(rol)
+
+              const motivoEstado = esGerente
+                ? 'El rol Gerente debe permanecer activo.'
+                : !estadoPermitido
+                  ? 'No se puede desactivar mientras tenga usuarios activos asignados o sus asignaciones no estén confirmadas.'
+                  : activo ? 'Desactivar rol' : 'Activar rol'
+
+              const motivoEliminar = protegido
+                ? 'Este rol no se puede eliminar.'
+                : !eliminable
+                  ? 'Tiene usuarios asignados o no se han confirmado sus asignaciones.'
+                  : 'Eliminar rol'
+
+              return (
+                <TableRow
+                  key={rol.id}
+                  hover
+                  sx={{ '&:last-child td': { borderBottom: 0 } }}
+                >
+                  {/* Nombre del rol */}
+                  <TableCell sx={cellSx}>
+                    <Typography
+                      fontSize={13}
+                      fontWeight={600}
+                      sx={{ overflowWrap: 'anywhere' }}
+                    >
+                      {rol.nombre}
+                    </Typography>
+                  </TableCell>
+
+                  {/* Usuarios asociados */}
+                  <TableCell sx={cellSx} align="center">
+                    <Tooltip
+                      title={
+                        rol.usuariosAsignados == null ||
+                          rol.usuariosActivos == null
+                          ? 'Asignaciones no disponibles'
+                          : `${rol.usuariosActivos} activos y ${rol.usuariosAsignados - rol.usuariosActivos
+                          } inactivos`
+                      }
+                    >
+                      <Typography component="span" fontSize={13}>
+                        {rol.usuariosAsignados ?? '—'}
+                      </Typography>
+                    </Tooltip>
+                  </TableCell>
+
+                  {/* Estado del rol */}
+                  <TableCell sx={cellSx}>
+                    <EstadoSwitch
+                      activo={activo}
+                      nombre={rol.nombre}
+                      disabled={ocupado || !estadoPermitido}
+                      motivo={motivoEstado}
+                      onChange={() => solicitarCambio(rol)}
+                    />
+                  </TableCell>
+
+                  {/* Acciones disponibles */}
+                  <TableCell sx={cellSx} align="right">
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'flex-end',
+                        alignItems: 'center',
+                        gap: 0.25,
+                      }}
+                    >
+                      <Accion
+                        titulo="Ver detalle"
+                        icono={Eye}
+                        disabled={ocupado}
+                        onClick={() => onVer(rol)}
+                      />
+
+                      <Accion
+                        titulo={esGerente
+                          ? 'El Gerente no se puede modificar.'
+                          : 'Editar rol'}
+                        icono={Pencil}
+                        disabled={ocupado || esGerente}
+                        onClick={() => onEditar(rol)}
+                      />
+
+                      <Accion
+                        titulo={motivoEliminar}
+                        icono={Trash2}
+                        color="error.main"
+                        disabled={ocupado || !eliminable}
+                        onClick={() => onEliminar(rol)}
+                      />
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* Confirmación de cambio de estado */}
+      <Dialog
+        open={Boolean(rolPendiente)}
+        onClose={() => { }}
+        maxWidth="xs"
+        fullWidth
+        aria-labelledby="estado-rol-title"
+        slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+      >
+        <DialogTitle id="estado-rol-title" sx={{ fontWeight: 700 }}>
+          ¿Deseas {accion.toLowerCase()} este rol?
         </DialogTitle>
 
-        <DialogContent sx={{ mt: 1 }}>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            ¿Seguro deseas{' '}
-            <strong>{nuevoEstado ? 'activar' : 'desactivar'}</strong> el rol{' '}
-            <strong>{rolPendiente?.nombre}</strong>?
-          </Typography>
-
-          <Typography variant="body2" color="text.secondary">
-            El estado pasará a:{' '}
-            <StatusBadge
-              variant={nuevoEstado ? 'success' : 'accent'}
-              dot
-            >
-              {nuevoEstado ? 'Activo' : 'Inactivo'}
-            </StatusBadge>
-          </Typography>
-
-          {!nuevoEstado && (
+        <DialogContent>
+          <Typography fontSize={13.5} sx={{ mb: 2 }}>
+            El rol <strong>{rolPendiente?.nombre}</strong>
+            {' '}cambiará su estado a{' '}
             <Typography
-              variant="body2"
-              color="warning.main"
-              sx={{ mt: 2 }}
+              component="span"
+              fontSize="inherit"
+              fontWeight={600}
+              color={activando ? 'success.main' : 'text.secondary'}
             >
-              Al desactivarlo, este rol ya no podrá asignarse a nuevos
-              usuarios.
-            </Typography>
+              {activando ? 'Activo' : 'Inactivo'}
+            </Typography>.
+          </Typography>
+
+          <Alert
+            severity={activando ? 'info' : 'warning'}
+            variant="outlined"
+            sx={{ fontSize: 12.5 }}
+          >
+            {activando
+              ? 'El rol estará disponible para nuevas asignaciones y permitirá reactivar los usuarios asociados.'
+              : 'El rol no podrá asignarse a nuevos usuarios ni permitirá reactivar usuarios asociados. Los registros existentes se conservarán.'}
+          </Alert>
+
+          {errorText && (
+            <Alert severity="error" sx={{ mt: 1.5 }}>
+              {errorText}
+            </Alert>
           )}
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
-          <Button variant="secondary" onClick={handleCancelar}>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button
+            color="inherit"
+            onClick={cancelarCambio}
+            disabled={ocupado}
+            autoFocus
+          >
             Cancelar
           </Button>
-          <Button variant="primary" onClick={handleConfirmar}>
-            Confirmar
+
+          <Button
+            variant="contained"
+            color={activando ? 'primary' : 'warning'}
+            onClick={confirmarCambio}
+            disabled={ocupado}
+            startIcon={procesando
+              ? <CircularProgress size={16} color="inherit" />
+              : undefined}
+          >
+            {procesando ? 'Procesando...' : `${accion} rol`}
           </Button>
         </DialogActions>
       </Dialog>

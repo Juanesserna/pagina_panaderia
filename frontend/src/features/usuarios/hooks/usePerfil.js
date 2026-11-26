@@ -1,37 +1,81 @@
-import { useEffect, useState, useCallback } from 'react'
-import { getUsuarioActual, updateUsuario } from '../services/usuariosService'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  getUsuarioActual,
+  updatePerfil,
+} from '../services/usuariosService'
 
-// Mismo patrón que useUsuarios.js: trae los datos con un servicio async
-// y expone { usuario, loading } a la pantalla.
 export default function usePerfil() {
   const [usuario, setUsuario] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [submitting, setSubmitting] = useState(false)
 
+  const enviando = useRef(false)
+
+  // Consulta la información de la cuenta actual.
   useEffect(() => {
-    let active = true
-    getUsuarioActual().then((data) => {
-      if (active) {
-        setUsuario(data)
-        setLoading(false)
+    let activo = true
+
+    async function cargarPerfil() {
+      try {
+        const data = await getUsuarioActual()
+
+        if (!data) {
+          throw new Error('No se encontró información del perfil.')
+        }
+
+        if (activo) {
+          setUsuario(data)
+          setError(null)
+        }
+      } catch (error) {
+        if (activo) {
+          setError(error.message || 'No se pudo cargar el perfil.')
+        }
+      } finally {
+        if (activo) {
+          setLoading(false)
+        }
       }
-    })
+    }
+
+    cargarPerfil()
+
     return () => {
-      active = false
+      activo = false
     }
   }, [])
 
-  // Mismo patrón que editarUsuario() en useUsuarios.js: reutiliza el
-  // updateUsuario() que ya existe en el servicio (el mismo que usa el
-  // formulario de edición de Usuarios). No se crea ninguna función nueva
-  // en el servicio. Solo se usa para email y teléfono, los únicos campos
-  // editables del perfil.
-  const editarPerfil = useCallback(
-    async (data) => {
-      const actualizado = await updateUsuario(usuario.id, data)
-      setUsuario(actualizado)
-    },
-    [usuario]
-  )
+  // Actualiza exclusivamente los datos de contacto.
+  const editarPerfil = useCallback(async (data) => {
+    if (!usuario?.id) {
+      throw new Error('No hay una cuenta disponible.')
+    }
 
-  return { usuario, loading, editarPerfil }
+    if (enviando.current) {
+      throw new Error('Ya existe una actualización en proceso.')
+    }
+
+    enviando.current = true
+    setSubmitting(true)
+
+    try {
+      const actualizado = await updatePerfil(data)
+
+      setUsuario(actualizado)
+
+      return actualizado
+    } finally {
+      enviando.current = false
+      setSubmitting(false)
+    }
+  }, [usuario?.id])
+
+  return {
+    usuario,
+    loading,
+    error,
+    submitting,
+    editarPerfil,
+  }
 }

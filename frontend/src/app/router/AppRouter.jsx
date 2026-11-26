@@ -15,6 +15,8 @@ const MiPerfilPage = lazy(() => import('@features/usuarios/pages/MiPerfilPage'))
 // Rutas protegidas
 const DashboardPage = lazy(() => import('@features/dashboard/pages/DashboardPage'))
 const CategoriasPage = lazy(() => import('@features/categorias/pages/CategoriasPage'))
+const ClientesPage = lazy(() => import('@features/clientes/pages/ClientesPage'))
+const EmpleadosPage = lazy(() => import('@features/empleados/pages/EmpleadosPage'))
 const ComprasPage = lazy(() => import('@features/compras/pages/ComprasPage'))
 const InsumosPage = lazy(() => import('@features/insumos/pages/InsumosPage'))
 const ProduccionPage = lazy(() => import('@features/produccion/pages/ProduccionPage'))
@@ -49,6 +51,8 @@ export default function AppRouter() {
               <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
               <Route path={ROUTES.PERFIL} element={<MiPerfilPage />} />
               <Route path={ROUTES.CATEGORIAS} element={<CategoriasPage />} />
+              <Route path={ROUTES.CLIENTES} element={<ClientesPage />} />
+              <Route path={ROUTES.EMPLEADOS} element={<EmpleadosPage />} />
               <Route path={ROUTES.COMPRAS} element={<ComprasPage />} />
               <Route path={ROUTES.INSUMOS} element={<InsumosPage />} />
               <Route path={ROUTES.PRODUCCION} element={<ProduccionPage />} />

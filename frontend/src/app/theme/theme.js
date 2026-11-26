@@ -72,13 +72,9 @@ function buildTheme(mode) {
         },
       },
       MuiOutlinedInput: {
-        defaultProps: {
-          notched: false,
-        },
         styleOverrides: {
           root: {
             borderRadius: 8,
-            overflow: 'hidden',
             backgroundColor: c.surface2,
             fontSize: '0.8125rem',
           },

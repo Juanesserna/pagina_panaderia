@@ -1,337 +1,696 @@
-import { useState } from 'react'
-import Dialog from '@mui/material/Dialog'
-import DialogTitle from '@mui/material/DialogTitle'
-import DialogContent from '@mui/material/DialogContent'
-import DialogActions from '@mui/material/DialogActions'
-import Typography from '@mui/material/Typography'
-import IconButton from '@mui/material/IconButton'
-import Box from '@mui/material/Box'
-import TextField from '@mui/material/TextField'
-import MenuItem from '@mui/material/MenuItem'
-import Button from '@mui/material/Button'
-import InputAdornment from '@mui/material/InputAdornment'
-import CloseIcon from '@mui/icons-material/Close'
-import CreditCardOutlinedIcon from '@mui/icons-material/CreditCardOutlined'
-import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined'
-import MailOutlinedIcon from '@mui/icons-material/MailOutlined'
-import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined'
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
-import Visibility from '@mui/icons-material/Visibility'
-import VisibilityOff from '@mui/icons-material/VisibilityOff'
-import AddIcon from '@mui/icons-material/Add'
-import EditIcon from '@mui/icons-material/Edit'
-import { BRAND } from '@shared/utils/colors'
-import { ROLES, ESTADOS } from '../services/usuariosService'
-import { Pencil } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import {
+  Alert, Autocomplete, Box, Button,
+  CircularProgress, Dialog, DialogTitle,
+  DialogContent, DialogActions, Divider,
+  MenuItem, Stack, TextField, Typography,
+} from '@mui/material'
+
+import {
+  UserPlus, Pencil,
+  AlertTriangle, CheckCircle2,
+} from 'lucide-react'
+
+import {
+  ESTADOS, esRolCompatible, esUnicoGerente,
+  fetchPerfilesDisponibles,
+} from '../services/usuariosService'
+
+import { fetchRoles } from '../../roles/services/rolesService'
 
 const EMPTY_FORM = {
-  cedula: '',
-  nombre: '',
+  tipoPerfil: '',
+  idPerfil: '',
   email: '',
-  telefono: '',
-  rol: '',
+  id_rol: '',
   estado: 'Activo',
-  password: '',
-  confirmPassword: '',
 }
 
-// Mismo criterio que en Roles y Ventas: un label fijo, chico y en mayúsculas
-// ARRIBA del campo (en vez del label flotante de MUI, que en un grid de dos
-// columnas quedaba tapado/recortado en el primer renglón y era ilegible en
-// modo oscuro). Así el alto de cada campo es siempre el mismo y no depende
-// de si el campo tiene o no contenido.
-function FieldLabel({ children }) {
+const TIPOS_PERFIL = ['Cliente', 'Empleado']
+const CAMPOS = Object.keys(EMPTY_FORM)
+const PERFILES_VACIOS = { clientes: [], empleados: [] }
+
+const inputSx = {
+  '& .MuiOutlinedInput-root': {
+    borderRadius: '8px', fontSize: 13, minHeight: 40,
+    border: 0, boxShadow: 'none', overflow: 'hidden',
+    '& .MuiOutlinedInput-notchedOutline': {
+      borderRadius: '8px', borderColor: 'divider', borderWidth: 1,
+    },
+    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+      borderColor: 'primary.main', borderWidth: 1,
+    },
+    '&.Mui-error .MuiOutlinedInput-notchedOutline': { borderColor: 'error.main' },
+    '&.Mui-disabled .MuiOutlinedInput-notchedOutline': { borderColor: 'divider' },
+    '&.Mui-disabled': { opacity: 0.65 },
+    '& .MuiInputBase-input': {
+      border: '0 !important', borderRadius: '0 !important',
+      backgroundColor: 'transparent', boxShadow: 'none',
+    },
+    '& input:-webkit-autofill': {
+      WebkitBoxShadow: '0 0 0 1000px transparent inset',
+      WebkitTextFillColor: 'currentColor',
+      transition: 'background-color 9999s ease-out',
+    },
+  },
+  '& .MuiFormHelperText-root': { mx: 0.5, mt: 0.5, fontSize: 11 },
+}
+
+const filaSx = {
+  display: 'grid',
+  gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+  gap: 1.5,
+}
+
+function obtenerValores(usuario) {
+  return {
+    ...EMPTY_FORM,
+    tipoPerfil: usuario?.tipoPerfil ?? '',
+    idPerfil: String(usuario?.id_cliente ?? usuario?.id_empleado ?? ''),
+    email: usuario?.email ?? '',
+    id_rol: String(usuario?.id_rol ?? ''),
+    estado: usuario?.estado ?? 'Activo',
+  }
+}
+
+function normalizarEmail(email) {
+  return email.trim().toLowerCase()
+}
+
+function snapshot(form) {
+  return JSON.stringify({
+    ...form,
+    email: normalizarEmail(form.email),
+  })
+}
+
+// Componentes visuales reutilizables.
+function Encabezado({ icon: Icon, titulo, descripcion, color = 'primary.main' }) {
   return (
-    <Typography
-      sx={{
-        fontSize: 11,
-        fontWeight: 600,
-        letterSpacing: 0.5,
-        color: 'text.secondary',
-        textTransform: 'uppercase',
-        mb: 0.5,
-      }}
-    >
+    <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+      <Box sx={{
+        width: 44, height: 44, flexShrink: 0,
+        display: 'grid', placeItems: 'center',
+        borderRadius: 2, bgcolor: 'action.hover', color,
+      }}>
+        <Icon size={23} />
+      </Box>
+      <Box>
+        <Typography sx={{ fontSize: 17, fontWeight: 700 }}>
+          {titulo}
+        </Typography>
+        {descripcion && (
+          <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+            {descripcion}
+          </Typography>
+        )}
+      </Box>
+    </Stack>
+  )
+}
+
+function Seccion({ children }) {
+  return (
+    <Typography sx={{
+      fontSize: 11, fontWeight: 700,
+      letterSpacing: 0.7, color: 'text.secondary',
+      textTransform: 'uppercase',
+    }}>
       {children}
     </Typography>
   )
 }
 
-const inputSx = {
-  '& .MuiOutlinedInput-root': { bgcolor: 'action.hover', borderRadius: 2 },
+function Campo({ nombre, etiqueta, children }) {
+  return (
+    <Box data-campo={nombre} sx={{ minWidth: 0 }}>
+      <Typography
+        id={`usuario-${nombre}-label`}
+        component="div"
+        sx={{ fontSize: 12, fontWeight: 600, mb: 0.7 }}
+      >
+        {etiqueta}
+        <Box component="span" sx={{ color: 'error.main', ml: 0.5 }}>
+          *
+        </Box>
+      </Typography>
+      {children}
+    </Box>
+  )
 }
 
-export default function UsuarioFormDialog({ open, mode, initialData, onClose, onSubmit, submitting }) {
-  const isCreate = mode === 'create'
-  const [form, setForm] = useState(EMPTY_FORM)
-  const [touched, setTouched] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
+function Selector({ opciones, placeholder, ...props }) {
+  return (
+    <TextField
+      select
+      fullWidth
+      size="small"
+      sx={inputSx}
+      {...props}
+      slotProps={{
+        select: {
+          displayEmpty: true,
+          SelectDisplayProps: {
+            'aria-labelledby': `usuario-${props.name}-label`,
+            'aria-required': true,
+          },
+          renderValue: (valor) =>
+            opciones.find((opcion) => opcion.value === valor)?.label ||
+            <Box component="span" sx={{ color: 'text.secondary' }}>
+              {placeholder}
+            </Box>,
+        },
+      }}
+    >
+      {opciones.map(({ value, label, disabled }) => (
+        <MenuItem key={value} value={value} disabled={disabled}>
+          {label}
+        </MenuItem>
+      ))}
+    </TextField>
+  )
+}
 
-  // Reinicia el formulario cada vez que el diálogo pasa de cerrado a abierto,
-  // ajustando el estado durante el render (patrón recomendado por React) en
-  // vez de en un useEffect, para evitar el render en cascada que marca la
-  // regla react-hooks/set-state-in-effect.
-  const [prevOpen, setPrevOpen] = useState(open)
-  if (open !== prevOpen) {
-    setPrevOpen(open)
-    if (open) {
-      setForm(
-        isCreate
-          ? EMPTY_FORM
-          : {
-              cedula: initialData?.cedula ?? '',
-              nombre: initialData?.nombre ?? '',
-              email: initialData?.email ?? '',
-              telefono: initialData?.telefono ?? '',
-              rol: initialData?.rol ?? '',
-              estado: initialData?.estado ?? 'Activo',
-              password: '',
-              confirmPassword: '',
-            }
-      )
-      setTouched(false)
-      setShowPassword(false)
+export default function UsuarioFormDialog({
+  open, mode, initialData, onClose,
+  onSubmit, onError, submitting = false,
+}) {
+  const esCreacion = mode === 'create'
+
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [touched, setTouched] = useState({})
+  const [roles, setRoles] = useState([])
+  const [perfiles, setPerfiles] = useState(PERFILES_VACIOS)
+  const [cargando, setCargando] = useState(true)
+  const [errorCarga, setErrorCarga] = useState('')
+  const [confirmacion, setConfirmacion] = useState(null)
+
+  const inicial = useRef(EMPTY_FORM)
+  const enviando = useRef(false)
+  const formularioRef = useRef(null)
+  const onErrorRef = useRef(onError)
+
+  useEffect(() => {
+    onErrorRef.current = onError
+  }, [onError])
+
+  // Inicializar formulario y consultar datos actualizados.
+  useEffect(() => {
+    if (!open) return
+
+    let vigente = true
+    const valores = esCreacion
+      ? { ...EMPTY_FORM }
+      : obtenerValores(initialData)
+
+    inicial.current = valores
+    setForm(valores)
+    setTouched({})
+    setConfirmacion(null)
+    setCargando(true)
+    setErrorCarga('')
+    setRoles([])
+    setPerfiles(PERFILES_VACIOS)
+
+    Promise.all([
+      fetchRoles(),
+      esCreacion
+        ? fetchPerfilesDisponibles()
+        : Promise.resolve(PERFILES_VACIOS),
+    ])
+      .then(([rolesActuales, perfilesActuales]) => {
+        if (!vigente) return
+        setRoles(rolesActuales)
+        setPerfiles(perfilesActuales)
+      })
+      .catch(() => {
+        if (!vigente) return
+        const mensaje = 'No se pudieron cargar los roles y perfiles.'
+        setErrorCarga(mensaje)
+        onErrorRef.current?.(mensaje)
+      })
+      .finally(() => {
+        if (vigente) setCargando(false)
+      })
+
+    return () => { vigente = false }
+  }, [open, esCreacion, initialData])
+
+  const ocupado = submitting || cargando
+  const deshabilitado = ocupado || Boolean(errorCarga)
+  const protegido = !esCreacion && Boolean(initialData) && esUnicoGerente(initialData)
+
+  const perfilesDisponibles =
+    form.tipoPerfil === 'Cliente' ? perfiles.clientes :
+    form.tipoPerfil === 'Empleado' ? perfiles.empleados : []
+
+  const perfilSeleccionado = esCreacion
+    ? perfilesDisponibles.find(p => String(p.id) === form.idPerfil) ?? null
+    : initialData?.cliente ?? initialData?.empleado ?? null
+
+  const rolesDisponibles = roles.filter(rol =>
+    esRolCompatible(rol.id, form.tipoPerfil) &&
+    (rol.estado === 'Activo' ||
+      (!esCreacion && rol.id === initialData?.id_rol))
+  )
+
+  const rolSeleccionado = rolesDisponibles.find(
+    rol => String(rol.id) === form.id_rol
+  )
+
+  const rolInactivo = rolSeleccionado?.estado === 'Inactivo'
+  const hayCambios = snapshot(form) !== snapshot(inicial.current)
+  const email = normalizarEmail(form.email)
+
+  // Validaciones centralizadas.
+  const errores = {
+    tipoPerfil: !TIPOS_PERFIL.includes(form.tipoPerfil)
+      ? 'Selecciona un tipo de perfil.' : '',
+
+    idPerfil: !perfilSeleccionado
+      ? 'Selecciona un perfil válido.' : '',
+
+    email: !email
+      ? 'El correo electrónico es obligatorio.'
+      : email.length > 120 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)
+        ? 'Ingresa un correo electrónico válido.' : '',
+
+    id_rol: !rolSeleccionado
+      ? 'Selecciona un rol disponible.'
+      : protegido && Number(form.id_rol) !== initialData?.id_rol
+        ? 'No puedes cambiar el rol del único Gerente activo.' : '',
+
+    estado: !ESTADOS.includes(form.estado)
+      ? 'Selecciona un estado válido.'
+      : form.estado === 'Activo' && rolInactivo
+        ? 'No puedes activar una cuenta con un rol inactivo.'
+        : protegido && form.estado !== 'Activo'
+          ? 'No puedes desactivar al único Gerente activo.' : '',
+  }
+
+  function cambiar(campo, valor) {
+    setForm(prev => ({ ...prev, [campo]: valor }))
+  }
+
+  function marcar(campo) {
+    setTouched(prev => ({ ...prev, [campo]: true }))
+  }
+
+  function cambiarTipo(tipoPerfil) {
+    setForm(prev => ({
+      ...prev, tipoPerfil, idPerfil: '', id_rol: '',
+    }))
+    setTouched(prev => ({
+      ...prev, tipoPerfil: true, idPerfil: false, id_rol: false,
+    }))
+  }
+
+  function cambiarRol(id_rol) {
+    const rol = rolesDisponibles.find(r => String(r.id) === id_rol)
+
+    setForm(prev => ({
+      ...prev, id_rol,
+      estado: rol?.estado === 'Inactivo' ? 'Inactivo' : prev.estado,
+    }))
+  }
+
+  // Validar TAB y Shift + TAB sin interferir con menús abiertos.
+  function validarTab(event, campo) {
+    if (event.key !== 'Tab' || deshabilitado) return
+    if (event.target.getAttribute('aria-expanded') === 'true') return
+
+    marcar(campo)
+
+    if (errores[campo]) {
+      event.preventDefault()
+      event.stopPropagation()
     }
   }
 
-  const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }))
+  function propsCampo(campo) {
+    const mensaje = touched[campo] ? errores[campo] : ''
 
-  // En creación TODOS los campos son obligatorios. En edición no bloqueamos
-  // el guardado (a pedido explícito: "en editar no debería ser tan exigente").
-  const isValid = isCreate
-    ? form.cedula.trim() &&
-      form.nombre.trim() &&
-      form.email.trim() &&
-      form.telefono.trim() &&
-      form.rol &&
-      form.estado &&
-      form.password.length >= 6 &&
-      form.password === form.confirmPassword
-    : true
-
-  const handleSubmit = () => {
-    setTouched(true)
-    if (!isValid) return
-    const rest = { ...form }
-    delete rest.password
-    delete rest.confirmPassword
-    onSubmit(rest)
+    return {
+      name: campo,
+      error: Boolean(mensaje),
+      helperText: mensaje,
+      onBlur: () => marcar(campo),
+      onKeyDown: event => validarTab(event, campo),
+    }
   }
 
-  const showError = (value) => touched && isCreate && !value
+  function enfocarError() {
+    requestAnimationFrame(() => {
+      for (const campo of CAMPOS.filter(c => errores[c])) {
+        const control = formularioRef.current
+          ?.querySelector(`[data-campo="${campo}"]`)
+          ?.querySelector(
+            '[role="combobox"]:not([aria-disabled="true"]):not(:disabled), input:not(:disabled):not([type="hidden"])'
+          )
+
+        if (control) {
+          control.focus()
+          break
+        }
+      }
+    })
+  }
+
+  function validarFormulario() {
+    setTouched(Object.fromEntries(CAMPOS.map(c => [c, true])))
+
+    if (Object.values(errores).some(Boolean)) {
+      onError?.('Completa los campos obligatorios y corrige los datos ingresados.')
+      enfocarError()
+      return false
+    }
+
+    return true
+  }
+
+  async function guardar() {
+    if (deshabilitado || enviando.current) return
+    if (!validarFormulario()) return
+
+    const datos = {
+      email,
+      id_rol: Number(form.id_rol),
+      estado: form.estado,
+      ...(esCreacion && {
+        id_cliente: form.tipoPerfil === 'Cliente' ? Number(form.idPerfil) : null,
+        id_empleado: form.tipoPerfil === 'Empleado' ? Number(form.idPerfil) : null,
+      }),
+    }
+
+    enviando.current = true
+    setConfirmacion(null)
+
+    try {
+      await onSubmit(datos)
+    } catch (error) {
+      onError?.(error.message || 'No se pudo guardar el usuario.')
+    } finally {
+      enviando.current = false
+    }
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault()
+
+    if (deshabilitado || enviando.current || (!esCreacion && !hayCambios)) return
+    if (esCreacion) guardar()
+    else if (validarFormulario()) setConfirmacion('guardar')
+  }
+
+  function cancelar() {
+    if (submitting || enviando.current) return
+    if (hayCambios) setConfirmacion('salir')
+    else onClose()
+  }
+
+  function confirmarAccion() {
+    const accion = confirmacion
+    setConfirmacion(null)
+
+    if (accion === 'salir') onClose()
+    else if (accion === 'restaurar') {
+      setForm({ ...inicial.current })
+      setTouched({})
+    } else guardar()
+  }
+
+  const esAdvertencia = confirmacion !== 'guardar'
+
+  const textos = {
+    salir: {
+      titulo: '¿Deseas abandonar el formulario?',
+      mensaje: 'Perderás los cambios que no hayas guardado.',
+      boton: 'Salir del formulario',
+    },
+    restaurar: {
+      titulo: esCreacion ? '¿Limpiar formulario?' : '¿Restaurar los datos?',
+      mensaje: esCreacion
+        ? 'Se eliminarán los datos ingresados.'
+        : 'Se recuperarán los valores originales de la cuenta.',
+      boton: esCreacion ? 'Limpiar' : 'Restaurar',
+    },
+    guardar: {
+      titulo: '¿Guardar los cambios?',
+      mensaje: 'Los cambios en el rol y estado pueden afectar el acceso del usuario.',
+      boton: 'Guardar cambios',
+    },
+  }
+
+  const textoConfirmacion = textos[confirmacion]
 
   return (
-    <Dialog open={open} onClose={submitting ? undefined : onClose} fullWidth maxWidth="sm">
-      <DialogTitle sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', pb: 0 }}>
-        <Box>
-          <Typography sx={{ fontWeight: 700, fontSize: 18 }}>
-            {isCreate ? 'Nuevo usuario' : 'Editar usuario'}
-          </Typography>
-          <Typography sx={{ fontSize: 13, color: 'text.secondary', fontWeight: 400 }}>
-            {isCreate ? 'Completa los datos del nuevo usuario' : 'Actualiza los datos del usuario'}
-          </Typography>
-        </Box>
-        <IconButton onClick={onClose} disabled={submitting} size="small">
-          <CloseIcon fontSize="small" />
-        </IconButton>
-      </DialogTitle>
-
-      <DialogContent sx={{ pt: 3 }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-          <Box>
-            <FieldLabel>NIT / Cédula</FieldLabel>
-            <TextField
-              value={form.cedula}
-              onChange={set('cedula')}
-              placeholder="Ej. 1234567890"
-              error={showError(form.cedula.trim())}
-              fullWidth
-              sx={inputSx}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <CreditCardOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                    </InputAdornment>
-                  ),
-                },
-              }}
-            />
-          </Box>
-
-          <Box>
-            <FieldLabel>Nombre completo</FieldLabel>
-            <TextField
-              value={form.nombre}
-              onChange={set('nombre')}
-              placeholder="Ej. Ana Martínez"
-              error={showError(form.nombre.trim())}
-              fullWidth
-              sx={inputSx}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <PersonOutlineOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                    </InputAdornment>
-                  ),
-                },
-              }}
-            />
-          </Box>
-
-          <Box>
-            <FieldLabel>Email</FieldLabel>
-            <TextField
-              type="email"
-              value={form.email}
-              onChange={set('email')}
-              placeholder="usuario@alhorno.mx"
-              error={showError(form.email.trim())}
-              fullWidth
-              sx={inputSx}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <MailOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                    </InputAdornment>
-                  ),
-                },
-              }}
-            />
-          </Box>
-
-          <Box>
-            <FieldLabel>Teléfono</FieldLabel>
-            <TextField
-              value={form.telefono}
-              onChange={set('telefono')}
-              placeholder="Ej. 3001234567"
-              error={showError(form.telefono.trim())}
-              fullWidth
-              sx={inputSx}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <PhoneOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                    </InputAdornment>
-                  ),
-                },
-              }}
-            />
-          </Box>
-
-          <Box>
-            <FieldLabel>Rol</FieldLabel>
-            <TextField
-              select
-              value={form.rol}
-              onChange={set('rol')}
-              error={showError(form.rol)}
-              fullWidth
-              sx={inputSx}
-              slotProps={{
-                select: {
-                  displayEmpty: true,
-                  renderValue: (selected) =>
-                    selected || <Box sx={{ color: 'text.disabled' }}>Seleccionar rol...</Box>,
-                },
-              }}
-            >
-              {ROLES.map((rol) => (
-                <MenuItem key={rol} value={rol}>
-                  {rol}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Box>
-
-          <Box>
-            <FieldLabel>{isCreate ? 'Estado inicial' : 'Estado'}</FieldLabel>
-            <TextField select value={form.estado} onChange={set('estado')} fullWidth sx={inputSx}>
-              {ESTADOS.map((estado) => (
-                <MenuItem key={estado} value={estado}>
-                  {estado}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Box>
-
-          {isCreate && (
-            <>
-              <Box>
-                <FieldLabel>Contraseña</FieldLabel>
-                <TextField
-                  type={showPassword ? 'text' : 'password'}
-                  value={form.password}
-                  onChange={set('password')}
-                  placeholder="Mínimo 6 caracteres"
-                  error={touched && form.password.length < 6}
-                  helperText={touched && form.password.length < 6 ? 'Mínimo 6 caracteres' : ''}
-                  fullWidth
-                  sx={inputSx}
-                  slotProps={{
-                    input: {
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <LockOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                        </InputAdornment>
-                      ),
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton size="small" onClick={() => setShowPassword((p) => !p)}>
-                            {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    },
-                  }}
-                />
-              </Box>
-
-              <Box>
-                <FieldLabel>Confirmar contraseña</FieldLabel>
-                <TextField
-                  type={showPassword ? 'text' : 'password'}
-                  value={form.confirmPassword}
-                  onChange={set('confirmPassword')}
-                  placeholder="Repetir contraseña"
-                  error={touched && form.confirmPassword !== form.password}
-                  helperText={touched && form.confirmPassword !== form.password ? 'Las contraseñas no coinciden' : ''}
-                  fullWidth
-                  sx={inputSx}
-                  slotProps={{
-                    input: {
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <LockOutlinedIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-                        </InputAdornment>
-                      ),
-                    },
-                  }}
-                />
-              </Box>
-            </>
-          )}
-        </Box>
-      </DialogContent>
-
-      <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button onClick={onClose} disabled={submitting} color="inherit">
-          Cancelar
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          disabled={submitting || (touched && isCreate && !isValid)}
-          startIcon={isCreate ? <AddIcon /> :  <Pencil size={18} />}
-          sx={{ bgcolor: BRAND.orange, '&:hover': { bgcolor: BRAND.orangeDark } }}
+    <>
+      <Dialog
+        open={open}
+        onClose={(_, reason) => {
+          if (reason === 'escapeKeyDown' && !confirmacion) cancelar()
+        }}
+        fullWidth
+        maxWidth="sm"
+        slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+      >
+        <Box
+          ref={formularioRef}
+          component="form"
+          onSubmit={handleSubmit}
+          noValidate
+          sx={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}
         >
-          {submitting ? 'Guardando...' : isCreate ? 'Guardar usuario' : 'Guardar cambios'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+          <DialogTitle sx={{ px: 2.5, py: 1.5 }}>
+            <Encabezado
+              icon={esCreacion ? UserPlus : Pencil}
+              titulo={esCreacion ? 'Nuevo usuario' : 'Editar usuario'}
+              descripcion={esCreacion
+                ? 'Registra una cuenta de acceso al sistema.'
+                : 'Actualiza la información de la cuenta.'}
+            />
+          </DialogTitle>
+          <Divider />
+
+          <DialogContent sx={{ px: 2.5, py: 1.5 }}>
+            <Stack spacing={1.2}>
+              {errorCarga && <Alert severity="error">{errorCarga}</Alert>}
+
+              <Seccion>Información del perfil</Seccion>
+
+              {esCreacion && (
+                <>
+                  <Box sx={{ ...filaSx, gridTemplateColumns: { xs: '1fr', sm: '1fr 2fr' } }}>
+                    <Campo nombre="tipoPerfil" etiqueta="Tipo de perfil">
+                      <Selector
+                        {...propsCampo('tipoPerfil')}
+                        value={form.tipoPerfil}
+                        placeholder="Seleccionar tipo de perfil"
+                        opciones={TIPOS_PERFIL.map(value => ({ value, label: value }))}
+                        onChange={e => cambiarTipo(e.target.value)}
+                        disabled={deshabilitado}
+                      />
+                    </Campo>
+                    <Campo nombre="idPerfil" etiqueta="Perfil asociado">
+                      <Autocomplete
+                        options={perfilesDisponibles}
+                        value={perfilSeleccionado}
+                        loading={cargando}
+                        disabled={deshabilitado || !form.tipoPerfil}
+                        getOptionLabel={p => `${p.nombre} — ${p.documento}`}
+                        isOptionEqualToValue={(a, b) => a.id === b.id}
+                        onChange={(_, perfil) => {
+                          cambiar('idPerfil', String(perfil?.id ?? ''))
+                          marcar('idPerfil')
+                        }}
+                        noOptionsText="No hay perfiles disponibles"
+                        loadingText="Cargando perfiles..."
+                        renderInput={params => (
+                          <TextField
+                            {...params}
+                            {...propsCampo('idPerfil')}
+                            size="small"
+                            required
+                            placeholder={form.tipoPerfil
+                              ? 'Buscar por nombre o documento'
+                              : 'Selecciona primero el tipo de perfil'}
+                            sx={inputSx}
+                          />
+                        )}
+                      />
+                    </Campo>
+                  </Box>
+                  {perfilSeleccionado && (
+                    <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+                      {perfilSeleccionado.tipoDocumento} · {perfilSeleccionado.documento}
+                    </Typography>
+                  )}
+
+                  {!cargando && form.tipoPerfil && !perfilesDisponibles.length && (
+                    <Alert severity="info">
+                      No hay perfiles de este tipo sin cuenta de acceso.
+                    </Alert>
+                  )}
+                </>
+              )}
+
+              {!esCreacion && perfilSeleccionado && (
+                <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 1 }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{perfilSeleccionado.nombre}</Typography>
+                  <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+                    {form.tipoPerfil} · {perfilSeleccionado.tipoDocumento} · {perfilSeleccionado.documento}
+                  </Typography>
+                </Box>
+              )}
+
+              {!esCreacion && !perfilSeleccionado && (
+                <Alert severity="warning">
+                  Esta cuenta no tiene un perfil asociado válido.
+                </Alert>
+              )}
+              <Divider />
+              <Seccion>Información de la cuenta</Seccion>
+              <Campo nombre="email" etiqueta="Correo electrónico">
+                <TextField
+                  {...propsCampo('email')}
+                  fullWidth
+                  required
+                  size="small"
+                  type="email"
+                  placeholder="usuario@alhorno.mx"
+                  value={form.email}
+                  disabled={deshabilitado}
+                  onChange={e => cambiar('email', e.target.value)}
+                  onBlur={() => {
+                    cambiar('email', email)
+                    marcar('email')
+                  }}
+                  slotProps={{
+                    htmlInput: {
+                      maxLength: 120,
+                      'aria-labelledby': 'usuario-email-label',
+                    },
+                  }}
+                  sx={inputSx}
+                />
+              </Campo>
+              <Box sx={filaSx}>
+                <Campo nombre="id_rol" etiqueta="Rol asignado">
+                  <Selector
+                    {...propsCampo('id_rol')}
+                    value={rolSeleccionado ? form.id_rol : ''}
+                    placeholder="Seleccionar rol"
+                    opciones={rolesDisponibles.map(rol => ({
+                      value: String(rol.id),
+                      label: rol.nombre + (rol.estado === 'Inactivo' ? ' (Inactivo)' : ''),
+                    }))}
+                    onChange={e => cambiarRol(e.target.value)}
+                    disabled={deshabilitado || protegido || !form.tipoPerfil}
+                  />
+                </Campo>
+                <Campo nombre="estado" etiqueta={esCreacion ? 'Estado inicial' : 'Estado'}>
+                  <Selector
+                    {...propsCampo('estado')}
+                    value={form.estado}
+                    opciones={ESTADOS.map(value => ({
+                      value, label: value,
+                      disabled: value === 'Activo' && rolInactivo,
+                    }))}
+                    onChange={e => cambiar('estado', e.target.value)}
+                    disabled={deshabilitado || protegido}
+                  />
+                </Campo>
+              </Box>
+
+              {protegido && (
+                <Alert severity="info">
+                  El rol y estado del único Gerente activo están protegidos.
+                </Alert>
+              )}
+
+              {rolInactivo && (
+                <Alert severity="warning">
+                  La cuenta debe permanecer inactiva mientras su rol esté inactivo.
+                </Alert>
+              )}
+            </Stack>
+          </DialogContent>
+          <Divider />
+
+          <DialogActions sx={{ px: 2.5, py: 1.3, flexWrap: 'wrap', gap: 1 }}>
+            <Button
+              color="inherit"
+              disabled={ocupado || !hayCambios}
+              onClick={() => setConfirmacion('restaurar')}
+              sx={{ mr: 'auto' }}
+            >
+              {esCreacion ? 'Limpiar' : 'Restaurar'}
+            </Button>
+            <Button
+              variant="outlined"
+              color="inherit"
+              onClick={cancelar}
+              disabled={submitting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={deshabilitado || (!esCreacion && !hayCambios)}
+              startIcon={submitting
+                ? <CircularProgress size={16} color="inherit" />
+                : undefined}
+            >
+              {submitting ? 'Guardando...' :
+                esCreacion ? 'Guardar usuario' : 'Guardar cambios'}
+            </Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
+
+      {/* Confirmación reutilizada para guardar, limpiar y salir. */}
+      <Dialog
+        open={Boolean(confirmacion)}
+        onClose={(_, reason) => {
+          if (reason === 'escapeKeyDown') setConfirmacion(null)
+        }}
+        fullWidth
+        maxWidth="xs"
+        slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+      >
+        <DialogTitle>
+          <Encabezado
+            icon={esAdvertencia ? AlertTriangle : CheckCircle2}
+            titulo={textoConfirmacion?.titulo}
+            color={esAdvertencia ? 'warning.main' : 'primary.main'}
+          />
+        </DialogTitle>
+
+        <DialogContent>
+          <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>
+            {textoConfirmacion?.mensaje}
+          </Typography>
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            variant="outlined"
+            color="inherit"
+            onClick={() => setConfirmacion(null)}
+            autoFocus
+          >
+            {esAdvertencia ? 'Permanecer aquí' : 'Cancelar'}
+          </Button>
+          <Button
+            variant="contained"
+            color={esAdvertencia ? 'warning' : 'primary'}
+            onClick={confirmarAccion}
+          >
+            {textoConfirmacion?.boton}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   )
 }
