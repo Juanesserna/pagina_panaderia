@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 // Importa las funciones que traen el catálogo de insumos y las unidades de medida
 import { fetchInsumos, getUnidadesMedida } from '@features/insumos'
+// Importa la API de productos para cargar el catálogo de productos intermedios
+import { productosApi } from '../../api/productosApi'
 
 // Un insumo está activo si su estado es true (datos de ejemplo) o 'Activo' (formularios)
 const estaActivo = (insumo) => insumo.estado === true || insumo.estado === 'Activo'
@@ -18,7 +20,7 @@ const filaVacia = () => ({
 
 // Hook con toda la lógica de la tabla de receta: estados, catálogos y handlers.
 // "insumos" son los insumos que ya tiene la receta (para evitar repetidos).
-export default function useRecetaTabla({ insumos = [], onAgregarInsumo, onEditInsumo, codigoProducto }) {
+export default function useRecetaTabla({ insumos = [], onAgregarInsumo, onEditInsumo }) {
   // Indica si se está mostrando la fila para agregar un insumo nuevo
   const [agregandoFila, setAgregandoFila] = useState(false)
   // Guarda el id del insumo que se está editando (null si ninguno)
@@ -29,21 +31,26 @@ export default function useRecetaTabla({ insumos = [], onAgregarInsumo, onEditIn
   const [filaEditando, setFilaEditando] = useState(null)
   // Catálogo de insumos disponibles (solo activos)
   const [insumosCatalogo, setInsumosCatalogo] = useState([])
+  // Catálogo de productos intermedios disponibles (tipo INTERMEDIO)
+  const [productosCatalogo, setProductosCatalogo] = useState([])
   // Lista de unidades de medida disponibles
   const [unidadesMedida, setUnidadesMedida] = useState([])
   // Indica si los catálogos todavía están cargando
   const [loading, setLoading] = useState(true)
 
-  // Al montar, carga los catálogos de insumos y unidades
+  // Al montar, carga los catálogos de insumos, productos intermedios y unidades
   useEffect(() => {
     const cargarCatalogos = async () => {
       try {
-        const [insumosData, unidadesData] = await Promise.all([
+        const [insumosData, productosData, unidadesData] = await Promise.all([
           fetchInsumos(),
+          productosApi.obtenerProductos({ tipo: 'INTERMEDIO', limite: 50 }),
           Promise.resolve(getUnidadesMedida()),
         ])
         // Solo se pueden agregar insumos activos
         setInsumosCatalogo(insumosData.filter(estaActivo))
+        // Solo productos de tipo INTERMEDIO
+        setProductosCatalogo((productosData.datos || []).filter((p) => p.tipo === 'INTERMEDIO'))
         setUnidadesMedida(unidadesData)
       } catch (error) {
         console.error('Error cargando catálogos:', error)
@@ -54,10 +61,10 @@ export default function useRecetaTabla({ insumos = [], onAgregarInsumo, onEditIn
     cargarCatalogos()
   }, [])
 
-  // Ids de insumos que ya están en la receta (sin contar la fila que se está editando)
+  // Ids de insumos que ya están en la receta (solo INSUMO, sin contar la fila que se está editando)
   const insumosUsados = insumos
-    .filter((i) => i.id !== editandoFilaId)
-    .map((i) => String(i.idInsumo))
+    .filter((i) => i.id !== editandoFilaId && (i.origen ?? 'INSUMO') === 'INSUMO')
+    .map((i) => String(i.idComponente ?? i.idInsumo))
 
   // Se ejecuta al pulsar "Agregar insumo": prepara una fila nueva vacía
   const handleAgregarClick = () => {
@@ -75,8 +82,8 @@ export default function useRecetaTabla({ insumos = [], onAgregarInsumo, onEditIn
     setFilaEditando({
       id: insumo.id,
       idTemp: insumo.id,
-      insumoId: insumo.idInsumo,
-      insumoNombre: insumo.insumo,
+      insumoId: insumo.idComponente ?? insumo.idInsumo,
+      insumoNombre: insumo.nombre ?? insumo.insumo,
       cantidad: insumo.cantidad,
       unidadId: unidad?.id ?? '',
       unidadNombre: insumo.unidad,
@@ -98,15 +105,19 @@ export default function useRecetaTabla({ insumos = [], onAgregarInsumo, onEditIn
     const fila = editandoFilaId !== null ? filaEditando : nuevaFila
 
     // No continúa si falta el insumo o la unidad, o la cantidad no es mayor que cero
-    if (!fila.insumoId || !fila.unidadId || Number(fila.cantidad) <= 0) return
+    if (!fila.insumoId || !fila.unidadId || Number(fila.cantidad) <= 0) {
+      return
+    }
     // No permite repetir un insumo que ya está en la receta
-    if (insumosUsados.includes(String(fila.insumoId))) return
+    if (insumosUsados.includes(String(fila.insumoId))) {
+      return
+    }
 
     if (editandoFilaId !== null) {
       // Modo edición: arma los datos actualizados y avisa al padre
       const datosActualizados = {
-        idInsumo: fila.insumoId,
-        insumo: fila.insumoNombre,
+        idComponente: fila.insumoId,
+        nombre: fila.insumoNombre,
         cantidad: Number(fila.cantidad),
         unidad: fila.unidadNombre,
       }
@@ -116,12 +127,12 @@ export default function useRecetaTabla({ insumos = [], onAgregarInsumo, onEditIn
       setEditandoFilaId(null)
       setFilaEditando(null)
     } else {
-      // Modo agregar: arma el insumo nuevo con el código del producto
+      // Modo agregar: arma el insumo nuevo
       const filaFinal = {
         id: fila.idTemp,
-        idProducto: codigoProducto,
-        idInsumo: fila.insumoId,
-        insumo: fila.insumoNombre,
+        origen: 'INSUMO',
+        idComponente: fila.insumoId,
+        nombre: fila.insumoNombre,
         cantidad: Number(fila.cantidad),
         unidad: fila.unidadNombre,
       }
@@ -149,6 +160,7 @@ export default function useRecetaTabla({ insumos = [], onAgregarInsumo, onEditIn
     nuevaFila,
     filaEditando,
     insumosCatalogo,
+    productosCatalogo,
     unidadesMedida,
     insumosUsados,
     loading,

@@ -15,6 +15,8 @@ import { useValidacionProducto } from '../hooks/useValidacionProducto'
 const VALORES_INICIALES = {
   nombre: '',
   categoria: '',
+  tipo: 'TERMINADO',
+  esVendible: true,
   precioVenta: '',
   stockActual: '',
   stockMinimo: '',
@@ -69,13 +71,16 @@ export default function NuevoProductoModal({
     }
     setGuardando(true)
     try {
+      // Un Terminado siempre es vendible; si el producto no es vendible, no lleva precio
+      const esVendible = formulario.tipo === 'TERMINADO' ? true : Boolean(formulario.esVendible)
       const datos = {
         ...formulario,
-        precioVenta: Number(formulario.precioVenta) || 0,
+        esVendible,
+        precioVenta: esVendible ? Number(formulario.precioVenta) || 0 : 0,
         stockActual: Number(formulario.stockActual) || 0,
         stockMinimo: Number(formulario.stockMinimo) || 0,
-        cantMinimaProduccion: Number(formulario.cantMinimaProduccion) || 0,
-        cantMaximaProduccion: Number(formulario.cantMaximaProduccion) || 0,
+        cantMinimaProduccion: Number(formulario.cantMinimaProduccion) || 1,
+        cantMaximaProduccion: Number(formulario.cantMaximaProduccion) || 1,
       }
       await onGuardar(datos)
     } catch (err) {
@@ -119,6 +124,7 @@ export default function NuevoProductoModal({
         </Typography>
 
         <CamposProducto
+          modo="crear"
           formulario={formulario}
           handleChange={handleChange}
           handleNumber={handleNumber}

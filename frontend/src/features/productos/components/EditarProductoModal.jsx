@@ -11,6 +11,7 @@ import { IconPencil } from '@tabler/icons-react'
 // Botón estándar del panel
 import { Button, Modal } from '@shared/ui'
 import RecetaTabla from './RecetaTabla'
+import { filasDesdeApi, filasHaciaApi } from './receta/recetaUtils'
 // Bloque de campos compartido por los formularios de producto
 import CamposProducto from './formulario/CamposProducto'
 // Hook de validación del formulario de producto
@@ -18,24 +19,21 @@ import { useValidacionProducto } from '../hooks/useValidacionProducto'
 
 // Construye el estado inicial del formulario a partir del producto recibido
 const construirFormulario = (producto) => ({
-  // Nombre del producto, vacío si no hay producto
   nombre: producto?.nombre ?? '',
-  // Categoría del producto, vacía si no hay producto
   categoria: producto?.categoria ?? '',
-  // Precio de venta, vacío si no hay producto
-  precioVenta: producto?.precioVenta ?? '',
-  // Stock actual tomado del campo stock del producto
+  // El tipo no se puede cambiar: se muestra bloqueado
+  tipo: producto?.tipo ?? 'TERMINADO',
+  esVendible: producto?.esVendible ?? true,
+  // Un producto no vendible no tiene precio de venta
+  precioVenta: producto?.esVendible === false ? '' : (producto?.precioVenta ?? ''),
+  // El stock actual se muestra solo de lectura
   stockActual: producto?.stock ?? '',
-  // Stock mínimo guardado en el producto (0 si el producto aún no lo tiene)
   stockMinimo: producto?.stockMinimo ?? 0,
-  // Cantidad mínima de producción guardada en el producto ('1' si no la tiene)
   cantMinimaProduccion: producto?.cantMinimaProduccion ?? '1',
-  // Cantidad máxima de producción guardada en el producto ('100' si no la tiene)
   cantMaximaProduccion: producto?.cantMaximaProduccion ?? '100',
-  // URL de la imagen, vacía si no hay producto
   imagen: producto?.imagenUrl ?? '',
-  // Activo si el estado del producto es 'Activo'; true si no hay producto
-  activo: producto ? producto.estado === 'Activo' : true,
+  // Estado guardado (Activo/Inactivo). "Agotado" no es un estado guardado: se calcula por stock
+  activo: producto ? producto.activo !== false : true,
 })
 
 export default function EditarProductoModal({
@@ -56,6 +54,11 @@ export default function EditarProductoModal({
   } = useValidacionProducto(valoresIniciales)
   const [errorServidor, setErrorServidor] = useState(null)
   const [guardando, setGuardando] = useState(false)
+  const [insumos, setInsumos] = useState(() => filasDesdeApi(producto?.receta))
+
+  const handleAgregarInsumo = (nueva) => setInsumos((prev) => [...prev, nueva])
+  const handleEditarInsumo = (id, datos) => setInsumos((prev) => prev.map((i) => (i.id === id ? { ...i, ...datos } : i)))
+  const handleEliminarInsumo = (id) => setInsumos((prev) => prev.filter((i) => i.id !== id))
 
   const handleChange = (campo) => (e) => {
     const { value } = e.target
@@ -85,15 +88,18 @@ export default function EditarProductoModal({
     }
     setGuardando(true)
     try {
+      const esVendible = formulario.tipo === 'TERMINADO' ? true : Boolean(formulario.esVendible)
       const datos = {
         ...formulario,
-        precioVenta: Number(formulario.precioVenta) || 0,
+        esVendible,
+        precioVenta: esVendible ? Number(formulario.precioVenta) || 0 : 0,
         stockActual: Number(formulario.stockActual) || 0,
         stockMinimo: Number(formulario.stockMinimo) || 0,
-        cantMinimaProduccion: Number(formulario.cantMinimaProduccion) || 0,
-        cantMaximaProduccion: Number(formulario.cantMaximaProduccion) || 0,
+        cantMinimaProduccion: Number(formulario.cantMinimaProduccion) || 1,
+        cantMaximaProduccion: Number(formulario.cantMaximaProduccion) || 1,
         id: producto?.id,
         codigo: producto?.codigo,
+        receta: filasHaciaApi(insumos),
       }
       await onGuardar(datos)
     } catch (err) {
@@ -106,6 +112,7 @@ export default function EditarProductoModal({
   const handleClose = () => {
     reiniciar()
     setErrorServidor(null)
+    setInsumos(filasDesdeApi(producto?.receta))
     onClose()
   }
 
@@ -137,6 +144,7 @@ export default function EditarProductoModal({
         </Typography>
 
         <CamposProducto
+          modo="editar"
           formulario={formulario}
           handleChange={handleChange}
           handleNumber={handleNumber}
@@ -158,10 +166,10 @@ export default function EditarProductoModal({
           >
             <CardContent sx={{ p: 3 }}>
               <RecetaTabla
-                insumos={[]}
-                onAgregarInsumo={() => {}}
-                onEditInsumo={() => {}}
-                onDeleteInsumo={() => {}}
+                insumos={insumos}
+                onAgregarInsumo={handleAgregarInsumo}
+                onEditInsumo={handleEditarInsumo}
+                onDeleteInsumo={handleEliminarInsumo}
                 codigoProducto={producto?.codigo}
               />
             </CardContent>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom'
+import { useNavigate, useLocation, Navigate, Link as RouterLink } from 'react-router-dom'
 import {
   Box,
   Card,
@@ -7,6 +7,7 @@ import {
   Link,
   Typography,
   useTheme,
+  Alert,
 } from '@mui/material'
 import { IconCheck } from '@tabler/icons-react'
 import { fonts } from '@app/theme/colors'
@@ -14,17 +15,26 @@ import { fonts } from '@app/theme/colors'
 import { Button } from '@shared/ui'
 import { ROUTES } from '@app/router/routes'
 import RecetaTabla from '../components/RecetaTabla'
+import { filasHaciaApi } from '../components/receta/recetaUtils'
+import { productosApi } from '../api/productosApi'
 
 export default function AgregarRecetaPage() {
   const theme = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
   const producto = location.state?.producto
-
-  const codigo = producto?.codigo ?? `PR-${producto?.productoId ?? '000'}`
-  const nombre = producto?.nombre ?? 'Producto sin nombre'
+  const productoId = location.state?.productoId ?? producto?.id
 
   const [insumos, setInsumos] = useState([])
+  const [guardando, setGuardando] = useState(false)
+  const [errorServidor, setErrorServidor] = useState(null)
+
+  if (!productoId) {
+    return <Navigate to={ROUTES.PRODUCTOS} replace />
+  }
+
+  const codigo = producto?.codigo ?? `PR-${productoId ?? '000'}`
+  const nombre = producto?.nombre ?? 'Producto sin nombre'
 
   const handleAgregarInsumo = (nuevoInsumo) => {
     setInsumos((prev) => [...prev, nuevoInsumo])
@@ -44,8 +54,17 @@ export default function AgregarRecetaPage() {
     navigate(ROUTES.PRODUCTOS)
   }
 
-  const handleGuardar = () => {
-    navigate(ROUTES.PRODUCTOS)
+  const handleGuardar = async () => {
+    if (guardando || insumos.length === 0) return
+    setGuardando(true)
+    setErrorServidor(null)
+    try {
+      await productosApi.actualizarProducto(productoId, { receta: filasHaciaApi(insumos) })
+      navigate(ROUTES.PRODUCTOS)
+    } catch (err) {
+      setErrorServidor(err?.message || 'No se pudo guardar la receta')
+      setGuardando(false)
+    }
   }
 
   return (
@@ -199,6 +218,12 @@ export default function AgregarRecetaPage() {
           </CardContent>
         </Card>
 
+        {errorServidor && (
+          <Alert severity="error" onClose={() => setErrorServidor(null)}>
+            {errorServidor}
+          </Alert>
+        )}
+
         {/* Botones finales */}
         <Box
           sx={{
@@ -209,11 +234,15 @@ export default function AgregarRecetaPage() {
             mt: 3,
           }}
         >
-          <Button variant="secondary" onClick={handleOmitir}>
+          <Button variant="secondary" onClick={handleOmitir} disabled={guardando}>
             Omitir por ahora
           </Button>
-          <Button leftIcon={<IconCheck size={16} />} onClick={handleGuardar}>
-            Guardar Receta y Finalizar
+          <Button
+            leftIcon={<IconCheck size={16} />}
+            onClick={handleGuardar}
+            disabled={guardando || insumos.length === 0}
+          >
+            {guardando ? 'Guardando...' : 'Guardar Receta y Finalizar'}
           </Button>
         </Box>
       </Box>
