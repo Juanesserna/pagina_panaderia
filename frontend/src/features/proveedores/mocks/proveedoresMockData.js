@@ -1,7 +1,7 @@
 // TEMPORAL: datos de ejemplo (reflejan tb_proveedor). Se eliminan cuando exista el backend real.
 export const initialProveedores = [
   {
-    id: 1,
+    id: 2001,
     nombre: 'Molinos El Trigal S.A.',
     nit: '900.123.456-7',
     descripcion: 'Proveedor líder de harinas y cereales para panaderías industriales',
@@ -12,7 +12,7 @@ export const initialProveedores = [
     estado: true,
   },
   {
-    id: 2,
+    id: 2002,
     nombre: 'Lácteos La Pradera Ltda.',
     nit: '800.654.321-2',
     descripcion: 'Distribuidora de productos lácteos frescos y UHT',
@@ -23,7 +23,7 @@ export const initialProveedores = [
     estado: true,
   },
   {
-    id: 3,
+    id: 2003,
     nombre: 'Dulces del Caribe S.A.S.',
     nit: '901.555.888-0',
     descripcion: 'Importadora de azúcares refinados y panela',
@@ -34,7 +34,7 @@ export const initialProveedores = [
     estado: false,
   },
   {
-    id: 4,
+    id: 2004,
     nombre: 'Grasas y Aceites Premium CIA.',
     nit: '700.200.100-5',
     descripcion: 'Especialistas en grasas vegetales y mantequillas importadas',
@@ -45,7 +45,7 @@ export const initialProveedores = [
     estado: true,
   },
   {
-    id: 5,
+    id: 2005,
     nombre: 'BioLevaduras Internacional',
     nit: '860.400.200-3',
     descripcion: 'Proveedor de levaduras activas y mejorantes para pan',

@@ -6,8 +6,8 @@
 //   id_proveedor, nombre, email, estado (BOOLEAN), nit, direccion,
 //   telefono, nombre_contacto
 // "descripcion" requiere columna nueva (ver MIGRACIÓN_SQL abajo), igual
-// decisión que se tomó para tb_insumo. "Código" se deriva de id_proveedor,
-// no es columna real.
+// decisión que se tomó para tb_insumo. El "ID" que se muestra en pantalla es
+// id_proveedor tal cual (igual que el ID de Ventas), sin código derivado.
 import { initialProveedores } from '../mocks/proveedoresMockData'
 
 const DELAY_MS = 300
@@ -25,7 +25,8 @@ export function fetchProveedores() {
 
 export function createProveedor(data) {
   const nuevo = {
-    id: proveedores.length ? Math.max(...proveedores.map((p) => p.id)) + 1 : 1,
+    // Proveedores usan IDs desde 2001; Insumos desde 1001 (no se cruzan).
+    id: proveedores.length ? Math.max(...proveedores.map((p) => p.id)) + 1 : 2001,
     nombre: data.nombre,
     nit: data.nit,
     descripcion: data.descripcion,
@@ -74,7 +75,7 @@ export function changeEstadoProveedor(id, nuevoEstado) {
 
    ALTER TABLE tb_proveedor ADD COLUMN descripcion TEXT;
 
-   "Código" se deriva de id_proveedor y no requiere columna nueva.
+   El "ID" que se muestra es id_proveedor y no requiere columna nueva.
    No se agregó historial ni fechas de creación/actualización porque
    tb_proveedor tampoco las tiene, igual que tb_insumo.
 ──────────────────────────────────────────────────────────────────────────── */

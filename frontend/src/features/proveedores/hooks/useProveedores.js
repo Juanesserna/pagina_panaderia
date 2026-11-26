@@ -7,8 +7,9 @@ import {
   changeEstadoProveedor,
 } from '../services/proveedoresService'
 import { PAGE_SIZE, filtrosVacios } from '../constants/proveedores.constants'
+import { esEmailValido, coincideBusqueda } from '../utils/proveedoresHelpers'
 
-export function useProveedores() {
+export function useProveedores({ mostrarNotificacion = () => {} } = {}) {
   const [proveedores, setProveedores] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -47,12 +48,34 @@ export function useProveedores() {
   }
 
   const handleGuardar = async (form) => {
-    if (!form.nombre || !form.nit) return
+    const faltantes = []
+    if (!String(form.nombre).trim()) faltantes.push('nombre de la empresa')
+    if (!String(form.nit).trim()) faltantes.push('NIT')
+    if (!String(form.nombreContacto).trim()) faltantes.push('nombre del contacto')
+    if (!String(form.telefono).trim()) faltantes.push('teléfono')
+    if (!String(form.email).trim()) faltantes.push('correo electrónico')
+    if (!String(form.direccion).trim()) faltantes.push('dirección')
 
-    if (vista === 'crear') {
-      await createProveedor(form)
-    } else if (vista === 'editar' && seleccionado) {
-      await updateProveedor(seleccionado.id, form)
+    if (faltantes.length > 0) {
+      mostrarNotificacion('advertencia', 'Campos obligatorios', `Falta completar: ${faltantes.join(', ')}`)
+      return
+    }
+    if (!esEmailValido(form.email)) {
+      mostrarNotificacion('advertencia', 'Correo inválido', 'Escribe un correo con formato nombre@empresa.com')
+      return
+    }
+
+    try {
+      if (vista === 'crear') {
+        const nuevo = await createProveedor(form)
+        mostrarNotificacion('exito', 'Proveedor registrado', `El proveedor ${nuevo.nombre} (ID ${nuevo.id}) se creó correctamente`)
+      } else if (vista === 'editar' && seleccionado) {
+        await updateProveedor(seleccionado.id, form)
+        mostrarNotificacion('exito', 'Proveedor actualizado', `El proveedor ${seleccionado.nombre} (ID ${seleccionado.id}) se actualizó correctamente`)
+      }
+    } catch {
+      mostrarNotificacion('error', 'No se pudo guardar', 'Ocurrió un error al guardar el proveedor. Intenta de nuevo')
+      return
     }
     await cargar()
     setVista('lista')
@@ -60,7 +83,13 @@ export function useProveedores() {
 
   const handleEliminar = async () => {
     if (!proveedorAccion) return
-    await deleteProveedor(proveedorAccion.id)
+    try {
+      await deleteProveedor(proveedorAccion.id)
+    } catch {
+      mostrarNotificacion('error', 'No se pudo eliminar', `No fue posible eliminar el proveedor ${proveedorAccion.nombre}. Intenta de nuevo`)
+      return
+    }
+    mostrarNotificacion('exito', 'Proveedor eliminado', `El proveedor ${proveedorAccion.nombre} (ID ${proveedorAccion.id}) se eliminó correctamente`)
     await cargar()
     setModalEliminar(false)
     if (vista !== 'lista') setVista('lista')
@@ -68,7 +97,13 @@ export function useProveedores() {
 
   const handleCambiarEstado = async (nuevoEstado) => {
     if (!proveedorAccion) return
-    await changeEstadoProveedor(proveedorAccion.id, nuevoEstado)
+    try {
+      await changeEstadoProveedor(proveedorAccion.id, nuevoEstado)
+    } catch {
+      mostrarNotificacion('error', 'No se pudo cambiar el estado', `No fue posible actualizar el estado del proveedor ${proveedorAccion.nombre}. Intenta de nuevo`)
+      return
+    }
+    mostrarNotificacion('exito', 'Estado actualizado', `El proveedor ${proveedorAccion.nombre} ahora está ${nuevoEstado ? 'Activo' : 'Inactivo'}`)
     await cargar()
     setModalEstado(false)
   }
@@ -81,15 +116,8 @@ export function useProveedores() {
   const filtered = useMemo(() => {
     let data = proveedores
 
-    if (search) {
-      const txt = search.toLowerCase()
-      data = data.filter(
-        (p) =>
-          p.nombre.toLowerCase().includes(txt) ||
-          `prv-${String(p.id).padStart(3, '0')}`.includes(txt) ||
-          p.nit.toLowerCase().includes(txt) ||
-          p.nombreContacto.toLowerCase().includes(txt)
-      )
+    if (search.trim()) {
+      data = data.filter((p) => coincideBusqueda(p, search))
     }
     if (filtrosActivos.estado)
       data = data.filter((p) => p.estado === (filtrosActivos.estado === 'true'))

@@ -1,7 +1,7 @@
 import { Box, Stack, Typography } from '@mui/material'
 import { Button, Modal, StatusBadge } from '@shared/ui'
 import { estadoVisualVariant } from '../constants/proveedores.constants'
-import { formatoCodigo, getEstadoVisual } from '../utils/proveedoresHelpers'
+import { getEstadoVisual } from '../utils/proveedoresHelpers'
 import { CampoInfo } from './Campo'
 
 const gridSx = { display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }
@@ -26,7 +26,7 @@ export function DetalleProveedor({ open, proveedor, onEditar, onCerrar }) {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Typography variant="subtitle1">Información general</Typography>
           <Box sx={gridSx}>
-            <CampoInfo label="Código" value={formatoCodigo(proveedor.id)} />
+            <CampoInfo label="ID" value={proveedor.id} />
             <CampoInfo label="NIT" value={proveedor.nit} />
             <CampoInfo label="Nombre empresa" value={proveedor.nombre} sx={anchoCompletoSx} />
           </Box>

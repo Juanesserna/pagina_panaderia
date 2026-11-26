@@ -3,7 +3,7 @@ import { alpha } from '@mui/material/styles'
 import { IconTrash } from '@tabler/icons-react'
 import { Button, Modal, StatusBadge } from '@shared/ui'
 import { estadoVisualVariant } from '../constants/proveedores.constants'
-import { formatoCodigo, getEstadoVisual } from '../utils/proveedoresHelpers'
+import { getEstadoVisual } from '../utils/proveedoresHelpers'
 
 export function EliminarProveedorDialog({ open, proveedor, onClose, onConfirmar }) {
   return (
@@ -29,7 +29,7 @@ export function EliminarProveedorDialog({ open, proveedor, onClose, onConfirmar 
             <Typography variant="subtitle1">¿Está seguro de eliminar este proveedor?</Typography>
             <Typography variant="caption">Esta acción no se puede deshacer.</Typography>
             <Typography variant="subtitle1" sx={{ mt: 1, color: 'primary.main' }}>
-              {proveedor.nombre} ({formatoCodigo(proveedor.id)})
+              {proveedor.nombre} (ID {proveedor.id})
             </Typography>
           </Box>
 

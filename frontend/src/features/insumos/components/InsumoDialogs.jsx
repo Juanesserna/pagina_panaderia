@@ -3,7 +3,6 @@ import { alpha } from '@mui/material/styles'
 import { IconTrash } from '@tabler/icons-react'
 import { Button, Modal, StatusBadge } from '@shared/ui'
 import { estadoVisualVariant } from '../constants/insumos.constants'
-import { formatoCodigo } from '../utils/insumosHelpers'
 
 export function EliminarInsumoDialog({ open, insumo, onClose, onConfirmar }) {
   return (
@@ -29,7 +28,7 @@ export function EliminarInsumoDialog({ open, insumo, onClose, onConfirmar }) {
             <Typography variant="subtitle1">¿Está seguro de eliminar este insumo?</Typography>
             <Typography variant="caption">Esta acción no se puede deshacer.</Typography>
             <Typography variant="subtitle1" sx={{ mt: 1, color: 'primary.main' }}>
-              {insumo.nombre} ({formatoCodigo(insumo.id)})
+              {insumo.nombre} (ID {insumo.id})
             </Typography>
           </Box>
 

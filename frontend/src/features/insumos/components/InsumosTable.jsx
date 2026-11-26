@@ -1,21 +1,21 @@
 import { IconButton, Stack, Typography } from '@mui/material'
 import { IconEye, IconPencil, IconTrash } from '@tabler/icons-react'
 import { DataTable } from '@shared/ui'
-import { formatoCodigo, formatoMoneda, nombreCategoria, unidadAbrev, getEstadoVisual } from '../utils/insumosHelpers'
+import { formatoMoneda, nombreCategoria, unidadAbrev, getEstadoVisual } from '../utils/insumosHelpers'
 import { EstadoSwitch } from './EstadoSwitch'
 
 const accionSx = { color: 'text.secondary', '&:hover': { color: 'primary.main' } }
 const accionEliminarSx = { color: 'text.secondary', '&:hover': { color: 'error.main' } }
 
-// Jerarquía de texto: el dato principal (código, nombre, stock actual) va en
+// Jerarquía de texto: el dato principal (ID, nombre, stock actual) va en
 // negrita; los datos secundarios (categoría, unidad, stock mínimo, costo) en body2.
 export function InsumosTable({ rows, sortKey, sortDir, onSort, onVer, onEditar, onCambiarEstado, onEliminar }) {
   const columns = [
     {
       key: 'id',
-      header: 'Código',
+      header: 'ID',
       sortable: true,
-      accessor: (r) => <Typography variant="mono">{formatoCodigo(r.id)}</Typography>,
+      accessor: (r) => <Typography variant="subtitle2">{r.id}</Typography>,
     },
     {
       key: 'nombre',
@@ -48,10 +48,10 @@ export function InsumosTable({ rows, sortKey, sortDir, onSort, onVer, onEditar, 
       accessor: (r) => <Typography variant="body2">{r.stockMinimo}</Typography>,
     },
     {
-      key: 'costoPromedio',
-      header: 'Costo prom.',
+      key: 'costoMaximo',
+      header: 'Costo máx.',
       align: 'right',
-      accessor: (r) => <Typography variant="body2">{formatoMoneda(r.costoPromedio)}</Typography>,
+      accessor: (r) => <Typography variant="body2">{formatoMoneda(r.costoMaximo)}</Typography>,
     },
     {
       key: 'estado',

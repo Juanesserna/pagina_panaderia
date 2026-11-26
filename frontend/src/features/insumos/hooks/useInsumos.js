@@ -9,7 +9,7 @@ import {
 import { getEstadoVisual } from '../utils/insumosHelpers'
 import { PAGE_SIZE, filtrosVacios } from '../constants/insumos.constants'
 
-export function useInsumos() {
+export function useInsumos({ mostrarNotificacion = () => {} } = {}) {
   const [insumos, setInsumos] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -48,12 +48,32 @@ export function useInsumos() {
   }
 
   const handleGuardar = async (form) => {
-    if (!form.nombre || !form.idCategoria || !form.idUnidadMedida) return
+    const faltantes = []
+    if (!String(form.nombre).trim()) faltantes.push('nombre')
+    if (!form.idCategoria) faltantes.push('categoría')
+    if (!form.idUnidadMedida) faltantes.push('unidad de medida')
+    if (form.stockMinimo === '') faltantes.push('stock mínimo')
 
-    if (vista === 'crear') {
-      await createInsumo(form)
-    } else if (vista === 'editar' && seleccionado) {
-      await updateInsumo(seleccionado.id, form)
+    if (faltantes.length > 0) {
+      mostrarNotificacion('advertencia', 'Campos obligatorios', `Falta completar: ${faltantes.join(', ')}`)
+      return
+    }
+    if (Number(form.stockMinimo) < 0) {
+      mostrarNotificacion('advertencia', 'Stock mínimo inválido', 'Debe ser un número mayor o igual a 0')
+      return
+    }
+
+    try {
+      if (vista === 'crear') {
+        const nuevo = await createInsumo({ ...form, nombre: form.nombre.trim() })
+        mostrarNotificacion('exito', 'Insumo registrado', `El insumo ${nuevo.nombre} (ID ${nuevo.id}) se creó correctamente`)
+      } else if (vista === 'editar' && seleccionado) {
+        await updateInsumo(seleccionado.id, form)
+        mostrarNotificacion('exito', 'Insumo actualizado', `El insumo ${seleccionado.nombre} (ID ${seleccionado.id}) se actualizó correctamente`)
+      }
+    } catch {
+      mostrarNotificacion('error', 'No se pudo guardar', 'Ocurrió un error al guardar el insumo. Intenta de nuevo')
+      return
     }
     await cargar()
     setVista('lista')
@@ -61,7 +81,13 @@ export function useInsumos() {
 
   const handleEliminar = async () => {
     if (!insumoAccion) return
-    await deleteInsumo(insumoAccion.id)
+    try {
+      await deleteInsumo(insumoAccion.id)
+    } catch {
+      mostrarNotificacion('error', 'No se pudo eliminar', `No fue posible eliminar el insumo ${insumoAccion.nombre}. Intenta de nuevo`)
+      return
+    }
+    mostrarNotificacion('exito', 'Insumo eliminado', `El insumo ${insumoAccion.nombre} (ID ${insumoAccion.id}) se eliminó correctamente`)
     await cargar()
     setModalEliminar(false)
     if (vista !== 'lista') setVista('lista')
@@ -69,7 +95,13 @@ export function useInsumos() {
 
   const handleCambiarEstado = async (nuevoEstado) => {
     if (!insumoAccion) return
-    await changeEstadoInsumo(insumoAccion.id, nuevoEstado)
+    try {
+      await changeEstadoInsumo(insumoAccion.id, nuevoEstado)
+    } catch {
+      mostrarNotificacion('error', 'No se pudo cambiar el estado', `No fue posible actualizar el estado del insumo ${insumoAccion.nombre}. Intenta de nuevo`)
+      return
+    }
+    mostrarNotificacion('exito', 'Estado actualizado', `El insumo ${insumoAccion.nombre} ahora está ${nuevoEstado ? 'Activo' : 'Inactivo'}`)
     await cargar()
     setModalEstado(false)
   }
@@ -87,7 +119,7 @@ export function useInsumos() {
       data = data.filter(
         (i) =>
           i.nombre.toLowerCase().includes(txt) ||
-          `ins-${String(i.id).padStart(3, '0')}`.includes(txt)
+          String(i.id).includes(txt)
       )
     }
     if (filtrosActivos.idCategoria)
