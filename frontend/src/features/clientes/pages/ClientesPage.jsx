@@ -1,7 +1,6 @@
-
 import { useState } from 'react'
-import Box from '@mui/material/Box'
-import Paper from '@mui/material/Paper'
+import { Alert, Box, Button, Paper } from '@mui/material'
+import { Users, UserCheck, UserRound } from 'lucide-react'
 
 import useClientes from '../hooks/useClientes'
 import ClientesToolbar from '../components/ClientesToolbar'
@@ -9,7 +8,7 @@ import ClientesTable from '../components/ClientesTable'
 import ClienteFormDialog from '../components/ClienteFormDialog'
 import ClienteDetailDialog from '../components/ClienteDetailDialog'
 
-import { Pagination } from '@shared/ui'
+import { Pagination, KPIGrid, KPICard } from '@shared/ui'
 import {
   NotificacionesContainer,
   useNotificaciones,
@@ -18,18 +17,23 @@ import {
 export default function ClientesPage() {
   const {
     clientes,
+    estadisticas,
     totalFiltrados,
     page,
     pageSize,
     setPage,
     loading,
     submitting,
+    error,
     search,
     setSearch,
     tipoDocumentoFiltro,
     setTipoDocumentoFiltro,
+    cuentaFiltro,
+    setCuentaFiltro,
     hayFiltrosActivos,
     limpiarFiltros,
+    cargarClientes,
     agregarCliente,
     editarCliente,
   } = useClientes()
@@ -40,23 +44,24 @@ export default function ClientesPage() {
 
   const { notificaciones, mostrarNotificacion } = useNotificaciones()
 
-  const handleSubmitForm = async (data) => {
-    try {
-      if (formDialog.mode === 'create') {
-        await agregarCliente(data)
+  async function handleSubmitForm(data) {
+    if (!formDialog || submitting) return
 
-        mostrarNotificacion(
-          'exito',
-          'Cliente registrado correctamente.'
-        )
+    try {
+      const esCreacion = formDialog.mode === 'create'
+
+      if (esCreacion) {
+        await agregarCliente(data)
       } else {
         await editarCliente(formDialog.cliente.id, data)
-
-        mostrarNotificacion(
-          'exito',
-          'Cliente actualizado correctamente.'
-        )
       }
+
+      mostrarNotificacion(
+        'exito',
+        esCreacion
+          ? 'Cliente registrado correctamente.'
+          : 'Cliente actualizado correctamente.'
+      )
 
       setFormDialog(null)
     } catch (error) {
@@ -67,17 +72,65 @@ export default function ClientesPage() {
     }
   }
 
-  const handleValidationError = (mensaje) => {
-  mostrarNotificacion('error', mensaje)
-}
   return (
-    <Box>
+    <Box sx={{ width: '100%', minWidth: 0 }}>
+      {/* Indicadores generales del módulo. */}
+      <Box sx={{ mb: 1.5 }}>
+        <KPIGrid compact>
+          <KPICard
+            title="Total clientes"
+            value={loading ? '—' : estadisticas.total}
+            icon={<Users size={18} />}
+            variant="accent"
+            compact
+          />
+
+          <KPICard
+            title="Con cuenta"
+            value={loading ? '—' : estadisticas.conCuenta}
+            icon={<UserCheck size={18} />}
+            variant="success"
+            compact
+          />
+
+          <KPICard
+            title="Sin cuenta"
+            value={loading ? '—' : estadisticas.sinCuenta}
+            icon={<UserRound size={18} />}
+            variant="info"
+            compact
+          />
+        </KPIGrid>
+      </Box>
+
+      {error && !formDialog && !loading && (
+        <Alert
+          severity="error"
+          sx={{ mb: 1.5 }}
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              onClick={cargarClientes}
+            >
+              Reintentar
+            </Button>
+          }
+        >
+          {error}
+        </Alert>
+      )}
+
       <Paper
         variant="outlined"
         sx={{
           borderColor: 'divider',
           borderRadius: 3,
+          borderTop: '4px solid',
+          borderTopColor: 'primary.main',
           overflow: 'hidden',
+          width: '100%',
+          minWidth: 0,
         }}
       >
         <ClientesToolbar
@@ -85,9 +138,11 @@ export default function ClientesPage() {
           onSearchChange={setSearch}
           onNuevoCliente={() => setFormDialog({ mode: 'create' })}
           filtersOpen={filtersOpen}
-          onToggleFilters={() => setFiltersOpen((prev) => !prev)}
+          onToggleFilters={() => setFiltersOpen(prev => !prev)}
           tipoDocumentoFiltro={tipoDocumentoFiltro}
           onTipoDocumentoFiltroChange={setTipoDocumentoFiltro}
+          cuentaFiltro={cuentaFiltro}
+          onCuentaFiltroChange={setCuentaFiltro}
           hayFiltrosActivos={hayFiltrosActivos}
           onLimpiarFiltros={limpiarFiltros}
         />
@@ -96,7 +151,7 @@ export default function ClientesPage() {
           clientes={clientes}
           loading={loading}
           onVer={setClienteDetalle}
-          onEditar={(cliente) =>
+          onEditar={cliente =>
             setFormDialog({ mode: 'edit', cliente })
           }
         />
@@ -123,9 +178,9 @@ export default function ClientesPage() {
         initialData={formDialog?.cliente}
         onClose={() => {
           if (!submitting) setFormDialog(null)
-          }}
+        }}
         onSubmit={handleSubmitForm}
-        onError={handleValidationError}
+        onError={mensaje => mostrarNotificacion('error', mensaje)}
         submitting={submitting}
       />
 
@@ -135,9 +190,7 @@ export default function ClientesPage() {
         onClose={() => setClienteDetalle(null)}
       />
 
-      <NotificacionesContainer
-        notificaciones={notificaciones}
-      />
+      <NotificacionesContainer notificaciones={notificaciones} />
     </Box>
   )
 }

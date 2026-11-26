@@ -1,16 +1,27 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
-import Dialog from '@mui/material/Dialog'
-import DialogTitle from '@mui/material/DialogTitle'
-import DialogContent from '@mui/material/DialogContent'
-import DialogActions from '@mui/material/DialogActions'
-import Button from '@mui/material/Button'
-import Alert from '@mui/material/Alert'
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Alert,
+  Box,
+  Typography,
+  Stack,
+  CircularProgress,
+} from '@mui/material'
 
-import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded'
-import { BRAND } from '@shared/utils/colors'
+import {
+  UserMinus,
+  UserCheck,
+  ShieldAlert,
+  Info,
+} from 'lucide-react'
+
+import UserAvatar from '@shared/components/UserAvatar'
+import StatusChip from './StatusChip'
 
 export default function DeleteUserDialog({
   open,
@@ -21,37 +32,51 @@ export default function DeleteUserDialog({
 }) {
   const [loadingAction, setLoadingAction] = useState(false)
   const [errorText, setErrorText] = useState('')
+  const ejecutando = useRef(false)
 
   const estaActivo = usuario?.estado === 'Activo'
-  const bloqueado =
-    Boolean(usuario) && estaActivo && esUnicoGerente(usuario)
 
-  const nombreUsuario =
-    usuario?.nombre?.trim() || `Usuario #${usuario?.id}`
+  const gerenteProtegido =
+    Boolean(usuario) &&
+    estaActivo &&
+    esUnicoGerente(usuario)
+
+  const rolNoDisponible =
+    Boolean(usuario) &&
+    !estaActivo &&
+    usuario.estadoRol !== 'Activo'
+
+  const bloqueado = gerenteProtegido || rolNoDisponible
+
+  const nombre =
+    usuario?.nombre?.trim() ||
+    usuario?.email?.trim() ||
+    `Usuario #${usuario?.id}`
+
+  const accion = estaActivo ? 'Desactivar' : 'Activar'
+  const color = bloqueado || estaActivo ? 'warning' : 'success'
+
+  const Icono = bloqueado
+    ? ShieldAlert
+    : estaActivo
+      ? UserMinus
+      : UserCheck
 
   useEffect(() => {
-    if (open) {
-      setErrorText('')
-      setLoadingAction(false)
-    }
+    if (open) setErrorText('')
   }, [open, usuario?.id])
 
-  const handleClose = (event, reason) => {
-    if (
-      loadingAction ||
-      reason === 'backdropClick' ||
-      reason === 'escapeKeyDown'
-    ) {
-      return
-    }
+  function handleClose() {
+    if (ejecutando.current) return
 
     setErrorText('')
     onClose?.()
   }
 
-  const run = async () => {
-    if (loadingAction || bloqueado || !usuario) return
+  async function confirmarCambio() {
+    if (ejecutando.current || bloqueado || !usuario) return
 
+    ejecutando.current = true
     setLoadingAction(true)
     setErrorText('')
 
@@ -60,18 +85,15 @@ export default function DeleteUserDialog({
 
       if (resultado === false) {
         setErrorText(
-          'No se pudo completar el cambio de estado. Puedes intentarlo nuevamente.'
+          'No se pudo completar la operación. Inténtalo nuevamente.'
         )
-        return
       }
-
-      setErrorText('')
-      onClose?.()
     } catch (error) {
       setErrorText(
         error.message || 'Ocurrió un error inesperado.'
       )
     } finally {
+      ejecutando.current = false
       setLoadingAction(false)
     }
   }
@@ -81,72 +103,170 @@ export default function DeleteUserDialog({
   return (
     <Dialog
       open={open}
-      onClose={handleClose}
+      onClose={() => {}}
       fullWidth
       maxWidth="xs"
+      slotProps={{
+        paper: {
+          sx: { borderRadius: 3 },
+        },
+      }}
     >
-      <DialogTitle sx={{ fontWeight: 700 }}>
-        {bloqueado
-          ? 'Acción no permitida'
-          : estaActivo
-            ? 'Inhabilitar usuario'
-            : 'Reactivar usuario'}
-      </DialogTitle>
-
-      <DialogContent>
-        {bloqueado ? (
-          <Alert
-            severity="warning"
-            icon={<WarningAmberRoundedIcon />}
+      <DialogTitle sx={{ px: 2.5, py: 2 }}>
+        <Stack
+          direction="row"
+          spacing={1.5}
+          sx={{ alignItems: 'center' }}
+        >
+          <Box
+            sx={{
+              width: 44,
+              height: 44,
+              flexShrink: 0,
+              display: 'grid',
+              placeItems: 'center',
+              borderRadius: 2,
+              bgcolor: 'action.hover',
+              color: `${color}.main`,
+            }}
           >
-            <strong>{nombreUsuario}</strong> es el único Gerente activo
-            del sistema. No se puede inhabilitar porque debe existir
-            al menos un Gerente activo.
-          </Alert>
-        ) : (
-          <Box sx={{ color: 'text.secondary' }}>
-            <Typography sx={{ fontSize: 14, mb: 1 }}>
-              {estaActivo ? (
-                <>
-                  ¿Deseas inhabilitar la cuenta de{' '}
-                  <strong>{nombreUsuario}</strong>?
-                </>
-              ) : (
-                <>
-                  ¿Deseas reactivar la cuenta de{' '}
-                  <strong>{nombreUsuario}</strong>?
-                </>
-              )}
+            <Icono size={23} />
+          </Box>
+
+          <Box>
+            <Typography
+              sx={{ fontSize: 17, fontWeight: 700 }}
+            >
+              {bloqueado
+                ? 'Acción no permitida'
+                : `¿${accion} usuario?`}
             </Typography>
 
-            <Typography sx={{ fontSize: 13 }}>
-              {estaActivo
-                ? 'El usuario perderá el acceso al sistema, pero su cuenta y sus registros se conservarán. Podrá reactivarse posteriormente.'
-                : 'El usuario recuperará el acceso al sistema según los privilegios de su rol asignado.'}
+            <Typography
+              sx={{
+                fontSize: 12,
+                color: 'text.secondary',
+              }}
+            >
+              Confirmación de cambio de estado
             </Typography>
           </Box>
-        )}
+        </Stack>
+      </DialogTitle>
 
-        {errorText && (
-          <Alert severity="error" sx={{ mt: 2 }}>
-            {errorText}
-          </Alert>
-        )}
+      <DialogContent sx={{ px: 2.5, pb: 2 }}>
+        <Stack spacing={2}>
+          {/* Resumen de la cuenta seleccionada */}
+          <Stack
+            direction="row"
+            spacing={1.2}
+            sx={{
+              alignItems: 'center',
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 2,
+              p: 1.5,
+            }}
+          >
+            <UserAvatar name={nombre} size={42} />
+
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography
+                sx={{
+                  fontSize: 14,
+                  fontWeight: 700,
+                  overflowWrap: 'anywhere',
+                }}
+              >
+                {nombre}
+              </Typography>
+
+              <Typography
+                sx={{
+                  fontSize: 12,
+                  color: 'text.secondary',
+                  overflowWrap: 'anywhere',
+                }}
+              >
+                {usuario.email}
+              </Typography>
+
+              <Typography
+                sx={{
+                  fontSize: 11,
+                  color: 'text.secondary',
+                }}
+              >
+                {usuario.rol || 'Sin rol asignado'}
+              </Typography>
+            </Box>
+
+            <StatusChip estado={usuario.estado} />
+          </Stack>
+
+          {bloqueado ? (
+            <Alert severity="warning">
+              {gerenteProtegido
+                ? 'Debe existir al menos un Gerente activo en el sistema.'
+                : 'No puedes activar esta cuenta mientras su rol esté inactivo o no esté disponible.'}
+            </Alert>
+          ) : (
+            <>
+              <Typography sx={{ fontSize: 14 }}>
+                {estaActivo
+                  ? 'Al desactivar esta cuenta, el usuario dejará de tener acceso al sistema.'
+                  : 'Al activar esta cuenta, el usuario recuperará el acceso según los privilegios de su rol.'}
+              </Typography>
+
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                  alignItems: 'flex-start',
+                  color: 'text.secondary',
+                }}
+              >
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexShrink: 0,
+                    mt: 0.25,
+                  }}
+                >
+                  <Info size={16} />
+                </Box>
+
+                <Typography
+                  sx={{ fontSize: 12, lineHeight: 1.5 }}
+                >
+                  {estaActivo
+                    ? 'Sus datos y registros se conservarán. Podrás volver a activar la cuenta posteriormente.'
+                    : 'Se conservarán sus datos, perfil asociado y registros existentes.'}
+                </Typography>
+              </Stack>
+            </>
+          )}
+
+          {errorText && (
+            <Alert severity="error">
+              {errorText}
+            </Alert>
+          )}
+        </Stack>
       </DialogContent>
 
       <DialogActions
         sx={{
-          px: 3,
-          pb: 2.5,
+          px: 2.5,
+          pb: 2,
+          gap: 0.5,
           flexWrap: 'wrap',
-          gap: 1,
         }}
       >
         {bloqueado ? (
           <Button
             onClick={handleClose}
             variant="contained"
-            sx={{ bgcolor: BRAND.orange }}
           >
             Entendido
           </Button>
@@ -157,24 +277,26 @@ export default function DeleteUserDialog({
               disabled={loadingAction}
               variant="outlined"
               color="inherit"
-              sx={{ borderColor: 'divider' }}
             >
               Cancelar
             </Button>
 
             <Button
-              onClick={run}
+              onClick={confirmarCambio}
               disabled={loadingAction}
-              variant="outlined"
-              color={estaActivo ? 'warning' : 'success'}
+              variant="contained"
+              color={color}
+              startIcon={
+                loadingAction
+                  ? <CircularProgress size={16} color="inherit" />
+                  : undefined
+              }
             >
               {loadingAction
                 ? 'Procesando...'
                 : errorText
                   ? 'Reintentar'
-                  : estaActivo
-                    ? 'Inhabilitar'
-                    : 'Reactivar'}
+                  : `${accion} cuenta`}
             </Button>
           </>
         )}

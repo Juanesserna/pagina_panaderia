@@ -1,25 +1,30 @@
-
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Typography,
+  Divider,
   IconButton,
-  Box,
-  TextField,
   InputAdornment,
   Stack,
+  TextField,
+  Typography,
 } from '@mui/material'
 
-import CloseIcon from '@mui/icons-material/Close'
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
-import Visibility from '@mui/icons-material/Visibility'
-import VisibilityOff from '@mui/icons-material/VisibilityOff'
-
-import { BRAND } from '@shared/utils/colors'
-import { Button } from '@shared/components/Button'
+import {
+  KeyRound,
+  LockKeyhole,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  Circle,
+  AlertTriangle,
+} from 'lucide-react'
 
 const EMPTY_FORM = {
   actual: '',
@@ -39,94 +44,210 @@ const CAMPOS = [
   { id: 'confirmar', label: 'Confirmar nueva contraseña' },
 ]
 
+const REGLAS = [
+  {
+    label: 'Mínimo 15 caracteres',
+    validar: (valor) => [...valor].length >= 15,
+  },
+  {
+    label: 'Máximo 72 bytes',
+    validar: (valor) =>
+      new TextEncoder().encode(valor).length <= 72,
+  },
+  {
+    label: 'Una letra mayúscula',
+    validar: (valor) => /\p{Lu}/u.test(valor),
+  },
+  {
+    label: 'Una letra minúscula',
+    validar: (valor) => /\p{Ll}/u.test(valor),
+  },
+  {
+    label: 'Un número',
+    validar: (valor) => /\d/.test(valor),
+  },
+  {
+    label: 'Un carácter especial',
+    validar: (valor) => /[\p{P}\p{S}]/u.test(valor),
+  },
+]
+
+const inputSx = {
+  '& .MuiOutlinedInput-root': {
+    bgcolor: 'background.alt',
+    borderRadius: '8px',
+    minHeight: 40,
+
+    '& fieldset': {
+      borderColor: 'divider',
+    },
+
+    '&:hover fieldset': {
+      borderColor: 'text.secondary',
+    },
+
+    '&.Mui-focused fieldset': {
+      borderColor: 'primary.main',
+    },
+
+    '&.Mui-error fieldset': {
+      borderColor: 'error.main',
+    },
+  },
+
+  '& .MuiFormHelperText-root': {
+    fontSize: 11,
+    mx: 0,
+  },
+
+  '& input:-webkit-autofill': {
+    WebkitBoxShadow: (theme) =>
+      `0 0 0 100px ${theme.palette.background.alt} inset`,
+    WebkitTextFillColor: (theme) =>
+      theme.palette.text.primary,
+  },
+}
+
 function validarCampo(campo, form) {
   const valor = form[campo]
 
   if (!valor.trim()) {
-    return 'Este campo es obligatorio'
+    return 'Este campo es obligatorio.'
   }
 
   if (campo === 'nueva') {
-    if (valor.length < 6) {
-      return 'La contraseña debe tener mínimo 6 caracteres'
+    if (valor === form.actual) {
+      return 'La nueva contraseña debe ser diferente a la actual.'
     }
 
-    if (valor === form.actual) {
-      return 'La nueva contraseña debe ser diferente a la actual'
+    if (!REGLAS.every((regla) => regla.validar(valor))) {
+      return 'La contraseña no cumple todos los requisitos.'
     }
   }
 
   if (campo === 'confirmar' && valor !== form.nueva) {
-    return 'Las contraseñas no coinciden'
+    return 'Las contraseñas no coinciden.'
   }
 
   return ''
+}
+
+// Requisitos de seguridad de la nueva contraseña.
+function RequisitosPassword({ password }) {
+  return (
+    <Box
+      sx={{
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: '8px',
+        bgcolor: 'background.alt',
+        p: 1.5,
+      }}
+    >
+      <Typography
+        sx={{
+          fontSize: 11.5,
+          fontWeight: 700,
+          mb: 1,
+        }}
+      >
+        Requisitos de seguridad
+      </Typography>
+
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',
+            sm: '1fr 1fr',
+          },
+          gap: 0.75,
+        }}
+      >
+        {REGLAS.map((regla) => {
+          const cumple =
+            Boolean(password) && regla.validar(password)
+
+          const Icon = cumple ? CheckCircle2 : Circle
+
+          return (
+            <Stack
+              key={regla.label}
+              direction="row"
+              spacing={0.75}
+              sx={{
+                alignItems: 'center',
+                color: cumple
+                  ? 'success.main'
+                  : 'text.secondary',
+              }}
+            >
+              <Icon size={14} />
+
+              <Typography
+                sx={{
+                  fontSize: 11,
+                  color: 'inherit',
+                }}
+              >
+                {regla.label}
+              </Typography>
+            </Stack>
+          )
+        })}
+      </Box>
+    </Box>
+  )
 }
 
 export default function CambiarPasswordDialog({
   open,
   onClose,
   onSubmit,
-  submitting,
+  onError,
+  submitting = false,
 }) {
   const [form, setForm] = useState(EMPTY_FORM)
   const [mostrar, setMostrar] = useState(EMPTY_MOSTRAR)
-  const [errores, setErrores] = useState({})
-  const [intentandoGuardar, setIntentandoGuardar] = useState(false)
+  const [tocados, setTocados] = useState({})
+  const [confirmacion, setConfirmacion] = useState(null)
+  const [guardando, setGuardando] = useState(false)
 
+  const enviando = useRef(false)
+
+  const ocupado = submitting || guardando
+
+  const hayCambios = Object.values(form).some(Boolean)
+
+  const errores = Object.fromEntries(
+    CAMPOS.map(({ id }) => [
+      id,
+      validarCampo(id, form),
+    ])
+  )
+
+  // Limpia las contraseñas al abrir o cerrar el formulario.
   useEffect(() => {
-    if (open) {
-      setForm({ ...EMPTY_FORM })
-      setMostrar({ ...EMPTY_MOSTRAR })
-      setErrores({})
-      setIntentandoGuardar(false)
-    }
+    setForm({ ...EMPTY_FORM })
+    setMostrar({ ...EMPTY_MOSTRAR })
+    setTocados({})
+    setConfirmacion(null)
   }, [open])
 
-  const handleChange = (campo) => (event) => {
-    const valor = event.target.value
-    const siguiente = { ...form, [campo]: valor }
-
-    setForm(siguiente)
-
-    setErrores((prev) => {
-      const nuevos = { ...prev }
-
-      if (Object.prototype.hasOwnProperty.call(prev, campo)) {
-        nuevos[campo] = validarCampo(campo, siguiente)
-      }
-
-      // Actualizar errores dependientes cuando cambian
-      // la contraseña actual o la nueva.
-      if (campo === 'actual' && 'nueva' in prev) {
-        nuevos.nueva = validarCampo('nueva', siguiente)
-      }
-
-      if (campo === 'nueva' && 'confirmar' in prev) {
-        nuevos.confirmar = validarCampo('confirmar', siguiente)
-      }
-
-      return nuevos
-    })
-  }
-
-  const validarUno = (campo) => {
-    const error = validarCampo(campo, form)
-
-    setErrores((prev) => ({
+  const marcarCampo = (campo) => {
+    setTocados((prev) => ({
       ...prev,
-      [campo]: error,
+      [campo]: true,
     }))
-
-    return !error
   }
 
-  const handleTab = (campo) => (event) => {
-    if (event.key !== 'Tab') return
+  const cambiarCampo = (campo) => (event) => {
+    const valor = event.target.value
 
-    if (!validarUno(campo)) {
-      event.preventDefault()
-    }
+    setForm((prev) => ({
+      ...prev,
+      [campo]: valor,
+    }))
   }
 
   const toggleMostrar = (campo) => {
@@ -136,190 +257,433 @@ export default function CambiarPasswordDialog({
     }))
   }
 
-  const handleSubmit = () => {
-    if (submitting || intentandoGuardar) return
+  const manejarTab = (campo) => (event) => {
+    if (event.key !== 'Tab') return
 
-    const nuevosErrores = Object.fromEntries(
-      CAMPOS.map(({ id }) => [id, validarCampo(id, form)])
-    )
+    marcarCampo(campo)
 
-    setErrores(nuevosErrores)
-
-    if (Object.values(nuevosErrores).some(Boolean)) return
-
-    setIntentandoGuardar(true)
-
-    Promise.resolve()
-      .then(() =>
-        onSubmit({
-          actual: form.actual,
-          nueva: form.nueva,
-        })
-      )
-      .catch(() => {
-        // El componente padre gestiona el mensaje de error.
-      })
-      .finally(() => {
-        setIntentandoGuardar(false)
-      })
+    if (errores[campo]) {
+      event.preventDefault()
+      event.stopPropagation()
+    }
   }
 
-  const handleClose = (event, reason) => {
-    if (submitting || intentandoGuardar) return
+  const validarFormulario = () => {
+    setTocados(
+      Object.fromEntries(
+        CAMPOS.map(({ id }) => [id, true])
+      )
+    )
 
-    if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
+    const primerError = CAMPOS.find(
+      ({ id }) => errores[id]
+    )
+
+    if (primerError) {
+      onError?.('Revisa los campos y requisitos de seguridad.')
+
+      requestAnimationFrame(() => {
+        document
+          .getElementById(`password-${primerError.id}`)
+          ?.focus()
+      })
+
+      return false
+    }
+
+    return true
+  }
+
+  const guardar = async () => {
+    if (ocupado || enviando.current) return
+    if (!validarFormulario()) return
+
+    enviando.current = true
+    setGuardando(true)
+    setConfirmacion(null)
+
+    try {
+      const resultado = await onSubmit({
+        actual: form.actual,
+        nueva: form.nueva,
+      })
+
+      if (resultado !== false) {
+        setForm({ ...EMPTY_FORM })
+        setMostrar({ ...EMPTY_MOSTRAR })
+        setTocados({})
+      }
+    } catch (error) {
+      onError?.(
+        error.message || 'No se pudo cambiar la contraseña.'
+      )
+    } finally {
+      enviando.current = false
+      setGuardando(false)
+    }
+  }
+
+  const manejarSubmit = (event) => {
+    event.preventDefault()
+
+    if (ocupado) return
+    if (!validarFormulario()) return
+
+    setMostrar({ ...EMPTY_MOSTRAR })
+    setConfirmacion('guardar')
+  }
+
+  const cancelar = () => {
+    if (ocupado) return
+
+    if (hayCambios) {
+      setMostrar({ ...EMPTY_MOSTRAR })
+      setConfirmacion('salir')
+    } else {
+      onClose()
+    }
+  }
+
+  const limpiar = () => {
+    setForm({ ...EMPTY_FORM })
+    setMostrar({ ...EMPTY_MOSTRAR })
+    setTocados({})
+    setConfirmacion(null)
+  }
+
+  const confirmarAccion = () => {
+    if (ocupado) return
+
+    if (confirmacion === 'guardar') {
+      guardar()
       return
     }
 
-    onClose()
+    if (confirmacion === 'limpiar') {
+      limpiar()
+      return
+    }
+
+    if (confirmacion === 'salir') {
+      limpiar()
+      onClose()
+    }
   }
 
-  const bloqueado = submitting || intentandoGuardar
+  const esGuardar = confirmacion === 'guardar'
+  const esLimpiar = confirmacion === 'limpiar'
+
+  const tituloConfirmacion = esGuardar
+    ? '¿Actualizar la contraseña?'
+    : esLimpiar
+      ? '¿Limpiar el formulario?'
+      : '¿Salir sin guardar?'
+
+  const descripcionConfirmacion = esGuardar
+    ? 'Se realizará el cambio de contraseña en modo de prueba.'
+    : esLimpiar
+      ? 'Se eliminarán los datos ingresados en el formulario.'
+      : 'Los datos ingresados se perderán.'
 
   return (
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      disableEscapeKeyDown
-      fullWidth
-      maxWidth="xs"
-    >
-      <DialogTitle
-        sx={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          pb: 0,
+    <>
+      <Dialog
+        open={open}
+        onClose={(_, reason) => {
+          if (reason === 'escapeKeyDown') cancelar()
+        }}
+        fullWidth
+        maxWidth="xs"
+        aria-labelledby="cambiar-password-titulo"
+        slotProps={{
+          paper: {
+            sx: { borderRadius: 3 },
+          },
         }}
       >
-        <Box>
-          <Typography fontWeight={700} fontSize={18}>
-            Cambiar contraseña
-          </Typography>
-
-          <Typography fontSize={13} color="text.secondary">
-            Actualiza la contraseña de tu cuenta.
-          </Typography>
-        </Box>
-
-        <IconButton
-          onClick={handleClose}
-          disabled={bloqueado}
-          size="small"
-          aria-label="Cerrar formulario"
+        <Box
+          component="form"
+          noValidate
+          onSubmit={manejarSubmit}
         >
-          <CloseIcon fontSize="small" />
-        </IconButton>
-      </DialogTitle>
-
-      <DialogContent
-        sx={{
-          pt: 3,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 2,
-        }}
-      >
-        <Stack spacing={2}>
-          {CAMPOS.map(({ id, label }) => (
-            <Box key={id}>
-              <Typography
+          <DialogTitle>
+            <Stack
+              direction="row"
+              spacing={1.5}
+              sx={{ alignItems: 'center' }}
+            >
+              <Box
                 sx={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  letterSpacing: 0.5,
-                  color: 'text.secondary',
-                  mb: 0.5,
+                  width: 40,
+                  height: 40,
+                  borderRadius: 2,
+                  bgcolor: 'action.hover',
+                  color: 'primary.main',
+                  display: 'grid',
+                  placeItems: 'center',
+                  flexShrink: 0,
                 }}
               >
-                {label.toUpperCase()}
+                <KeyRound size={20} />
+              </Box>
+
+              <Box>
+                <Typography
+                  id="cambiar-password-titulo"
+                  sx={{
+                    fontSize: 17,
+                    fontWeight: 700,
+                  }}
+                >
+                  Cambiar contraseña
+                </Typography>
+
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                >
+                  Actualiza la contraseña de tu cuenta.
+                </Typography>
+              </Box>
+            </Stack>
+          </DialogTitle>
+
+          <Divider />
+
+          <DialogContent sx={{ py: 2 }}>
+            <Stack spacing={1.5}>
+              <Alert severity="info" sx={{ fontSize: 11.5 }}>
+                Modo de prueba. No se modifican credenciales reales.
+              </Alert>
+
+              {CAMPOS.map(({ id, label }) => (
+                <Box key={id}>
+                  <Typography
+                    component="label"
+                    htmlFor={`password-${id}`}
+                    sx={{
+                      display: 'block',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      letterSpacing: 0.5,
+                      color: 'text.secondary',
+                      textTransform: 'uppercase',
+                      mb: 0.5,
+                    }}
+                  >
+                    {label}
+
+                    <Box
+                      component="span"
+                      sx={{
+                        color: 'error.main',
+                        ml: 0.5,
+                      }}
+                    >
+                      *
+                    </Box>
+                  </Typography>
+
+                  <TextField
+                    id={`password-${id}`}
+                    name={id}
+                    fullWidth
+                    required
+                    size="small"
+                    type={mostrar[id] ? 'text' : 'password'}
+                    value={form[id]}
+                    onChange={cambiarCampo(id)}
+                    onBlur={() => marcarCampo(id)}
+                    onKeyDown={manejarTab(id)}
+                    placeholder={`Ingresa ${label.toLowerCase()}`}
+                    error={Boolean(tocados[id] && errores[id])}
+                    helperText={tocados[id] ? errores[id] : ''}
+                    disabled={ocupado}
+                    autoComplete={
+                      id === 'actual'
+                        ? 'current-password'
+                        : 'new-password'
+                    }
+                    sx={inputSx}
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <LockKeyhole size={17} />
+                          </InputAdornment>
+                        ),
+
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              size="small"
+                              edge="end"
+                              type="button"
+                              disabled={ocupado}
+                              onMouseDown={(event) =>
+                                event.preventDefault()
+                              }
+                              onClick={() => toggleMostrar(id)}
+                              aria-label={
+                                mostrar[id]
+                                  ? `Ocultar ${label.toLowerCase()}`
+                                  : `Mostrar ${label.toLowerCase()}`
+                              }
+                              aria-pressed={mostrar[id]}
+                            >
+                              {mostrar[id]
+                                ? <EyeOff size={17} />
+                                : <Eye size={17} />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
+                  />
+
+                  {id === 'nueva' && (
+                    <Box sx={{ mt: 1.25 }}>
+                      <RequisitosPassword
+                        password={form.nueva}
+                      />
+                    </Box>
+                  )}
+                </Box>
+              ))}
+
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
+                Los campos marcados con * son obligatorios.
               </Typography>
+            </Stack>
+          </DialogContent>
 
-              <TextField
-                fullWidth
-                size="small"
-                type={mostrar[id] ? 'text' : 'password'}
-                value={form[id]}
-                onChange={handleChange(id)}
-                onBlur={() => validarUno(id)}
-                onKeyDown={handleTab(id)}
-                placeholder={`Ingresa ${label.toLowerCase()}`}
-                error={Boolean(errores[id])}
-                helperText={errores[id] || ''}
-                disabled={bloqueado}
-                autoComplete={
-                  id === 'actual'
-                    ? 'current-password'
-                    : 'new-password'
-                }
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    bgcolor: 'action.hover',
-                    borderRadius: 2,
-                  },
-                }}
-                slotProps={{
-                  input: {
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <LockOutlinedIcon
-                          fontSize="small"
-                          sx={{ color: 'text.secondary' }}
-                        />
-                      </InputAdornment>
-                    ),
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          size="small"
-                          edge="end"
-                          onClick={() => toggleMostrar(id)}
-                          disabled={bloqueado}
-                          aria-label={
-                            mostrar[id]
-                              ? 'Ocultar contraseña'
-                              : 'Mostrar contraseña'
-                          }
-                        >
-                          {mostrar[id] ? (
-                            <VisibilityOff fontSize="small" />
-                          ) : (
-                            <Visibility fontSize="small" />
-                          )}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-              />
+          <Divider />
+
+          <DialogActions sx={{ px: 2.5, py: 2, gap: 0.5 }}>
+            <Button
+              color="inherit"
+              disabled={ocupado || !hayCambios}
+              onClick={() => setConfirmacion('limpiar')}
+              sx={{ mr: 'auto' }}
+            >
+              Limpiar
+            </Button>
+
+            <Button
+              color="inherit"
+              disabled={ocupado}
+              onClick={cancelar}
+            >
+              Cancelar
+            </Button>
+
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={ocupado}
+              startIcon={
+                ocupado
+                  ? <CircularProgress size={15} color="inherit" />
+                  : <KeyRound size={15} />
+              }
+            >
+              {ocupado ? 'Guardando...' : 'Actualizar'}
+            </Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
+
+      {/* Confirmaciones del formulario. */}
+      <Dialog
+        open={open && Boolean(confirmacion)}
+        onClose={(_, reason) => {
+          if (reason === 'escapeKeyDown' && !ocupado) {
+            setConfirmacion(null)
+          }
+        }}
+        fullWidth
+        maxWidth="xs"
+        aria-labelledby="confirmar-password-titulo"
+        slotProps={{
+          paper: {
+            sx: { borderRadius: 3 },
+          },
+        }}
+      >
+        <DialogTitle>
+          <Stack
+            direction="row"
+            spacing={1.5}
+            sx={{ alignItems: 'center' }}
+          >
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: 2,
+                bgcolor: 'action.hover',
+                color: esGuardar
+                  ? 'primary.main'
+                  : 'warning.main',
+                display: 'grid',
+                placeItems: 'center',
+                flexShrink: 0,
+              }}
+            >
+              {esGuardar
+                ? <CheckCircle2 size={21} />
+                : <AlertTriangle size={21} />}
             </Box>
-          ))}
-        </Stack>
-      </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
-        <Button
-          onClick={handleClose}
-          disabled={bloqueado}
-          color="inherit"
-        >
-          Cancelar
-        </Button>
+            <Typography
+              id="confirmar-password-titulo"
+              sx={{
+                fontSize: 16,
+                fontWeight: 700,
+              }}
+            >
+              {tituloConfirmacion}
+            </Typography>
+          </Stack>
+        </DialogTitle>
 
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          disabled={bloqueado}
-          sx={{
-            bgcolor: BRAND.orange,
-            '&:hover': {
-              bgcolor: BRAND.orangeDark,
-            },
-          }}
-        >
-          {bloqueado ? 'Guardando...' : 'Actualizar contraseña'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+        <DialogContent>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+          >
+            {descripcionConfirmacion}
+          </Typography>
+        </DialogContent>
+
+        <DialogActions>
+          <Button
+            color="inherit"
+            disabled={ocupado}
+            onClick={() => setConfirmacion(null)}
+          >
+            {esGuardar || esLimpiar
+              ? 'Cancelar'
+              : 'Seguir editando'}
+          </Button>
+
+          <Button
+            variant="contained"
+            color={esGuardar ? 'primary' : 'warning'}
+            disabled={ocupado}
+            onClick={confirmarAccion}
+          >
+            {esGuardar
+              ? 'Confirmar'
+              : esLimpiar
+                ? 'Limpiar'
+                : 'Salir sin guardar'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   )
 }

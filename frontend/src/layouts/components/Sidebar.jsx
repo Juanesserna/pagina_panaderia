@@ -6,11 +6,12 @@ import {
 import { useTheme } from "@mui/material/styles";
 import {
   LayoutDashboard, TrendingUp, Factory, ShoppingCart, Truck,
-  Package, Layers, Users, UserRound, UserCog, Tag, Shield, ClipboardList, ChevronLeft, ChevronRight, ChevronDown,
+  Package, Layers, Users, UserRound, UserCog, Tag, Shield,
+  Settings, ClipboardList, ChevronLeft, ChevronRight, ChevronDown,
 } from "lucide-react";
 import { useColorMode } from "@app/providers/ThemeProvider";
-import logoOscuro from "@assets/img/logo_oscuro.png";
-import logoClaro from "@assets/img/logo_claro.png";
+import logoOscuro from "@assets/img/logo_oscuro.webp";
+import logoClaro from "@assets/img/logo_claro.webp";
 
 const NAV_GROUPS = [
   {
@@ -54,7 +55,7 @@ const NAV_GROUPS = [
     ]
   },
   {
-    key: "configuracion", label: "Configuración", icon: <Shield size={18} />,
+    key: "configuracion", label: "Configuración", icon: <Settings size={18} />,
     items: [
       { id: "roles", label: "Roles", icon: <Shield size={18} /> },
     ]

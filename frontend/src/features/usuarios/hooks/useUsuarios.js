@@ -3,6 +3,7 @@ import {
   useMemo,
   useState,
   useCallback,
+  useRef,
 } from 'react'
 
 import {
@@ -18,6 +19,7 @@ const PAGE_SIZE = 6
 export default function useUsuarios() {
   const [usuarios, setUsuarios] = useState([])
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
 
   const [search, setSearch] = useState('')
@@ -25,35 +27,32 @@ export default function useUsuarios() {
   const [estadoFiltro, setEstadoFiltro] = useState('Todos')
   const [page, setPage] = useState(1)
 
-  // Cargar usuarios.
+  const ejecutando = useRef(false)
+
+  // Cargar los usuarios y sus relaciones actuales.
   useEffect(() => {
-    let active = true
+    let activo = true
 
-    const cargarUsuarios = async () => {
-      try {
-        const data = await fetchUsuarios()
+    fetchUsuarios()
+      .then((data) => {
+        if (!activo) return
 
-        if (active) {
-          setUsuarios(data)
-          setError(null)
-        }
-      } catch (err) {
-        if (active) {
-          setError(
-            err.message || 'No se pudieron cargar los usuarios.'
-          )
-        }
-      } finally {
-        if (active) {
-          setLoading(false)
-        }
-      }
-    }
+        setUsuarios(data)
+        setError(null)
+      })
+      .catch((err) => {
+        if (!activo) return
 
-    cargarUsuarios()
+        setError(
+          err.message || 'No se pudieron cargar los usuarios.'
+        )
+      })
+      .finally(() => {
+        if (activo) setLoading(false)
+      })
 
     return () => {
-      active = false
+      activo = false
     }
   }, [])
 
@@ -68,10 +67,7 @@ export default function useUsuarios() {
         usuario.rol,
         usuario.documento,
         usuario.telefono,
-        usuario.cliente?.nombre,
-        usuario.cliente?.documento,
-        usuario.empleado?.nombre,
-        usuario.empleado?.documento,
+        usuario.tipoPerfil,
       ]
 
       const coincideBusqueda =
@@ -84,7 +80,8 @@ export default function useUsuarios() {
         rolFiltro === 'Todos' || usuario.rol === rolFiltro
 
       const coincideEstado =
-        estadoFiltro === 'Todos' || usuario.estado === estadoFiltro
+        estadoFiltro === 'Todos' ||
+        usuario.estado === estadoFiltro
 
       return coincideBusqueda && coincideRol && coincideEstado
     })
@@ -96,56 +93,51 @@ export default function useUsuarios() {
     Math.ceil(usuariosFiltrados.length / PAGE_SIZE)
   )
 
-  // Corregir la página cuando los filtros reducen los resultados.
-  useEffect(() => {
-    if (page > pageCount) {
-      setPage(pageCount)
-    }
-  }, [page, pageCount])
+  const paginaActual = Math.max(1, Math.min(page, pageCount))
 
-  const paginaActual = Math.min(page, pageCount)
+  useEffect(() => {
+    if (page !== paginaActual) {
+      setPage(paginaActual)
+    }
+  }, [page, paginaActual])
 
   const usuariosPagina = useMemo(() => {
-    const start = (paginaActual - 1) * PAGE_SIZE
+    const inicio = (paginaActual - 1) * PAGE_SIZE
 
-    return usuariosFiltrados.slice(start, start + PAGE_SIZE)
+    return usuariosFiltrados.slice(
+      inicio,
+      inicio + PAGE_SIZE
+    )
   }, [usuariosFiltrados, paginaActual])
 
-  // Indicadores generales.
-  const kpis = useMemo(
-    () => ({
-      activos: usuarios.filter(
-        (usuario) => usuario.estado === 'Activo'
-      ).length,
+  // Indicadores calculados sobre todos los usuarios.
+  const kpis = useMemo(() => {
+    const activos = usuarios.filter(
+      (usuario) => usuario.estado === 'Activo'
+    ).length
 
-      inactivos: usuarios.filter(
-        (usuario) => usuario.estado === 'Inactivo'
-      ).length,
-
+    return {
       total: usuarios.length,
-    }),
-    [usuarios]
-  )
+      activos,
+      inactivos: usuarios.length - activos,
+    }
+  }, [usuarios])
 
-  // Búsqueda.
   const cambiarBusqueda = useCallback((value) => {
     setSearch(value)
     setPage(1)
   }, [])
 
-  // Filtro por rol.
   const cambiarRolFiltro = useCallback((value) => {
     setRolFiltro(value)
     setPage(1)
   }, [])
 
-  // Filtro por estado.
   const cambiarEstadoFiltro = useCallback((value) => {
     setEstadoFiltro(value)
     setPage(1)
   }, [])
 
-  // Limpiar filtros.
   const limpiarFiltros = useCallback(() => {
     setRolFiltro('Todos')
     setEstadoFiltro('Todos')
@@ -155,72 +147,108 @@ export default function useUsuarios() {
   const hayFiltrosActivos =
     rolFiltro !== 'Todos' || estadoFiltro !== 'Todos'
 
-  // Crear usuario: agregar al final y mostrar la última página.
+  // Centraliza el control de operaciones y evita envíos duplicados.
+  const ejecutarOperacion = useCallback(async (operacion) => {
+    if (ejecutando.current) {
+      throw new Error('Ya hay una operación en proceso.')
+    }
+
+    ejecutando.current = true
+    setSubmitting(true)
+
+    try {
+      return await operacion()
+    } finally {
+      ejecutando.current = false
+      setSubmitting(false)
+    }
+  }, [])
+
+  // Crear: agregar al final y mostrar el nuevo registro.
   const agregarUsuario = useCallback(
-    async (data) => {
-      const nuevo = await createUsuario(data)
-      const actualizados = [...usuarios, nuevo]
+    (data) =>
+      ejecutarOperacion(async () => {
+        const nuevo = await createUsuario(data)
 
-      setUsuarios(actualizados)
+        setUsuarios((prev) => [...prev, nuevo])
 
-      // Limpiar búsqueda y filtros para que el nuevo registro sea visible.
-      setSearch('')
-      setRolFiltro('Todos')
-      setEstadoFiltro('Todos')
+        setSearch('')
+        setRolFiltro('Todos')
+        setEstadoFiltro('Todos')
 
-      setPage(
-        Math.max(1, Math.ceil(actualizados.length / PAGE_SIZE))
-      )
+        setPage(
+          Math.max(
+            1,
+            Math.ceil((usuarios.length + 1) / PAGE_SIZE)
+          )
+        )
 
-      return nuevo
-    },
-    [usuarios]
+        return nuevo
+      }),
+    [ejecutarOperacion, usuarios.length]
   )
 
+  // Actualiza únicamente el registro modificado.
+  const actualizarRegistro = useCallback((actualizado) => {
+    setUsuarios((prev) =>
+      prev.map((usuario) =>
+        usuario.id === actualizado.id
+          ? actualizado
+          : usuario
+      )
+    )
+
+    return actualizado
+  }, [])
+
   // Editar usuario.
-  const editarUsuario = useCallback(async (id, data) => {
-    const actualizado = await updateUsuario(id, data)
+  const editarUsuario = useCallback(
+    (id, data) =>
+      ejecutarOperacion(async () => {
+        const actualizado = await updateUsuario(id, data)
 
-    setUsuarios((prev) =>
-      prev.map((usuario) =>
-        usuario.id === id ? actualizado : usuario
-      )
-    )
+        return actualizarRegistro(actualizado)
+      }),
+    [ejecutarOperacion, actualizarRegistro]
+  )
 
-    return actualizado
-  }, [])
+  // Activar o desactivar usuario.
+  const cambiarEstado = useCallback(
+    (id) =>
+      ejecutarOperacion(async () => {
+        const actualizado = await toggleEstadoUsuario(id)
 
-  // Cambiar estado.
-  const cambiarEstado = useCallback(async (id) => {
-    const actualizado = await toggleEstadoUsuario(id)
-
-    setUsuarios((prev) =>
-      prev.map((usuario) =>
-        usuario.id === id ? actualizado : usuario
-      )
-    )
-
-    return actualizado
-  }, [])
+        return actualizarRegistro(actualizado)
+      }),
+    [ejecutarOperacion, actualizarRegistro]
+  )
 
   return {
     usuarios: usuariosPagina,
     totalFiltrados: usuariosFiltrados.length,
+
     page: paginaActual,
     pageCount,
     pageSize: PAGE_SIZE,
     setPage,
+
     loading,
+    submitting,
     error,
     kpis,
+
     search,
     setSearch: cambiarBusqueda,
+
     rolFiltro,
     setRolFiltro: cambiarRolFiltro,
+
     estadoFiltro,
     setEstadoFiltro: cambiarEstadoFiltro,
+
     hayFiltrosActivos,
     limpiarFiltros,
+
     agregarUsuario,
     editarUsuario,
     cambiarEstado,

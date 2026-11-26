@@ -1,20 +1,24 @@
+
 import { useState } from 'react'
 import Box from '@mui/material/Box'
 import Paper from '@mui/material/Paper'
 import Typography from '@mui/material/Typography'
+
 import useRoles from '../hooks/useRoles'
 import RolesKpis from '../components/RolesKpis'
-import RolesInfoBanner from '../components/RolesInfoBanner'
+
 import RolesToolbar from '../components/RolesToolbar'
 import RolesTable from '../components/RolesTable'
 import RoleFormDialog from '../components/RoleFormDialog'
 import RoleDetailDialog from '../components/RoleDetailDialog'
 import DeleteRoleDialog from '../components/DeleteRoleDialog'
+
 import { Pagination } from '@shared/ui'
 import {
   NotificacionesContainer,
   useNotificaciones,
 } from '@shared/notifications'
+import { GERENTE_ID } from '../services/rolesService'
 
 export default function RolesPage() {
   const {
@@ -24,6 +28,7 @@ export default function RolesPage() {
     pageSize,
     setPage,
     loading,
+    submitting,
     kpis,
     search,
     setSearch,
@@ -34,75 +39,110 @@ export default function RolesPage() {
   } = useRoles()
 
   const [formDialog, setFormDialog] = useState(null)
-  const [submitting, setSubmitting] = useState(false)
   const [rolDetalle, setRolDetalle] = useState(null)
   const [rolAEliminar, setRolAEliminar] = useState(null)
 
-  const { notificaciones, mostrarNotificacion } = useNotificaciones()
+  const { notificaciones, mostrarNotificacion } =
+    useNotificaciones()
 
   const handleSubmitForm = async (data) => {
-    setSubmitting(true)
+    if (!formDialog || submitting) return
 
     try {
       if (formDialog.mode === 'create') {
         await agregarRol(data)
-        mostrarNotificacion('exito', 'Rol creado correctamente.')
+
+        mostrarNotificacion(
+          'exito',
+          'Rol creado correctamente.'
+        )
       } else {
         await editarRol(formDialog.rol.id, data)
-        mostrarNotificacion('exito', 'Rol actualizado correctamente.')
+
+        mostrarNotificacion(
+          'exito',
+          'Rol actualizado correctamente.'
+        )
       }
 
       setFormDialog(null)
     } catch (error) {
       mostrarNotificacion(
         'error',
-        error.message || 'No se pudo completar la operación. Intenta nuevamente.'
+        error.message ||
+        'No se pudo completar la operación. Intenta nuevamente.'
       )
-    } finally {
-      setSubmitting(false)
     }
   }
 
   const handleToggleEstado = async (rolId) => {
-    const rol = roles.find((item) => item.id === rolId)
-    if (!rol) return
+    const rol = roles.find(item => item.id === rolId)
 
-    const nuevoEstado = rol.estado === 'Activo' ? 'Inactivo' : 'Activo'
+    if (!rol) {
+      throw new Error('El rol seleccionado no existe.')
+    }
+
+    if (submitting) {
+      throw new Error('Hay una operación en proceso.')
+    }
 
     try {
-      await cambiarEstado(rolId)
+      const actualizado = await cambiarEstado(rolId)
 
       mostrarNotificacion(
         'exito',
-        `El rol ${rol.nombre} se ${nuevoEstado === 'Activo' ? 'activó' : 'desactivó'} correctamente.`
+        `El rol ${rol.nombre} se ${actualizado.estado === 'Activo'
+          ? 'activó'
+          : 'desactivó'
+        } correctamente.`
       )
     } catch (error) {
       mostrarNotificacion(
         'error',
-        error.message || 'No se pudo cambiar el estado del rol.'
+        error.message ||
+        'No se pudo cambiar el estado del rol.'
       )
+
+      throw error
     }
   }
 
-  const handleEliminar = async () => {
-    if (!rolAEliminar) return
+  const handleEliminar = async (id) => {
+    if (!rolAEliminar) {
+      throw new Error('No se ha seleccionado un rol.')
+    }
 
     try {
-      await eliminarRol(rolAEliminar.id)
-      mostrarNotificacion('exito', 'Rol eliminado correctamente.')
-      setRolAEliminar(null)
+      await eliminarRol(id)
+
+      mostrarNotificacion(
+        'exito',
+        'Rol eliminado correctamente.'
+      )
     } catch (error) {
       mostrarNotificacion(
         'error',
         error.message || 'No se pudo eliminar el rol.'
       )
+
+      // Permite que el diálogo detecte el error
+      // y permanezca abierto.
+      throw error
     }
   }
+
   const handleValidationError = (mensaje) => {
-  mostrarNotificacion('error', mensaje)
+    mostrarNotificacion('error', mensaje)
   }
+
   return (
-    <Box sx={{ width: '100%', minWidth: 0, overflowX: 'hidden' }}>
+    <Box
+      sx={{
+        width: '100%',
+        minWidth: 0,
+        overflowX: 'hidden',
+      }}
+    >
       <Typography
         sx={{
           fontWeight: 700,
@@ -131,25 +171,35 @@ export default function RolesPage() {
         sx={{
           borderColor: 'divider',
           borderRadius: 3,
+          borderTop: '4px solid',
+          borderTopColor: 'primary.main',
           overflow: 'hidden',
           width: '100%',
           minWidth: 0,
         }}
       >
-        <RolesInfoBanner />
+
 
         <RolesToolbar
           search={search}
           onSearchChange={setSearch}
-          onNuevoRol={() => setFormDialog({ mode: 'create' })}
+          submitting={submitting}
+          onNuevoRol={() =>
+            setFormDialog({ mode: 'create' })
+          }
         />
 
         <RolesTable
           roles={roles}
           loading={loading}
+          submitting={submitting}
           onToggleEstado={handleToggleEstado}
           onVer={setRolDetalle}
-          onEditar={(rol) => setFormDialog({ mode: 'edit', rol })}
+          onEditar={(rol) => {
+            if (rol.id === GERENTE_ID || submitting) return
+
+            setFormDialog({ mode: 'edit', rol })
+          }}
           onEliminar={setRolAEliminar}
         />
 
@@ -192,7 +242,9 @@ export default function RolesPage() {
         onEliminar={handleEliminar}
       />
 
-      <NotificacionesContainer notificaciones={notificaciones} />
+      <NotificacionesContainer
+        notificaciones={notificaciones}
+      />
     </Box>
   )
 }

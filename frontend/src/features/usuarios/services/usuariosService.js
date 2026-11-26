@@ -1,26 +1,32 @@
-// Servicio 100% simulado: todavía no hay backend conectado.
+// Servicio simulado: todavía no hay backend conectado.
 // Los usuarios almacenan credenciales, estado y rol.
-// Los datos personales se consultan desde Clientes y Empleados.
+// Los datos personales pertenecen a Clientes y Empleados.
 
 import {
   fetchRoles,
-  getPrivilegiosPorNombre,
+  getPrivilegiosPorId,
+  GERENTE_ID,
   MODULOS as MODULOS_ROLES,
 } from '../../roles/services/rolesService'
 
-import { fetchClientes } from '../../clientes/services/clientesService'
-import { fetchEmpleados } from '../../empleados/services/empleadosService'
+import {
+  fetchClientes,
+  vincularUsuarioCliente,
+} from '../../clientes/services/clientesService'
 
-// Se conservan para compatibilidad con los componentes actuales.
+import {
+  fetchEmpleados,
+  vincularUsuarioEmpleado,
+  updateEmpleado,
+} from '../../empleados/services/empleadosService'
+
 export const ROLES = ['Gerente', 'Panadero', 'Cliente', 'Vendedor']
-
 export const ESTADOS = ['Activo', 'Inactivo']
-
 export const MODULOS = MODULOS_ROLES
 
+const CLIENTE_ROL_ID = 3
+
 // Datos ficticios basados en tb_usuarios.
-// Los datos personales pertenecen a Clientes y Empleados.
-// passwordhash es únicamente un marcador simulado.
 let usuarios = [
   {
     id: 1,
@@ -38,7 +44,7 @@ let usuarios = [
   },
   {
     id: 3,
-    email: 'luis@alhorno.mx',
+    email: 'andres@alhorno.mx',
     passwordhash: 'SIMULADO',
     estado: 'Activo',
     id_rol: 3,
@@ -59,21 +65,21 @@ let usuarios = [
   },
   {
     id: 6,
-    email: 'paula@alhorno.mx',
+    email: 'valentina@alhorno.mx',
     passwordhash: 'SIMULADO',
     estado: 'Activo',
     id_rol: 3,
   },
   {
     id: 7,
-    email: 'diego@alhorno.mx',
+    email: 'daniel@alhorno.mx',
     passwordhash: 'SIMULADO',
     estado: 'Inactivo',
     id_rol: 3,
   },
   {
     id: 8,
-    email: 'sofia@alhorno.mx',
+    email: 'isabella@alhorno.mx',
     passwordhash: 'SIMULADO',
     estado: 'Inactivo',
     id_rol: 3,
@@ -85,7 +91,7 @@ let nextId = Math.max(...usuarios.map((usuario) => usuario.id)) + 1
 const delay = (ms = 500) =>
   new Promise((resolve) => setTimeout(resolve, ms))
 
-// Caché de roles.
+// Caché de roles para consultar nombres y estados.
 let rolesCache = [
   { id: 1, nombre: 'Gerente', estado: 'Activo' },
   { id: 2, nombre: 'Panadero', estado: 'Activo' },
@@ -93,11 +99,39 @@ let rolesCache = [
   { id: 4, nombre: 'Vendedor', estado: 'Activo' },
 ]
 
-async function cargarRoles() {
-  const roles = await fetchRoles()
-  rolesCache = roles
+// Consulta las asignaciones actuales de un rol.
+export function getAsignacionesRol(idRol) {
+  const asignados = usuarios.filter(
+    (usuario) => Number(usuario.id_rol) === Number(idRol)
+  )
 
-  return roles
+  const activos = asignados.filter(
+    (usuario) => usuario.estado === 'Activo'
+  ).length
+
+  return {
+    total: asignados.length,
+    activos,
+    inactivos: asignados.length - activos,
+  }
+}
+
+// Los clientes reciben únicamente el rol Cliente.
+// Los empleados reciben roles internos y personalizados.
+export function esRolCompatible(idRol, tipoPerfil) {
+  const id = Number(idRol)
+
+  if (!Number.isSafeInteger(id) || id <= 0) return false
+
+  if (tipoPerfil === 'Cliente') return id === CLIENTE_ROL_ID
+  if (tipoPerfil === 'Empleado') return id !== CLIENTE_ROL_ID
+
+  return false
+}
+
+async function cargarRoles() {
+  rolesCache = await fetchRoles()
+  return rolesCache
 }
 
 function obtenerRol(idRol) {
@@ -106,29 +140,30 @@ function obtenerRol(idRol) {
   ) ?? null
 }
 
-// Resuelve el ID del rol.
-// También admite el nombre del rol por compatibilidad.
-function resolverIdRol(data, roles) {
-  if (data.id_rol !== undefined && data.id_rol !== null) {
-    const id = Number(data.id_rol)
+function buscarUsuario(id) {
+  return usuarios.find(
+    (usuario) => usuario.id === Number(id)
+  ) ?? null
+}
 
-    return Number.isFinite(id) ? id : null
+// Admite el ID o el nombre del rol por compatibilidad.
+function resolverIdRol(data, roles) {
+  if (data.id_rol != null) {
+    const id = Number(data.id_rol)
+    return Number.isSafeInteger(id) && id > 0 ? id : null
   }
 
   if (data.rol) {
-    const rol = roles.find(
-      (item) =>
-        item.nombre.toLowerCase() ===
+    return roles.find(
+      (rol) =>
+        rol.nombre.toLowerCase() ===
         String(data.rol).trim().toLowerCase()
-    )
-
-    return rol?.id ?? null
+    )?.id ?? null
   }
 
   return null
 }
 
-// Normaliza los datos de la cuenta.
 function normalizarUsuario(data, roles) {
   return {
     email: String(data.email ?? '').trim().toLowerCase(),
@@ -137,13 +172,8 @@ function normalizarUsuario(data, roles) {
   }
 }
 
-// Valida la información de la cuenta.
-function validarUsuario(
-  data,
-  roles,
-  idExcluir = null,
-  esCreacion = false
-) {
+// Valida exclusivamente los datos de la cuenta.
+function validarUsuario(data, roles, idExcluir = null) {
   if (!data || typeof data !== 'object') {
     throw new Error('Los datos del usuario no son válidos.')
   }
@@ -173,52 +203,38 @@ function validarUsuario(
     throw new Error('Selecciona un rol válido.')
   }
 
-  // Un rol inactivo no puede asignarse a una cuenta nueva
-  // ni utilizarse para cambiar el rol de una cuenta existente.
-  // Sin embargo, se permite conservar el rol actual al editar.
-  const usuarioExistente = usuarios.find(
-    (item) => item.id === idExcluir
-  )
+  const existente = buscarUsuario(idExcluir)
+  const conservaRolActual = existente?.id_rol === usuario.id_rol
 
-  const conservaRolActual =
-    usuarioExistente?.id_rol === usuario.id_rol
+  // Un rol inactivo solo puede conservarse en una cuenta inactiva.
+  if (rol.estado !== 'Activo') {
+    if (!conservaRolActual) {
+      throw new Error(
+        'No puedes asignar un rol que se encuentra inactivo.'
+      )
+    }
 
-  if (rol.estado !== 'Activo' && !conservaRolActual) {
-    throw new Error(
-      'No puedes asignar un rol que se encuentra inactivo.'
-    )
+    if (usuario.estado === 'Activo') {
+      throw new Error(
+        'No puedes activar esta cuenta mientras su rol esté inactivo.'
+      )
+    }
   }
 
   const duplicadoEmail = usuarios.some(
     (item) =>
-      item.id !== idExcluir &&
+      item.id !== Number(idExcluir) &&
       item.email.toLowerCase() === usuario.email
   )
 
   if (duplicadoEmail) {
-    throw new Error(
-      'Ya existe una cuenta registrada con ese correo.'
-    )
-  }
-
-  if (esCreacion) {
-    const password = String(data.password ?? '')
-
-    if (!password) {
-      throw new Error('La contraseña es obligatoria.')
-    }
-
-    if (password.length < 6) {
-      throw new Error(
-        'La contraseña debe tener al menos 6 caracteres.'
-      )
-    }
+    throw new Error('Ya existe una cuenta registrada con ese correo.')
   }
 
   return usuario
 }
 
-// Consulta los perfiles relacionados una sola vez.
+// Consulta los perfiles relacionados.
 async function obtenerDatosRelacionados() {
   const [clientes, empleados] = await Promise.all([
     fetchClientes(),
@@ -228,25 +244,90 @@ async function obtenerDatosRelacionados() {
   return { clientes, empleados }
 }
 
-// Construye el usuario para mostrarlo en la interfaz.
-// Las relaciones se consultan exclusivamente mediante id_usuario.
-function mapearUsuario(usuario, clientes, empleados) {
-  const cliente = clientes.find(
-    (item) => item.id_usuario === usuario.id
-  ) ?? null
+// Consulta los perfiles que todavía no tienen cuenta.
+export async function fetchPerfilesDisponibles() {
+  const { clientes, empleados } = await obtenerDatosRelacionados()
 
-  const empleado = empleados.find(
-    (item) => item.id_usuario === usuario.id
-  ) ?? null
+  return {
+    clientes: clientes.filter(
+      (cliente) => cliente.id_usuario == null
+    ),
+
+    empleados: empleados.filter(
+      (empleado) => empleado.id_usuario == null
+    ),
+  }
+}
+
+// Obtiene los perfiles asociados mediante id_usuario.
+function obtenerPerfiles(idUsuario, clientes, empleados) {
+  return {
+    cliente: clientes.find(
+      (item) => item.id_usuario === idUsuario
+    ) ?? null,
+
+    empleado: empleados.find(
+      (item) => item.id_usuario === idUsuario
+    ) ?? null,
+  }
+}
+
+// Valida el perfil seleccionado durante la creación.
+function validarPerfil(data, clientes, empleados) {
+  const tieneCliente =
+    data.id_cliente != null && data.id_cliente !== ''
+
+  const tieneEmpleado =
+    data.id_empleado != null && data.id_empleado !== ''
+
+  if (tieneCliente === tieneEmpleado) {
+    throw new Error(
+      'Selecciona un cliente o empleado para vincular la cuenta.'
+    )
+  }
+
+  const tipoPerfil = tieneCliente ? 'Cliente' : 'Empleado'
+
+  const perfil = tieneCliente
+    ? clientes.find((item) => item.id === Number(data.id_cliente))
+    : empleados.find((item) => item.id === Number(data.id_empleado))
+
+  if (!perfil) {
+    throw new Error('El perfil seleccionado no existe.')
+  }
+
+  if (perfil.id_usuario != null) {
+    throw new Error('El perfil seleccionado ya tiene una cuenta de acceso.')
+  }
+
+  return { perfil, tipoPerfil }
+}
+
+function validarCompatibilidadRol(idRol, tipoPerfil) {
+  if (!esRolCompatible(idRol, tipoPerfil)) {
+    throw new Error('El rol seleccionado no es compatible con el perfil.')
+  }
+}
+
+// Construye el usuario para mostrarlo en la interfaz.
+function mapearUsuario(usuario, clientes, empleados) {
+  const { cliente, empleado } = obtenerPerfiles(
+    usuario.id,
+    clientes,
+    empleados
+  )
 
   const rol = obtenerRol(usuario.id_rol)
+  const perfil = cliente ?? empleado
 
-  // No se expone el marcador de contraseña a los componentes.
+  // No se exponen credenciales a los componentes.
   const { passwordhash, ...datosCuenta } = usuario
 
   return {
     ...datosCuenta,
+
     rol: rol?.nombre ?? 'Sin rol',
+    estadoRol: rol?.estado ?? null,
 
     cliente,
     empleado,
@@ -254,26 +335,25 @@ function mapearUsuario(usuario, clientes, empleados) {
     id_cliente: cliente?.id ?? null,
     id_empleado: empleado?.id ?? null,
 
-    // Datos derivados para los componentes actuales.
-    nombre: cliente?.nombre ?? empleado?.nombre ?? null,
-    documento: cliente?.documento ?? empleado?.documento ?? null,
-    tipoDocumento:
-      cliente?.tipoDocumento ?? empleado?.tipoDocumento ?? null,
+    tipoPerfil: cliente
+      ? 'Cliente'
+      : empleado
+        ? 'Empleado'
+        : null,
+
+    nombre: perfil?.nombre ?? null,
+    documento: perfil?.documento ?? null,
+    tipoDocumento: perfil?.tipoDocumento ?? null,
     telefono: empleado?.telefono ?? null,
   }
 }
 
-// Obtiene los módulos y privilegios heredados del rol.
+// Obtiene los privilegios efectivos mediante el ID del rol.
 export function getModulosVisibles(usuario) {
-  if (!usuario) return []
+  if (!usuario || usuario.estado !== 'Activo') return []
+  if (!usuario.id_rol) return []
 
-  const rol = usuario.id_rol
-    ? obtenerRol(usuario.id_rol)
-    : rolesCache.find((item) => item.nombre === usuario.rol)
-
-  if (!rol) return []
-
-  const privilegios = getPrivilegiosPorNombre(rol.nombre)
+  const privilegios = getPrivilegiosPorId(usuario.id_rol)
 
   return MODULOS.filter(
     (modulo) => privilegios[modulo]?.length > 0
@@ -284,10 +364,9 @@ export function getModulosVisibles(usuario) {
   }))
 }
 
-// Consulta todas las cuentas.
+// Consulta todas las cuentas con sus datos relacionados.
 export async function fetchUsuarios() {
   await delay(400)
-
   await cargarRoles()
 
   const { clientes, empleados } = await obtenerDatosRelacionados()
@@ -297,13 +376,12 @@ export async function fetchUsuarios() {
   )
 }
 
-// Consulta la cuenta que aparece como autenticada.
+// Consulta la cuenta autenticada de forma simulada.
 export async function getUsuarioActual() {
   await delay(300)
-
   await cargarRoles()
 
-  const usuario = usuarios.find((item) => item.id === 1)
+  const usuario = buscarUsuario(1)
 
   if (!usuario) return null
 
@@ -312,44 +390,79 @@ export async function getUsuarioActual() {
   return mapearUsuario(usuario, clientes, empleados)
 }
 
-// Crea una cuenta de acceso.
+// Crea una cuenta vinculada con un perfil existente.
+// El administrador no establece la contraseña del usuario.
 export async function createUsuario(data) {
   await delay(600)
 
+  const { clientes, empleados } = await obtenerDatosRelacionados()
   const roles = await cargarRoles()
-  const validado = validarUsuario(data, roles, null, true)
+  const validado = validarUsuario(data, roles)
+
+  const { perfil, tipoPerfil } = validarPerfil(
+    data,
+    clientes,
+    empleados
+  )
+
+  validarCompatibilidadRol(validado.id_rol, tipoPerfil)
 
   const nuevo = {
-    id: nextId++,
-    email: validado.email,
+    id: nextId,
+    ...validado,
     passwordhash: 'SIMULADO',
-    estado: validado.estado,
-    id_rol: validado.id_rol,
+  }
+
+  // Vincula primero el perfil para evitar cuentas sin asociación.
+  // En el backend estas operaciones requerirán una transacción.
+  if (tipoPerfil === 'Cliente') {
+    vincularUsuarioCliente(perfil.id, nuevo.id)
+  } else {
+    vincularUsuarioEmpleado(perfil.id, nuevo.id)
   }
 
   usuarios = [...usuarios, nuevo]
+  nextId++
 
-  const { clientes, empleados } = await obtenerDatosRelacionados()
+  const relacionados = await obtenerDatosRelacionados()
 
-  return mapearUsuario(nuevo, clientes, empleados)
+  return mapearUsuario(
+    nuevo,
+    relacionados.clientes,
+    relacionados.empleados
+  )
 }
 
-// Actualiza correo, estado y rol.
-// No modifica los datos personales de Clientes o Empleados.
+// Actualiza correo, estado y rol sin modificar el perfil asociado.
 export async function updateUsuario(id, data) {
   await delay(600)
 
-  const existente = usuarios.find((item) => item.id === id)
+  const { clientes, empleados } = await obtenerDatosRelacionados()
+  const roles = await cargarRoles()
+  const existente = buscarUsuario(id)
 
   if (!existente) {
     throw new Error('El usuario que intentas actualizar no existe.')
   }
 
-  const roles = await cargarRoles()
-  const validado = validarUsuario(data, roles, id)
+  const validado = validarUsuario(data, roles, existente.id)
 
-  // Protege al único Gerente activo frente a cambios de rol
-  // y también frente a cambios de estado.
+  const { cliente, empleado } = obtenerPerfiles(
+    existente.id,
+    clientes,
+    empleados
+  )
+
+  if (Boolean(cliente) === Boolean(empleado)) {
+    throw new Error('La cuenta no tiene un perfil asociado válido.')
+  }
+
+  validarCompatibilidadRol(
+    validado.id_rol,
+    cliente ? 'Cliente' : 'Empleado'
+  )
+
+  // Protege al último Gerente activo del sistema.
   if (
     esUnicoGerente(existente) &&
     (
@@ -358,7 +471,7 @@ export async function updateUsuario(id, data) {
     )
   ) {
     throw new Error(
-      'No puedes cambiar el rol ni inhabilitar al único Gerente activo del sistema.'
+      'No puedes cambiar el rol ni desactivar al único Gerente activo del sistema.'
     )
   }
 
@@ -368,36 +481,101 @@ export async function updateUsuario(id, data) {
   }
 
   usuarios = usuarios.map((item) =>
-    item.id === id ? actualizado : item
+    item.id === existente.id ? actualizado : item
   )
-
-  const { clientes, empleados } = await obtenerDatosRelacionados()
 
   return mapearUsuario(actualizado, clientes, empleados)
 }
 
-// Comprueba si una cuenta es el único Gerente activo.
+// Actualiza únicamente los datos de contacto de Mi Perfil.
+export async function updatePerfil(data) {
+  await delay(300)
+
+  const roles = await cargarRoles()
+  const { clientes, empleados } = await obtenerDatosRelacionados()
+
+  // Cuenta actual simulada. Se reemplazará por la sesión real.
+  const existente = buscarUsuario(1)
+
+  if (!existente || existente.estado !== 'Activo') {
+    throw new Error('La cuenta actual no está disponible.')
+  }
+
+  const { cliente, empleado } = obtenerPerfiles(
+    existente.id,
+    clientes,
+    empleados
+  )
+
+  if (Boolean(cliente) === Boolean(empleado)) {
+    throw new Error('La cuenta no tiene un perfil asociado válido.')
+  }
+
+  // Valida el correo conservando el rol y estado actuales.
+  const { email } = validarUsuario(
+    {
+      email: data?.email,
+      estado: existente.estado,
+      id_rol: existente.id_rol,
+    },
+    roles,
+    existente.id
+  )
+
+  let perfilesActualizados = empleados
+
+  // El teléfono pertenece al empleado, no a la cuenta.
+  if (empleado) {
+    const telefono = String(data?.telefono ?? '').trim()
+
+    if (!/^3\d{9}$/.test(telefono)) {
+      throw new Error('Ingresa un celular colombiano válido.')
+    }
+
+    if (telefono !== empleado.telefono) {
+      const actualizado = await updateEmpleado(
+        empleado.id,
+        {
+          ...empleado,
+          telefono,
+        }
+      )
+
+      perfilesActualizados = empleados.map((item) =>
+        item.id === actualizado.id ? actualizado : item
+      )
+    }
+  }
+
+  // En el backend ambos cambios deberán ser transaccionales.
+  usuarios = usuarios.map((item) =>
+    item.id === existente.id
+      ? { ...item, email }
+      : item
+  )
+
+  return mapearUsuario(
+    buscarUsuario(existente.id),
+    clientes,
+    perfilesActualizados
+  )
+}
+
+// Determina si la cuenta es el último Gerente activo.
 export function esUnicoGerente(usuario) {
-  if (!usuario || usuario.estado !== 'Activo') {
+  if (
+    !usuario ||
+    usuario.estado !== 'Activo' ||
+    Number(usuario.id_rol) !== GERENTE_ID
+  ) {
     return false
   }
 
-  const rol = usuario.id_rol
-    ? obtenerRol(usuario.id_rol)
-    : rolesCache.find((item) => item.nombre === usuario.rol)
-
-  if (!rol || rol.nombre !== 'Gerente') {
-    return false
-  }
-
-  const gerentesActivos = usuarios.filter((item) => {
-    const rolUsuario = obtenerRol(item.id_rol)
-
-    return (
-      rolUsuario?.nombre === 'Gerente' &&
+  const gerentesActivos = usuarios.filter(
+    (item) =>
+      Number(item.id_rol) === GERENTE_ID &&
       item.estado === 'Activo'
-    )
-  })
+  )
 
   return (
     gerentesActivos.length === 1 &&
@@ -405,80 +583,87 @@ export function esUnicoGerente(usuario) {
   )
 }
 
-// Inhabilita o reactiva una cuenta.
-// No elimina registros.
+// Desactiva o reactiva una cuenta sin eliminar sus registros.
 export async function toggleEstadoUsuario(id) {
   await delay(600)
+  await cargarRoles()
 
-  const existente = usuarios.find((item) => item.id === id)
+  const existente = buscarUsuario(id)
 
   if (!existente) {
     throw new Error('El usuario que intentas modificar no existe.')
   }
 
-  if (
-    existente.estado === 'Activo' &&
-    esUnicoGerente(existente)
-  ) {
+  if (esUnicoGerente(existente)) {
     throw new Error(
-      'No puedes inhabilitar al único Gerente activo del sistema.'
+      'No puedes desactivar al único Gerente activo del sistema.'
     )
   }
 
-  // No permite reactivar una cuenta cuyo rol está inactivo.
   if (existente.estado === 'Inactivo') {
     const rol = obtenerRol(existente.id_rol)
 
     if (!rol || rol.estado !== 'Activo') {
       throw new Error(
-        'No puedes reactivar esta cuenta porque su rol está inactivo.'
+        'No puedes reactivar esta cuenta porque su rol está inactivo o no está disponible.'
       )
     }
   }
 
-  usuarios = usuarios.map((item) =>
-    item.id === id
-      ? {
-          ...item,
-          estado: item.estado === 'Activo' ? 'Inactivo' : 'Activo',
-        }
-      : item
-  )
+  const actualizado = {
+    ...existente,
+    estado: existente.estado === 'Activo' ? 'Inactivo' : 'Activo',
+  }
 
-  const actualizado = usuarios.find((item) => item.id === id)
+  usuarios = usuarios.map((item) =>
+    item.id === existente.id ? actualizado : item
+  )
 
   const { clientes, empleados } = await obtenerDatosRelacionados()
 
   return mapearUsuario(actualizado, clientes, empleados)
 }
 
+
 // CU.09.06 — Cambio de contraseña simulado.
-// No implementa hashing real ni autenticación.
+// La verificación real de credenciales requiere backend.
 export async function cambiarPassword(id, datos = {}) {
   await delay(600)
 
-  const existente = usuarios.find((item) => item.id === id)
+  const existente = buscarUsuario(id)
 
-  if (!existente) {
-    throw new Error('El usuario no existe.')
+  if (!existente || existente.id !== 1 || existente.estado !== 'Activo') {
+    throw new Error('La cuenta actual no está disponible.')
   }
 
   const { actual, nueva } = datos
 
-  if (!actual || !nueva) {
-    throw new Error(
-      'Debes completar los campos de contraseña.'
-    )
+  if (
+    typeof actual !== 'string' ||
+    typeof nueva !== 'string' ||
+    !actual.trim() ||
+    !nueva.trim()
+  ) {
+    throw new Error('Debes completar los campos de contraseña.')
   }
 
-  if (String(nueva).length < 6) {
-    throw new Error(
-      'La nueva contraseña debe tener al menos 6 caracteres.'
-    )
+  if (actual === nueva) {
+    throw new Error('La nueva contraseña debe ser diferente a la actual.')
   }
 
-  // En esta simulación no se guarda una contraseña en texto plano.
-  // La verificación de la contraseña actual requiere backend.
+  const cumpleRequisitos =
+    [...nueva].length >= 15 &&
+    new TextEncoder().encode(nueva).length <= 72 &&
+    /\p{Lu}/u.test(nueva) &&
+    /\p{Ll}/u.test(nueva) &&
+    /\d/.test(nueva) &&
+    /[\p{P}\p{S}]/u.test(nueva)
+
+  if (!cumpleRequisitos) {
+    throw new Error('La contraseña no cumple los requisitos de seguridad.')
+  }
+
+  // No se almacenan contraseñas reales durante la simulación.
   existente.passwordhash = 'SIMULADO_ACTUALIZADO'
 
   return { ok: true }

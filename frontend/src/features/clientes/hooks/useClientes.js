@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useState } from 'react'
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   fetchClientes,
   createCliente,
@@ -6,6 +6,14 @@ import {
 } from '../services/clientesService'
 
 const PAGE_SIZE = 6
+
+// Permite buscar nombres sin distinguir mayúsculas ni tildes.
+const normalizar = (valor) =>
+  String(valor ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
 
 export default function useClientes() {
   const [clientes, setClientes] = useState([])
@@ -15,15 +23,16 @@ export default function useClientes() {
 
   const [search, setSearch] = useState('')
   const [tipoDocumentoFiltro, setTipoDocumentoFiltro] = useState('Todos')
+  const [cuentaFiltro, setCuentaFiltro] = useState('Todos')
   const [page, setPage] = useState(1)
+
+  const enviando = useRef(false)
 
   const cargarClientes = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
-
-      const data = await fetchClientes()
-      setClientes(data)
+      setClientes(await fetchClientes())
     } catch (err) {
       setError(err.message || 'No se pudieron cargar los clientes.')
     } finally {
@@ -35,108 +44,137 @@ export default function useClientes() {
     cargarClientes()
   }, [cargarClientes])
 
-  const clientesFiltrados = useMemo(() => {
-    const termino = search.trim().toLowerCase()
+  // Indicadores generales, independientes de los filtros.
+  const estadisticas = useMemo(() => {
+    const conCuenta = clientes.filter(c => c.id_usuario != null).length
 
-    return clientes.filter((cliente) => {
+    return {
+      total: clientes.length,
+      conCuenta,
+      sinCuenta: clientes.length - conCuenta,
+    }
+  }, [clientes])
+
+  // Búsqueda y filtros combinados.
+  const clientesFiltrados = useMemo(() => {
+    const termino = normalizar(search)
+
+    return clientes.filter(cliente => {
       const coincideBusqueda =
         !termino ||
-        cliente.nombre.toLowerCase().includes(termino) ||
-        cliente.documento.toLowerCase().includes(termino)
+        normalizar(cliente.nombre).includes(termino) ||
+        normalizar(cliente.documento).includes(termino)
 
       const coincideTipo =
         tipoDocumentoFiltro === 'Todos' ||
         cliente.tipoDocumento === tipoDocumentoFiltro
 
-      return coincideBusqueda && coincideTipo
+      const coincideCuenta =
+        cuentaFiltro === 'Todos' ||
+        (cuentaFiltro === 'Con cuenta' && cliente.id_usuario != null) ||
+        (cuentaFiltro === 'Sin cuenta' && cliente.id_usuario == null)
+
+      return coincideBusqueda && coincideTipo && coincideCuenta
     })
-  }, [clientes, search, tipoDocumentoFiltro])
+  }, [clientes, search, tipoDocumentoFiltro, cuentaFiltro])
 
   const totalFiltrados = clientesFiltrados.length
-  const pageCount = Math.ceil(totalFiltrados / PAGE_SIZE)
+  const pageCount = Math.max(1, Math.ceil(totalFiltrados / PAGE_SIZE))
+  const paginaActual = Math.min(page, pageCount)
 
   const clientesPaginados = useMemo(() => {
-    const inicio = (page - 1) * PAGE_SIZE
+    const inicio = (paginaActual - 1) * PAGE_SIZE
+
     return clientesFiltrados.slice(inicio, inicio + PAGE_SIZE)
-  }, [clientesFiltrados, page])
+  }, [clientesFiltrados, paginaActual])
 
   useEffect(() => {
-    setPage((prev) => Math.min(prev, Math.max(pageCount, 1)))
+    setPage(prev => Math.min(prev, pageCount))
   }, [pageCount])
 
-  const cambiarBusqueda = (valor) => {
+  function cambiarBusqueda(valor) {
     setSearch(valor)
     setPage(1)
   }
 
-  const cambiarFiltroDocumento = (valor) => {
+  function cambiarFiltroDocumento(valor) {
     setTipoDocumentoFiltro(valor)
     setPage(1)
   }
 
-  const limpiarFiltros = () => {
-    setSearch('')
-    setTipoDocumentoFiltro('Todos')
+  function cambiarFiltroCuenta(valor) {
+    setCuentaFiltro(valor)
     setPage(1)
   }
 
-  const agregarCliente = async (data) => {
-  try {
+  function limpiarFiltros() {
+    setSearch('')
+    setTipoDocumentoFiltro('Todos')
+    setCuentaFiltro('Todos')
+    setPage(1)
+  }
+
+  // Centraliza el estado de guardado y evita solicitudes duplicadas.
+  async function ejecutarOperacion(operacion, mensajeError) {
+    if (enviando.current) {
+      throw new Error('Ya hay una operación en curso.')
+    }
+
+    enviando.current = true
     setSubmitting(true)
     setError(null)
 
-    const nuevo = await createCliente(data)
-
-    // Agregar el nuevo cliente al final de la lista.
-    setClientes((prev) => [...prev, nuevo])
-
-    // Limpiar filtros para que el nuevo registro sea visible.
-    setSearch('')
-    setTipoDocumentoFiltro('Todos')
-
-    // Ir a la última página.
-    setPage(Math.ceil((clientes.length + 1) / PAGE_SIZE))
-
-    return nuevo
-  } catch (err) {
-    setError(err.message || 'No se pudo registrar el cliente.')
-    throw err
-  } finally {
-    setSubmitting(false)
-  }
-}
-
-  const editarCliente = async (id, data) => {
     try {
-      setSubmitting(true)
-      setError(null)
+      return await operacion()
+    } catch (err) {
+      setError(err.message || mensajeError)
+      throw err
+    } finally {
+      enviando.current = false
+      setSubmitting(false)
+    }
+  }
 
+  function agregarCliente(data) {
+    return ejecutarOperacion(async () => {
+      const nuevo = await createCliente(data)
+
+      setClientes(prev => [...prev, nuevo])
+
+      // Mostrar el nuevo registro al final del listado.
+      limpiarFiltros()
+      setPage(Math.ceil((clientes.length + 1) / PAGE_SIZE))
+
+      return nuevo
+    }, 'No se pudo registrar el cliente.')
+  }
+
+  function editarCliente(id, data) {
+    return ejecutarOperacion(async () => {
       const actualizado = await updateCliente(id, data)
 
       if (actualizado) {
-        setClientes((prev) =>
-          prev.map((cliente) =>
+        setClientes(prev =>
+          prev.map(cliente =>
             cliente.id === id ? actualizado : cliente
           )
         )
       }
 
       return actualizado
-    } catch (err) {
-      setError(err.message || 'No se pudo actualizar el cliente.')
-      throw err
-    } finally {
-      setSubmitting(false)
-    }
+    }, 'No se pudo actualizar el cliente.')
   }
 
   const hayFiltrosActivos =
-    search.trim() !== '' || tipoDocumentoFiltro !== 'Todos'
+    search.trim() !== '' ||
+    tipoDocumentoFiltro !== 'Todos' ||
+    cuentaFiltro !== 'Todos'
 
   return {
     clientes: clientesPaginados,
+    estadisticas,
     totalFiltrados,
-    page,
+    page: paginaActual,
     pageCount,
     pageSize: PAGE_SIZE,
     setPage,
@@ -147,6 +185,8 @@ export default function useClientes() {
     setSearch: cambiarBusqueda,
     tipoDocumentoFiltro,
     setTipoDocumentoFiltro: cambiarFiltroDocumento,
+    cuentaFiltro,
+    setCuentaFiltro: cambiarFiltroCuenta,
     hayFiltrosActivos,
     limpiarFiltros,
     cargarClientes,

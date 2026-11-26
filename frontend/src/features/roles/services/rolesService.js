@@ -1,3 +1,4 @@
+// Servicio simulado. Las restricciones deberán replicarse en el backend.
 export const ESTADOS = ['Activo', 'Inactivo']
 
 export const ROLES_SISTEMA_IDS = [1, 2, 3, 4]
@@ -98,201 +99,327 @@ export const PRIVILEGIOS_POR_MODULO = {
   ],
 }
 
-function normalizarModulos(modulos = []) {
-  if (!Array.isArray(modulos)) return []
-  return [...new Set(modulos)].filter((modulo) => MODULOS.includes(modulo))
-}
+export const GERENTE_ID = 1
 
-function normalizarPrivilegios(privilegios = {}, modulos = []) {
-  return Object.fromEntries(
-    modulos.map((modulo) => {
-      const acciones = privilegios?.[modulo] ?? []
-      const permitidas = PRIVILEGIOS_POR_MODULO[modulo] ?? []
+// El Gerente conserva todos los privilegios del sistema.
+export const PRIVILEGIOS_PROTEGIDOS_GERENTE = Object.fromEntries(
+  MODULOS.map(modulo => [
+    modulo,
+    PRIVILEGIOS_POR_MODULO[modulo].map(({ id }) => id),
+  ])
+)
 
-      return [
-        modulo,
-        Array.isArray(acciones)
-          ? [...new Set(acciones)].filter((accion) =>
-              permitidas.some((item) => item.id === accion)
-            )
-          : [],
-      ]
-    })
-  )
-}
+const todosLosPrivilegios = modulos => Object.fromEntries(
+  modulos.map(modulo => [
+    modulo,
+    PRIVILEGIOS_POR_MODULO[modulo].map(({ id }) => id),
+  ])
+)
 
-function crearPrivilegiosIniciales(modulos) {
-  return Object.fromEntries(
-    modulos.map((modulo) => [
-      modulo,
-      (PRIVILEGIOS_POR_MODULO[modulo] ?? []).map((item) => item.id),
-    ])
-  )
-}
-
-function copiarRol(rol) {
-  return {
-    ...rol,
-    modulos: [...(rol.modulos ?? [])],
-    privilegios: Object.fromEntries(
-      Object.entries(rol.privilegios ?? {}).map(([modulo, acciones]) => [
-        modulo,
-        [...acciones],
-      ])
-    ),
-  }
-}
-
+// Roles predeterminados del sistema.
 let roles = [
-  {
-    id: 1, nombre: 'Gerente', estado: 'Activo',
-    modulos: ['Dashboard', 'Productos', 'Insumos', 'Proveedores', 'Compras', 'Producción', 'Ventas'],
-    usuariosAsignados: 2,
-  },
-  {
-    id: 2, nombre: 'Panadero', estado: 'Activo',
-    modulos: ['Dashboard', 'Insumos', 'Producción'],
-    usuariosAsignados: 3,
-  },
-  {
-    id: 3, nombre: 'Cliente', estado: 'Activo',
-    modulos: ['Dashboard', 'Ventas'],
-    usuariosAsignados: 0,
-  },
-  {
-    id: 4, nombre: 'Vendedor', estado: 'Activo',
-    modulos: ['Dashboard', 'Productos', 'Ventas'],
-    usuariosAsignados: 4,
-  },
-].map((rol) => ({
+  { id: 1, nombre: 'Gerente', modulos: [...MODULOS] },
+  { id: 2, nombre: 'Panadero', modulos: ['Dashboard', 'Insumos', 'Producción'] },
+  { id: 3, nombre: 'Cliente', modulos: ['Dashboard', 'Ventas'] },
+  { id: 4, nombre: 'Vendedor', modulos: ['Dashboard', 'Productos', 'Ventas'] },
+].map(rol => ({
   ...rol,
-  privilegios: crearPrivilegiosIniciales(rol.modulos),
+  estado: 'Activo',
+  privilegios: todosLosPrivilegios(rol.modulos),
 }))
 
-let nextId = roles.length + 1
+let nextId = 5
 
-export function getNextRoleId() {
-  return nextId
+export const getNextRoleId = () => nextId
+
+const delay = (ms = 400) =>
+  new Promise(resolve => setTimeout(resolve, ms))
+
+// Importación diferida: Usuarios ya depende de este servicio.
+async function obtenerConsultaAsignaciones() {
+  const { getAsignacionesRol } = await import(
+    '../../usuarios/services/usuariosService.js'
+  )
+
+  return getAsignacionesRol
 }
 
-const delay = (ms = 500) => new Promise((resolve) => setTimeout(resolve, ms))
+// Devuelve una copia del rol con sus asignaciones actuales.
+function copiarRol(rol, consultar) {
+  const { total, activos } = consultar(rol.id)
 
-function maybeFail(failRate = 0.15) {
-  if (Math.random() < failRate) {
-    throw new Error('No se pudo completar la acción. Intenta de nuevo.')
+  return {
+    ...rol,
+    modulos: [...rol.modulos],
+    privilegios: Object.fromEntries(
+      Object.entries(rol.privilegios).map(([modulo, ids]) => [
+        modulo,
+        [...ids],
+      ])
+    ),
+    usuariosAsignados: total,
+    usuariosActivos: activos,
   }
 }
 
 export function esRolSistema(rol) {
   const id = typeof rol === 'object' ? rol?.id : rol
+
   return ROLES_SISTEMA_IDS.includes(Number(id))
 }
 
 export function esEliminable(rol) {
-  return Boolean(rol) && !esRolSistema(rol) && (rol.usuariosAsignados ?? 0) === 0
+  return Boolean(rol) &&
+    !esRolSistema(rol) &&
+    rol.usuariosAsignados === 0
 }
 
-function validarNombre(nombre) {
-  return typeof nombre === 'string' &&
-    nombre.trim().length >= 3 &&
-    /^[\p{L}\s]+$/u.test(nombre.trim())
+// Solo se pueden desactivar roles sin usuarios activos,
+// excepto el Gerente, que debe permanecer activo.
+export function esDesactivable(rol) {
+  return Boolean(rol) &&
+    Number(rol.id) !== GERENTE_ID &&
+    rol.usuariosActivos === 0
 }
 
-export async function fetchRoles() {
-  await delay(400)
-  return roles.map(copiarRol)
+export function normalizarNombreRol(nombre) {
+  const limpio = String(nombre ?? '')
+    .normalize('NFC')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLocaleLowerCase('es-CO')
+
+  return limpio
+    ? limpio.charAt(0).toLocaleUpperCase('es-CO') + limpio.slice(1)
+    : ''
 }
 
-export async function createRole(data) {
-  const nombre = data.nombre?.trim() ?? ''
-  if (!validarNombre(nombre)) {
-    throw new Error('El nombre debe tener mínimo 3 letras y solo puede contener letras y espacios.')
+// Valida el nombre y evita registros duplicados.
+export function validarNombreRol(nombre, idExcluir = null) {
+  const limpio = normalizarNombreRol(nombre)
+
+  if (
+    limpio.length < 3 ||
+    limpio.length > 60 ||
+    !/^\p{L}[\p{L}\p{M}]*(?: [\p{L}\p{M}]+)*$/u.test(limpio) ||
+    (limpio.match(/\p{L}/gu) ?? []).length < 3
+  ) {
+    return 'El nombre debe tener entre 3 y 60 caracteres y contener al menos 3 letras. Solo se permiten letras y espacios.'
   }
 
-  const modulos = normalizarModulos(data.modulos ?? Object.keys(data.privilegios ?? {}))
-  const privilegios = normalizarPrivilegios(data.privilegios ?? {}, modulos)
-
-  if (!modulos.length) {
-    throw new Error('Debes agregar al menos un módulo.')
-  }
-
-  const sinPrivilegios = modulos.find((modulo) => !privilegios[modulo]?.length)
-  if (sinPrivilegios) {
-    throw new Error(`Debes seleccionar al menos un privilegio para ${sinPrivilegios}.`)
-  }
-
-  await delay(600)
-
-  const nuevo = {
-    ...data,
-    nombre,
-    id: nextId++,
-    usuariosAsignados: 0,
-    modulos,
-    privilegios,
-  }
-
-  roles = [...roles, nuevo ]
-  return copiarRol(nuevo)
-}
-
-export async function updateRole(id, data) {
-  const nombre = data.nombre?.trim() ?? ''
-  if (!validarNombre(nombre)) {
-    throw new Error('El nombre debe tener mínimo 3 letras y solo puede contener letras y espacios.')
-  }
-
-  await delay(600)
-
-  roles = roles.map((rol) => {
-    if (rol.id !== id) return rol
-
-    const modulos = normalizarModulos(data.modulos ?? rol.modulos)
-    const permisosBase = data.privilegios ?? Object.fromEntries(
-      modulos.map((modulo) => [modulo, rol.privilegios?.[modulo] ?? []])
+  if (
+    roles.some(rol =>
+      rol.id !== Number(idExcluir) &&
+      normalizarNombreRol(rol.nombre) === limpio
     )
+  ) {
+    return 'Ya existe un rol con ese nombre.'
+  }
 
-    return {
-      ...rol,
-      ...data,
-      nombre,
-      modulos,
-      privilegios: normalizarPrivilegios(permisosBase, modulos),
-    }
-  })
-
-  const actualizado = roles.find((rol) => rol.id === id)
-  return actualizado ? copiarRol(actualizado) : undefined
+  return ''
 }
 
-export async function toggleEstadoRole(id) {
-  await delay(400)
+// Centraliza las validaciones de creación y edición.
+function validarDatos(data, anterior, consultar) {
+  const nombre = normalizarNombreRol(data.nombre ?? anterior?.nombre)
+  const estado = data.estado ?? anterior?.estado ?? 'Activo'
 
-  roles = roles.map((rol) =>
-    rol.id === id
-      ? { ...rol, estado: rol.estado === 'Activo' ? 'Inactivo' : 'Activo' }
-      : rol
+  // Los roles predeterminados conservan su nombre original.
+  if (
+    esRolSistema(anterior) &&
+    nombre !== anterior.nombre
+  ) {
+    throw new Error(
+      'No puedes cambiar el nombre de un rol predeterminado.'
+    )
+  }
+
+  const error = validarNombreRol(nombre, anterior?.id)
+
+  if (error) throw new Error(error)
+
+  if (!ESTADOS.includes(estado)) {
+    throw new Error('Selecciona un estado válido.')
+  }
+
+  if (
+    anterior &&
+    estado === 'Inactivo' &&
+    consultar(anterior.id).activos > 0
+  ) {
+    throw new Error(
+      'No puedes desactivar un rol con usuarios activos asignados.'
+    )
+  }
+
+  const entrada = data.privilegios ?? anterior?.privilegios ?? {}
+
+  // Solo se conservan módulos y privilegios reconocidos.
+  const privilegios = Object.fromEntries(
+    MODULOS.map(modulo => [
+      modulo,
+      PRIVILEGIOS_POR_MODULO[modulo]
+        .map(({ id }) => id)
+        .filter(id =>
+          Array.isArray(entrada[modulo]) &&
+          entrada[modulo].includes(id)
+        ),
+    ]).filter(([, ids]) => ids.length > 0)
   )
 
-  const actualizado = roles.find((rol) => rol.id === id)
-  return actualizado ? copiarRol(actualizado) : undefined
+  const modulos = Object.keys(privilegios)
+
+  if (!modulos.length) {
+    throw new Error(
+      'Selecciona al menos un privilegio en algún módulo.'
+    )
+  }
+
+  if (
+    anterior?.id === GERENTE_ID &&
+    Object.entries(PRIVILEGIOS_PROTEGIDOS_GERENTE).some(
+      ([modulo, ids]) =>
+        ids.some(id => !privilegios[modulo]?.includes(id))
+    )
+  ) {
+    throw new Error(
+      'No puedes retirar los privilegios protegidos del Gerente.'
+    )
+  }
+
+  return { nombre, estado, modulos, privilegios }
 }
 
-export async function deleteRole(id) {
-  const rol = roles.find((item) => item.id === id)
+function buscarRol(id) {
+  const rol = roles.find(item => item.id === Number(id))
 
-  if (!rol) throw new Error('El rol que intentas eliminar no existe.')
-  if (esRolSistema(rol)) throw new Error('Los roles iniciales del sistema no se pueden eliminar.')
-  if (!esEliminable(rol)) throw new Error('No se puede eliminar un rol que tiene usuarios asignados.')
+  if (!rol) throw new Error('El rol no existe.')
 
+  return rol
+}
+
+// Consulta todos los roles.
+export async function fetchRoles() {
+  await delay()
+
+  const consultar = await obtenerConsultaAsignaciones()
+
+  return roles.map(rol => copiarRol(rol, consultar))
+}
+
+// Crea un rol personalizado.
+export async function createRole(data) {
   await delay(600)
-  maybeFail()
 
-  roles = roles.filter((item) => item.id !== id)
+  const consultar = await obtenerConsultaAsignaciones()
+
+  const nuevo = {
+    ...validarDatos(data, null, consultar),
+    id: nextId++,
+  }
+
+  roles = [...roles, nuevo]
+
+  return copiarRol(nuevo, consultar)
+}
+
+// Actualiza un rol respetando sus restricciones.
+export async function updateRole(id, data) {
+  await delay(600)
+
+  const consultar = await obtenerConsultaAsignaciones()
+  const anterior = buscarRol(id)
+
+  if (anterior.id === GERENTE_ID) {
+    throw new Error('El rol Gerente no se puede modificar.')
+  }
+
+  const actualizado = {
+    ...anterior,
+    ...validarDatos(data, anterior, consultar),
+  }
+
+  roles = roles.map(rol =>
+    rol.id === anterior.id ? actualizado : rol
+  )
+
+  return copiarRol(actualizado, consultar)
+}
+
+// Cambia el estado de un rol respetando sus asignaciones.
+export async function toggleEstadoRole(id) {
+  await delay()
+
+  const consultar = await obtenerConsultaAsignaciones()
+  const rol = buscarRol(id)
+
+  if (rol.id === GERENTE_ID) {
+    throw new Error(
+      'El rol Gerente debe permanecer activo.'
+    )
+  }
+
+  if (
+    rol.estado === 'Activo' &&
+    consultar(rol.id).activos > 0
+  ) {
+    throw new Error(
+      'No puedes desactivar un rol con usuarios activos asignados.'
+    )
+  }
+
+  const actualizado = {
+    ...rol,
+    estado: rol.estado === 'Activo' ? 'Inactivo' : 'Activo',
+  }
+
+  roles = roles.map(item =>
+    item.id === rol.id ? actualizado : item
+  )
+
+  return copiarRol(actualizado, consultar)
+}
+
+// Elimina únicamente roles personalizados sin usuarios asociados.
+export async function deleteRole(id) {
+  await delay(600)
+
+  const consultar = await obtenerConsultaAsignaciones()
+  const rol = buscarRol(id)
+
+  if (esRolSistema(rol)) {
+    throw new Error(
+      'Los roles predeterminados no se pueden eliminar.'
+    )
+  }
+
+  if (consultar(rol.id).total > 0) {
+    throw new Error(
+      'No puedes eliminar un rol con usuarios asignados.'
+    )
+  }
+
+  roles = roles.filter(item => item.id !== rol.id)
+
   return true
 }
 
+// Consulta los privilegios mediante el identificador del rol.
+export function getPrivilegiosPorId(id) {
+  const rol = roles.find(
+    item => item.id === Number(id) && item.estado === 'Activo'
+  )
+
+  return Object.fromEntries(
+    Object.entries(rol?.privilegios ?? {}).map(
+      ([modulo, ids]) => [modulo, [...ids]]
+    )
+  )
+}
+
+// Se conserva para compatibilidad con el módulo de Usuarios.
 export function getPrivilegiosPorNombre(nombreRol) {
-  const rol = roles.find((item) => item.nombre === nombreRol)
-  return rol ? copiarRol(rol).privilegios : {}
+  return getPrivilegiosPorId(
+    roles.find(rol => rol.nombre === nombreRol)?.id
+  )
 }

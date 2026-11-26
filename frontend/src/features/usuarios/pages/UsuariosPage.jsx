@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Box from '@mui/material/Box'
 import Paper from '@mui/material/Paper'
+
 import useUsuarios from '../hooks/useUsuarios'
 import UsuariosKpis from '../components/UsuariosKpis'
 import UsuariosToolbar from '../components/UsuariosToolbar'
@@ -23,6 +24,7 @@ export default function UsuariosPage() {
     pageSize,
     setPage,
     loading,
+    submitting,
     error,
     kpis,
     search,
@@ -40,15 +42,12 @@ export default function UsuariosPage() {
   } = useUsuarios()
 
   const [filtersOpen, setFiltersOpen] = useState(false)
-
   const [formDialog, setFormDialog] = useState(null)
-  const [submitting, setSubmitting] = useState(false)
-
   const [usuarioDetalle, setUsuarioDetalle] = useState(null)
-  const [usuarioAInhabilitar, setUsuarioAInhabilitar] = useState(null)
-  const [changingStatus, setChangingStatus] = useState(false)
+  const [usuarioCambioEstado, setUsuarioCambioEstado] = useState(null)
 
-  const { notificaciones, mostrarNotificacion } = useNotificaciones()
+  const { notificaciones, mostrarNotificacion } =
+    useNotificaciones()
 
   // Notificar errores durante la carga inicial.
   useEffect(() => {
@@ -57,77 +56,92 @@ export default function UsuariosPage() {
     }
   }, [error, mostrarNotificacion])
 
-  // Guardar o actualizar usuario.
-  const handleSubmitForm = async (data) => {
-    if (submitting || !formDialog) return
+  // Crear o actualizar una cuenta.
+  async function handleSubmitForm(data) {
+    if (submitting || !formDialog) return false
 
-    setSubmitting(true)
+    const esCreacion = formDialog.mode === 'create'
 
     try {
-      if (formDialog.mode === 'create') {
+      if (esCreacion) {
         await agregarUsuario(data)
-
-        mostrarNotificacion(
-          'exito',
-          'Usuario registrado correctamente.'
-        )
       } else {
         await editarUsuario(formDialog.usuario.id, data)
-
-        mostrarNotificacion(
-          'exito',
-          'Usuario actualizado correctamente.'
-        )
       }
 
+      mostrarNotificacion(
+        'exito',
+        esCreacion
+          ? 'Usuario registrado correctamente.'
+          : 'Usuario actualizado correctamente.'
+      )
+
       setFormDialog(null)
+      return true
     } catch (error) {
       mostrarNotificacion(
         'error',
         error.message || 'No se pudo guardar el usuario.'
       )
-    } finally {
-      setSubmitting(false)
+
+      return false
     }
   }
 
-  // Errores de validación del formulario.
-  const handleValidationError = (mensaje) => {
-    mostrarNotificacion('error', mensaje)
+  // Activar o desactivar una cuenta.
+  async function handleCambiarEstado(id) {
+    if (submitting) return false
+
+    try {
+      const actualizado = await cambiarEstado(id)
+
+      mostrarNotificacion(
+        'exito',
+        actualizado.estado === 'Activo'
+          ? 'Usuario activado correctamente.'
+          : 'Usuario desactivado correctamente.'
+      )
+
+      setUsuarioCambioEstado(null)
+      return true
+    } catch (error) {
+      mostrarNotificacion(
+        'error',
+        error.message || 'No se pudo cambiar el estado del usuario.'
+      )
+
+      return false
+    }
   }
 
-  // Cambiar estado después de confirmar.
-  const handleInhabilitar = async (id) => {
-  if (changingStatus) return false
+  function abrirFormulario(mode, usuario = null) {
+    if (loading || submitting) return
 
-  setChangingStatus(true)
-
-  try {
-    const actualizado = await cambiarEstado(id)
-
-    mostrarNotificacion(
-      'exito',
-      actualizado.estado === 'Inactivo'
-        ? 'El usuario ha sido inhabilitado.'
-        : 'El usuario ha sido reactivado.'
-    )
-
-    setUsuarioAInhabilitar(null)
-    return true
-  } catch (error) {
-    mostrarNotificacion(
-      'error',
-      error.message || 'No se pudo cambiar el estado del usuario.'
-    )
-
-    return false
-  } finally {
-    setChangingStatus(false)
+    setFormDialog({ mode, usuario })
   }
-}
+
+  function cerrarFormulario() {
+    if (!submitting) setFormDialog(null)
+  }
+
+  function abrirCambioEstado(usuario) {
+    if (!loading && !submitting) {
+      setUsuarioCambioEstado(usuario)
+    }
+  }
+
+  function cerrarCambioEstado() {
+    if (!submitting) setUsuarioCambioEstado(null)
+  }
 
   return (
-    <Box>
+    <Box
+      sx={{
+        width: '100%',
+        minWidth: 0,
+        overflowX: 'hidden',
+      }}
+    >
       <UsuariosKpis kpis={kpis} />
 
       <Paper
@@ -135,15 +149,21 @@ export default function UsuariosPage() {
         sx={{
           borderColor: 'divider',
           borderRadius: 3,
+          borderTop: '4px solid',
+          borderTopColor: 'primary.main',
           overflow: 'hidden',
+          width: '100%',
+          minWidth: 0,
         }}
       >
         <UsuariosToolbar
           search={search}
           onSearchChange={setSearch}
-          onNuevoUsuario={() => setFormDialog({ mode: 'create' })}
+          onNuevoUsuario={() => abrirFormulario('create')}
           filtersOpen={filtersOpen}
-          onToggleFilters={() => setFiltersOpen((prev) => !prev)}
+          onToggleFilters={() =>
+            setFiltersOpen((prev) => !prev)
+          }
           rolFiltro={rolFiltro}
           onRolFiltroChange={setRolFiltro}
           estadoFiltro={estadoFiltro}
@@ -155,11 +175,13 @@ export default function UsuariosPage() {
         <UsuariosTable
           usuarios={usuarios}
           loading={loading}
+          submitting={submitting}
           onVer={setUsuarioDetalle}
           onEditar={(usuario) =>
-            setFormDialog({ mode: 'edit', usuario })
+            abrirFormulario('edit', usuario)
           }
-          onInhabilitar={setUsuarioAInhabilitar}
+          onInhabilitar={abrirCambioEstado}
+          esUnicoGerente={esUnicoGerente}
         />
 
         <Box
@@ -182,11 +204,11 @@ export default function UsuariosPage() {
         open={Boolean(formDialog)}
         mode={formDialog?.mode}
         initialData={formDialog?.usuario}
-        onClose={() => {
-          if (!submitting) setFormDialog(null)
-        }}
+        onClose={cerrarFormulario}
         onSubmit={handleSubmitForm}
-        onError={handleValidationError}
+        onError={(mensaje) =>
+          mostrarNotificacion('error', mensaje)
+        }
         submitting={submitting}
       />
 
@@ -197,16 +219,16 @@ export default function UsuariosPage() {
       />
 
       <DeleteUserDialog
-        open={Boolean(usuarioAInhabilitar)}
-        usuario={usuarioAInhabilitar}
+        open={Boolean(usuarioCambioEstado)}
+        usuario={usuarioCambioEstado}
         esUnicoGerente={esUnicoGerente}
-        onClose={() => {
-          if (!changingStatus) setUsuarioAInhabilitar(null)
-        }}
-        onInhabilitar={handleInhabilitar}
+        onClose={cerrarCambioEstado}
+        onInhabilitar={handleCambiarEstado}
       />
 
-      <NotificacionesContainer notificaciones={notificaciones} />
+      <NotificacionesContainer
+        notificaciones={notificaciones}
+      />
     </Box>
   )
 }

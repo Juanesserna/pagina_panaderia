@@ -1,326 +1,549 @@
-import { useState } from 'react'
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
-import Checkbox from '@mui/material/Checkbox'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import FormControl from '@mui/material/FormControl'
-import Select from '@mui/material/Select'
-import MenuItem from '@mui/material/MenuItem'
-import IconButton from '@mui/material/IconButton'
-import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
-import DialogTitle from '@mui/material/DialogTitle'
-import DialogContent from '@mui/material/DialogContent'
-import DialogActions from '@mui/material/DialogActions'
-
-import CloseIcon from '@mui/icons-material/Close'
-import AddIcon from '@mui/icons-material/Add'
-import DeleteIcon from '@mui/icons-material/Delete'
-
+import {
+  Box,
+  Typography,
+  Checkbox,
+  FormControlLabel,
+  Button,
+  LinearProgress,
+} from '@mui/material'
+import { alpha } from '@mui/material/styles'
+import {
+  CheckCheck,
+  ListX,
+  Lock,
+  ShieldCheck,
+} from 'lucide-react'
+import { getModuleIcon } from '@shared/utils/moduleIcons'
 import {
   MODULOS,
   PRIVILEGIOS_POR_MODULO,
 } from '../services/rolesService'
 
+const TOTAL_PRIVILEGIOS = MODULOS.reduce(
+  (total, modulo) =>
+    total + PRIVILEGIOS_POR_MODULO[modulo].length,
+  0
+)
+
+const checkboxSx = {
+  p: 0.6,
+  '& .MuiSvgIcon-root': {
+    fontSize: 19,
+  },
+}
+
 export default function ModulosGrid({
-  modulos = [],
   privilegios = {},
-  onModulosChange,
+  privilegiosProtegidos = {},
   onPrivilegiosChange,
+  disabled = false,
 }) {
-  const [nuevoModulo, setNuevoModulo] = useState('')
-  const [moduloPorEliminar, setModuloPorEliminar] = useState(null)
+  // Obtiene únicamente los permisos válidos de cada módulo.
+  const obtenerIds = modulo =>
+    PRIVILEGIOS_POR_MODULO[modulo].map(({ id }) => id)
 
-  const modulosDisponibles = MODULOS.filter(
-    (modulo) => !modulos.includes(modulo)
-  )
-
-  const handleAgregarModulo = () => {
-    if (!nuevoModulo) return
-
-    onModulosChange([...modulos, nuevoModulo])
-    onPrivilegiosChange({
-      ...privilegios,
-      [nuevoModulo]: [],
-    })
-
-    setNuevoModulo('')
-  }
-
-  const handleEliminarModulo = () => {
-    if (!moduloPorEliminar) return
-
-    const nuevosModulos = modulos.filter(
-      (modulo) => modulo !== moduloPorEliminar
+  const obtenerProtegidos = modulo =>
+    obtenerIds(modulo).filter(id =>
+      privilegiosProtegidos[modulo]?.includes(id)
     )
 
-    const nuevosPrivilegios = { ...privilegios }
-    delete nuevosPrivilegios[moduloPorEliminar]
+  const obtenerSeleccionados = modulo =>
+    obtenerIds(modulo).filter(id =>
+      privilegios[modulo]?.includes(id) ||
+      privilegiosProtegidos[modulo]?.includes(id)
+    )
 
-    onModulosChange(nuevosModulos)
-    onPrivilegiosChange(nuevosPrivilegios)
-    setModuloPorEliminar(null)
+  const totalSeleccionados = MODULOS.reduce(
+    (total, modulo) =>
+      total + obtenerSeleccionados(modulo).length,
+    0
+  )
+
+  const totalProtegidos = MODULOS.reduce(
+    (total, modulo) =>
+      total + obtenerProtegidos(modulo).length,
+    0
+  )
+
+  const modulosAsignados = MODULOS.filter(
+    modulo => obtenerSeleccionados(modulo).length > 0
+  ).length
+
+  const porcentaje = TOTAL_PRIVILEGIOS
+    ? (totalSeleccionados / TOTAL_PRIVILEGIOS) * 100
+    : 0
+
+  // Garantiza que ninguna selección retire permisos protegidos.
+  function actualizar(nuevos) {
+    if (disabled) return
+
+    const resultado = Object.fromEntries(
+      MODULOS.map(modulo => [
+        modulo,
+        obtenerIds(modulo).filter(id =>
+          nuevos[modulo]?.includes(id) ||
+          privilegiosProtegidos[modulo]?.includes(id)
+        ),
+      ]).filter(([, ids]) => ids.length > 0)
+    )
+
+    onPrivilegiosChange(resultado)
   }
 
-  const handleTogglePrivilegio = (modulo, privilegioId) => {
-    const actuales = privilegios[modulo] ?? []
+  function cambiarPrivilegio(modulo, id, checked) {
+    if (
+      disabled ||
+      obtenerProtegidos(modulo).includes(id)
+    ) return
 
-    const nuevos = actuales.includes(privilegioId)
-      ? actuales.filter((id) => id !== privilegioId)
-      : [...actuales, privilegioId]
+    const actuales = obtenerSeleccionados(modulo)
 
-    onPrivilegiosChange({
+    actualizar({
       ...privilegios,
-      [modulo]: nuevos,
+      [modulo]: checked
+        ? [...new Set([...actuales, id])]
+        : actuales.filter(item => item !== id),
     })
+  }
+
+  function seleccionarModulo(modulo, checked) {
+    actualizar({
+      ...privilegios,
+      [modulo]: checked
+        ? obtenerIds(modulo)
+        : obtenerProtegidos(modulo),
+    })
+  }
+
+  function seleccionarTodos() {
+    actualizar(
+      Object.fromEntries(
+        MODULOS.map(modulo => [
+          modulo,
+          obtenerIds(modulo),
+        ])
+      )
+    )
+  }
+
+  function deseleccionarTodos() {
+    actualizar(privilegiosProtegidos)
   }
 
   return (
     <Box sx={{ width: '100%', minWidth: 0 }}>
-      <Box sx={{ mb: 1.2 }}>
-        <Typography sx={{ fontSize: '0.95rem', fontWeight: 700 }}>
-          Módulos y privilegios
-        </Typography>
-
-        <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', mt: 0.3 }}>
-          Selecciona los módulos y las acciones que podrá realizar el rol.
-        </Typography>
-      </Box>
-
+      {/* Resumen general de privilegios */}
       <Box
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
+          border: 1,
+          borderColor: 'divider',
+          borderTop: 3,
+          borderTopColor: 'primary.main',
+          borderRadius: 2,
+          p: 2,
           mb: 1.5,
-          flexWrap: 'wrap',
+          bgcolor: 'background.paper',
         }}
       >
-        <FormControl
-          size="small"
-          sx={{ width: { xs: '100%', sm: 260 }, maxWidth: '100%' }}
-        >
-          <Select
-            value={nuevoModulo}
-            displayEmpty
-            onChange={(e) => setNuevoModulo(e.target.value)}
-            renderValue={(selected) =>
-              selected || (
-                <Typography component="span" sx={{ fontSize: '0.8rem', color: 'text.secondary' }}>
-                  Seleccionar módulo
-                </Typography>
-              )
-            }
-            sx={{
-              height: 38,
-              fontSize: '0.8rem',
-              borderRadius: 1.5,
-              backgroundColor: 'background.paper',
-              '& .MuiSelect-select': { py: 1, px: 1.5 },
-            }}
-          >
-            {modulosDisponibles.map((modulo) => (
-              <MenuItem key={modulo} value={modulo}>
-                {modulo}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        <Button
-          variant="contained"
-          size="small"
-          startIcon={<AddIcon />}
-          onClick={handleAgregarModulo}
-          disabled={!nuevoModulo}
-          sx={{
-            height: 38,
-            px: 2,
-            whiteSpace: 'nowrap',
-            textTransform: 'none',
-            borderRadius: 1.5,
-            boxShadow: 'none',
-            '&:hover': { boxShadow: 'none' },
-          }}
-        >
-          Agregar módulo
-        </Button>
-      </Box>
-
-      {modulos.length === 0 ? (
         <Box
           sx={{
-            minHeight: 130,
-            border: '1px dashed',
-            borderColor: 'divider',
-            borderRadius: 2,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            textAlign: 'center',
-            p: 3,
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 1.5,
           }}
         >
-          <Box>
-            <Typography sx={{ fontSize: '0.9rem', fontWeight: 600, color: 'text.secondary' }}>
-              No hay módulos asignados
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.25,
+            }}
+          >
+            <Box
+              sx={{
+                width: 42,
+                height: 42,
+                borderRadius: 2,
+                display: 'grid',
+                placeItems: 'center',
+                color: 'primary.main',
+                bgcolor: theme =>
+                  alpha(theme.palette.primary.main, 0.1),
+              }}
+            >
+              <ShieldCheck size={23} />
+            </Box>
+
+            <Box>
+              <Typography fontWeight={700} fontSize={15}>
+                Módulos y privilegios
+              </Typography>
+
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
+                Configura las acciones permitidas para este rol.
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{ textAlign: 'right' }}>
+            <Typography
+              color="primary.main"
+              fontWeight={700}
+              fontSize={25}
+              sx={{ lineHeight: 1.2 }}
+            >
+              {totalSeleccionados}/{TOTAL_PRIVILEGIOS}
             </Typography>
-            <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary', mt: 0.5 }}>
-              Selecciona un módulo para comenzar a configurar sus privilegios.
+
+            <Typography
+              variant="caption"
+              color="text.secondary"
+            >
+              Privilegios seleccionados
             </Typography>
           </Box>
         </Box>
-      ) : (
+
+        <LinearProgress
+          variant="determinate"
+          value={porcentaje}
+          aria-label="Privilegios seleccionados"
+          sx={{
+            mt: 1.5,
+            height: 5,
+            borderRadius: 5,
+            bgcolor: 'action.hover',
+            '& .MuiLinearProgress-bar': {
+              borderRadius: 5,
+            },
+          }}
+        />
+
         <Box
           sx={{
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              sm: 'repeat(2, minmax(0, 1fr))',
-              lg: 'repeat(3, minmax(0, 1fr))',
-              xl: 'repeat(4, minmax(0, 1fr))',
-            },
-            gap: 1.2,
-            alignItems: 'start',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 1,
+            mt: 1,
           }}
         >
-          {modulos.map((modulo) => {
-            const opciones = PRIVILEGIOS_POR_MODULO[modulo] ?? []
-            const asignados = privilegios[modulo] ?? []
+          <Typography
+            variant="caption"
+            color="text.secondary"
+          >
+            {modulosAsignados} de {MODULOS.length} módulos asignados
+          </Typography>
 
-            return (
+          {totalProtegidos > 0 && (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                color: 'text.secondary',
+              }}
+            >
+              <Lock size={13} />
+
+              <Typography variant="caption">
+                {totalProtegidos} privilegios protegidos
+              </Typography>
+            </Box>
+          )}
+        </Box>
+
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 1,
+            mt: 1.5,
+          }}
+        >
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<CheckCheck size={17} />}
+            onClick={seleccionarTodos}
+            disabled={
+              disabled ||
+              totalSeleccionados === TOTAL_PRIVILEGIOS
+            }
+          >
+            Seleccionar todos
+          </Button>
+
+          <Button
+            size="small"
+            variant="outlined"
+            color="inherit"
+            startIcon={<ListX size={17} />}
+            onClick={deseleccionarTodos}
+            disabled={
+              disabled ||
+              totalSeleccionados === totalProtegidos
+            }
+          >
+            Deseleccionar todos
+          </Button>
+        </Box>
+
+        {totalProtegidos > 0 && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: 'block', mt: 1 }}
+          >
+            Los privilegios protegidos no pueden desmarcarse.
+          </Typography>
+        )}
+      </Box>
+
+      {/* Tarjetas de módulos */}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',
+            sm: 'repeat(2, minmax(0, 1fr))',
+            md: 'repeat(3, minmax(0, 1fr))',
+            lg: 'repeat(4, minmax(0, 1fr))',
+          },
+          gap: 1.5,
+          alignItems: 'stretch',
+        }}
+      >
+        {MODULOS.map(modulo => {
+          const Icono = getModuleIcon(modulo)
+          const opciones = PRIVILEGIOS_POR_MODULO[modulo]
+          const seleccionados = obtenerSeleccionados(modulo)
+          const protegidos = obtenerProtegidos(modulo)
+
+          const cantidad = seleccionados.length
+          const total = opciones.length
+          const completo = total > 0 && cantidad === total
+          const parcial = cantidad > 0 && cantidad < total
+          const asignado = cantidad > 0
+          const bloqueado = protegidos.length === total
+
+          return (
+            <Box
+              key={modulo}
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                minWidth: 0,
+                border: 1,
+                borderColor: asignado
+                  ? 'primary.main'
+                  : 'divider',
+                borderTop: 3,
+                borderTopColor: asignado
+                  ? 'primary.main'
+                  : 'divider',
+                borderRadius: 2,
+                overflow: 'hidden',
+                bgcolor: 'background.paper',
+                transition: 'border-color 0.2s',
+              }}
+            >
+              {/* Encabezado de la tarjeta */}
               <Box
-                key={modulo}
                 sx={{
-                  minWidth: 0,
-                  border: '1px solid',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  px: 1.25,
+                  py: 1.1,
+                  bgcolor: theme =>
+                    asignado
+                      ? alpha(theme.palette.primary.main, 0.05)
+                      : theme.palette.action.hover,
+                  borderBottom: 1,
                   borderColor: 'divider',
-                  borderRadius: 2,
-                  overflow: 'hidden',
-                  backgroundColor: 'background.paper',
                 }}
               >
                 <Box
                   sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    px: 1.3,
-                    py: 0.65,
-                    backgroundColor: 'action.hover',
-                    borderBottom: '1px solid',
-                    borderColor: 'divider',
+                    width: 34,
+                    height: 34,
+                    flexShrink: 0,
+                    display: 'grid',
+                    placeItems: 'center',
+                    borderRadius: 1.5,
+                    color: asignado
+                      ? 'primary.main'
+                      : 'text.secondary',
+                    bgcolor: theme =>
+                      alpha(
+                        theme.palette.primary.main,
+                        asignado ? 0.12 : 0.05
+                      ),
                   }}
                 >
-                  <Typography sx={{ fontSize: '0.82rem', fontWeight: 700 }}>
-                    {modulo}
-                  </Typography>
-
-                  <IconButton
-                    size="small"
-                    aria-label={`Quitar módulo ${modulo}`}
-                    onClick={() => setModuloPorEliminar(modulo)}
-                    disableRipple
-                    sx={{
-                      width: 27,
-                      height: 27,
-                      color: 'text.secondary',
-                      backgroundColor: 'transparent',
-                      '&:hover': {
-                        color: 'error.main',
-                        backgroundColor: 'transparent',
-                      },
-                      '&:active': {
-                        backgroundColor: 'transparent',
-                      },
-                      '&.Mui-focusVisible': {
-                        backgroundColor: 'transparent',
-                      },
-                    }}
-                  >
-                    <CloseIcon sx={{ fontSize: 17 }} />
-                  </IconButton>
+                  <Icono size={19} />
                 </Box>
 
-                <Box
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                    columnGap: 0.5,
-                    rowGap: 0.1,
-                    px: 1,
-                    py: 0.7,
-                  }}
+                <Typography
+                  fontSize={13}
+                  fontWeight={700}
+                  sx={{ flex: 1, minWidth: 0 }}
                 >
-                  {opciones.map((privilegio) => (
-                    <FormControlLabel
-                      key={privilegio.id}
-                      control={
-                        <Checkbox
-                          size="small"
-                          checked={asignados.includes(privilegio.id)}
-                          onChange={() => handleTogglePrivilegio(modulo, privilegio.id)}
-                          sx={{ p: 0.45 }}
-                        />
+                  {modulo}
+                </Typography>
+
+                {protegidos.length > 0 && (
+                  <Box
+                    component="span"
+                    title="Contiene privilegios protegidos"
+                    sx={{
+                      display: 'flex',
+                      color: 'text.secondary',
+                    }}
+                  >
+                    <Lock size={14} />
+                  </Box>
+                )}
+
+                <Typography
+                  fontSize={12}
+                  fontWeight={700}
+                  color={
+                    asignado
+                      ? 'primary.main'
+                      : 'text.secondary'
+                  }
+                >
+                  {cantidad}/{total}
+                </Typography>
+              </Box>
+
+              {/* Selección por módulo */}
+              <Box sx={{ px: 1.25, py: 0.75 }}>
+                <FormControlLabel
+                  sx={{ m: 0 }}
+                  control={
+                    <Checkbox
+                      size="small"
+                      checked={completo}
+                      indeterminate={parcial}
+                      disabled={disabled || bloqueado}
+                      onChange={(_, checked) =>
+                        seleccionarModulo(modulo, checked)
                       }
-                      label={privilegio.nombre}
+                      sx={checkboxSx}
+                    />
+                  }
+                  label={
+                    <Typography fontSize={12} fontWeight={600}>
+                      {bloqueado
+                        ? 'Módulo protegido'
+                        : 'Seleccionar módulo'}
+                    </Typography>
+                  }
+                />
+              </Box>
+
+              {/* Privilegios individuales */}
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                  alignItems: 'start',
+                  columnGap: 0.5,
+                  rowGap: 0.25,
+                  px: 1.25,
+                  pb: 1.25,
+                  flex: 1,
+                }}
+              >
+                {opciones.map(({ id, nombre }) => {
+                  const protegido = protegidos.includes(id)
+
+                  return (
+                    <FormControlLabel
+                      key={id}
                       sx={{
                         m: 0,
                         minWidth: 0,
+                        alignItems: 'flex-start',
                         '& .MuiFormControlLabel-label': {
-                          fontSize: '0.69rem',
-                          lineHeight: 1.2,
-                          color: 'text.secondary',
+                          minWidth: 0,
+                          pt: 0.65,
                         },
                       }}
+                      control={
+                        <Checkbox
+                          size="small"
+                          checked={seleccionados.includes(id)}
+                          disabled={disabled || protegido}
+                          onChange={(_, checked) =>
+                            cambiarPrivilegio(
+                              modulo,
+                              id,
+                              checked
+                            )
+                          }
+                          sx={checkboxSx}
+                        />
+                      }
+                      label={
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                          }}
+                        >
+                          <Typography
+                            fontSize={11.5}
+                            sx={{ lineHeight: 1.4 }}
+                            color="text.secondary"
+                          >
+                            {nombre}
+                          </Typography>
+
+                          {protegido && (
+                            <Box
+                              component="span"
+                              title="Privilegio protegido"
+                              sx={{
+                                display: 'flex',
+                                flexShrink: 0,
+                                color: 'text.secondary',
+                              }}
+                            >
+                              <Lock size={11} />
+                            </Box>
+                          )}
+                        </Box>
+                      }
                     />
-                  ))}
-                </Box>
+                  )
+                })}
               </Box>
-            )
-          })}
-        </Box>
-      )}
 
-      <Dialog
-        open={Boolean(moduloPorEliminar)}
-        onClose={() => setModuloPorEliminar(null)}
-        maxWidth="xs"
-        fullWidth
-        slotProps={{
-          paper: { sx: { borderRadius: 3 } },
-        }}
-      >
-        <DialogTitle sx={{ fontSize: '1rem', fontWeight: 700 }}>
-          Quitar módulo
-        </DialogTitle>
-
-        <DialogContent>
-          <Typography sx={{ fontSize: '0.9rem' }}>
-            ¿Deseas quitar el módulo <strong>{moduloPorEliminar}</strong> y todos sus privilegios asignados a este rol?
-          </Typography>
-        </DialogContent>
-
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button
-            onClick={() => setModuloPorEliminar(null)}
-            color="inherit"
-            sx={{ textTransform: 'none' }}
-          >
-            Cancelar
-          </Button>
-
-          <Button
-            onClick={handleEliminarModulo}
-            variant="contained"
-            color="error"
-            startIcon={<DeleteIcon />}
-            sx={{ textTransform: 'none' }}
-          >
-            Quitar módulo
-          </Button>
-        </DialogActions>
-      </Dialog>
+              {/* Indicador de asignación */}
+              <LinearProgress
+                variant="determinate"
+                value={total ? (cantidad / total) * 100 : 0}
+                aria-label={`Privilegios asignados en ${modulo}`}
+                sx={{
+                  height: 3,
+                  bgcolor: 'action.hover',
+                }}
+              />
+            </Box>
+          )
+        })}
+      </Box>
     </Box>
   )
 }

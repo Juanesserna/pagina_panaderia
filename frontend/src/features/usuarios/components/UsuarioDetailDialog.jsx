@@ -1,14 +1,17 @@
-import Dialog from '@mui/material/Dialog'
-import DialogTitle from '@mui/material/DialogTitle'
-import DialogContent from '@mui/material/DialogContent'
-import DialogActions from '@mui/material/DialogActions'
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
-import Chip from '@mui/material/Chip'
-import Button from '@mui/material/Button'
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Box,
+  Typography,
+  Chip,
+  Button,
+  Stack,
+  Alert,
+} from '@mui/material'
 
 import {
-  Mail,
   ShieldCheck,
   UserRound,
   BriefcaseBusiness,
@@ -27,7 +30,7 @@ function Dato({ label, value }) {
     <Box sx={{ minWidth: 0 }}>
       <Typography
         sx={{
-          fontSize: 10.5,
+          fontSize: 11,
           fontWeight: 600,
           color: 'text.secondary',
           mb: 0.25,
@@ -39,14 +42,13 @@ function Dato({ label, value }) {
       <Typography
         component="div"
         sx={{
-          fontSize: 12.5,
+          fontSize: 13,
           fontWeight: 600,
-          color: 'text.primary',
           overflowWrap: 'anywhere',
-          lineHeight: 1.35,
+          lineHeight: 1.4,
         }}
       >
-        {value === null || value === undefined || value === ''
+        {value == null || value === ''
           ? 'No registrado'
           : value}
       </Typography>
@@ -54,7 +56,7 @@ function Dato({ label, value }) {
   )
 }
 
-function Seccion({ icon: Icon, titulo, children }) {
+function Seccion({ icon: Icon, titulo, extra, children }) {
   return (
     <Box
       sx={{
@@ -63,122 +65,185 @@ function Seccion({ icon: Icon, titulo, children }) {
         borderRadius: 2,
         p: 1.5,
         minWidth: 0,
-        height: '100%',
       }}
     >
-      <Box
+      <Stack
+        direction="row"
+        spacing={0.8}
         sx={{
-          display: 'flex',
           alignItems: 'center',
-          gap: 0.8,
-          mb: 1.2,
+          flexWrap: 'wrap',
+          mb: 1.3,
         }}
       >
-        <Box sx={{ display: 'flex', color: 'text.secondary' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            color: 'text.secondary',
+          }}
+        >
           <Icon size={17} />
         </Box>
 
         <Typography
           sx={{
-            fontSize: 13.5,
+            fontSize: 13,
             fontWeight: 700,
+            flex: 1,
           }}
         >
           {titulo}
         </Typography>
-      </Box>
+
+        {extra}
+      </Stack>
 
       {children}
     </Box>
   )
 }
 
+// Información del perfil vinculado a la cuenta.
 function PerfilCard({ perfil, tipo }) {
-  if (!perfil) return null
+  const esCliente = tipo === 'Cliente'
 
-  const esCliente = tipo === 'cliente'
+  const horario =
+    perfil.horaEntrada && perfil.horaSalida
+      ? `${formatearHora(perfil.horaEntrada)} – ${formatearHora(perfil.horaSalida)}`
+      : perfil.horario || null
 
   return (
-    <Box
-      sx={{
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 2,
-        p: 1.5,
-        minWidth: 0,
-      }}
-    >
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 0.8,
-          mb: 1.2,
-        }}
-      >
-        {esCliente ? (
-          <UserRound size={17} />
-        ) : (
-          <BriefcaseBusiness size={17} />
-        )}
-
-        <Typography
-          sx={{
-            fontSize: 13,
-            fontWeight: 700,
-          }}
-        >
-          {esCliente ? 'Perfil de cliente' : 'Perfil de empleado'}
-        </Typography>
-
+    <Seccion
+      icon={esCliente ? UserRound : BriefcaseBusiness}
+      titulo={`Perfil de ${tipo.toLowerCase()}`}
+      extra={
         <Chip
           label="Vinculado"
           color="success"
           variant="outlined"
           size="small"
-          sx={{
-            ml: 'auto',
-            height: 22,
-            fontSize: 10.5,
-          }}
+          sx={{ height: 22, fontSize: 10.5 }}
         />
-      </Box>
-
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: {
-            xs: '1fr',
-            sm: 'repeat(2, minmax(0, 1fr))',
-          },
-          gap: 1.2,
-        }}
-      >
-        <Dato label="Nombre completo" value={perfil.nombre} />
+      }
+    >
+      <Stack spacing={1.2}>
         <Dato
-          label="Tipo de documento"
-          value={perfil.tipoDocumento}
-        />
-        <Dato
-          label="Número de documento"
+          label={perfil.tipoDocumento || 'Documento'}
           value={perfil.documento}
         />
 
         {!esCliente && (
           <>
-            <Dato label="Teléfono" value={perfil.telefono} />
             <Dato
-              label="Hora de entrada"
-              value={formatearHora(perfil.horaEntrada)}
+              label="Teléfono"
+              value={perfil.telefono}
             />
+
             <Dato
-              label="Hora de salida"
-              value={formatearHora(perfil.horaSalida)}
+              label="Horario laboral"
+              value={horario}
             />
           </>
         )}
-      </Box>
-    </Box>
+      </Stack>
+    </Seccion>
+  )
+}
+
+// Resumen compacto de los accesos heredados del rol.
+function ModulosDisponibles({ usuario }) {
+  const modulos = getModulosVisibles(usuario)
+
+  const totalPrivilegios = modulos.reduce(
+    (total, modulo) => total + modulo.acciones.length,
+    0
+  )
+
+  const mensaje =
+    usuario.estado !== 'Activo'
+      ? 'La cuenta está inactiva y no tiene accesos habilitados.'
+      : usuario.estadoRol !== 'Activo'
+        ? 'El rol está inactivo o no está disponible.'
+        : 'El rol no tiene privilegios asignados.'
+
+  return (
+    <Seccion
+      icon={LayoutGrid}
+      titulo="Módulos disponibles"
+      extra={
+        <Typography
+          sx={{
+            fontSize: 11,
+            color: 'text.secondary',
+            fontWeight: 600,
+          }}
+        >
+          {modulos.length} módulos · {totalPrivilegios} privilegios
+        </Typography>
+      }
+    >
+      <Typography
+        sx={{
+          fontSize: 11.5,
+          color: 'text.secondary',
+          mb: 1.3,
+        }}
+      >
+        Accesos heredados del rol asignado.
+        Los privilegios se administran desde Roles.
+      </Typography>
+
+      {modulos.length === 0 ? (
+        <Alert severity="info">
+          {mensaje}
+        </Alert>
+      ) : (
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: 'repeat(2, minmax(0, 1fr))',
+              sm: 'repeat(3, minmax(0, 1fr))',
+              md: 'repeat(4, minmax(0, 1fr))',
+            },
+            columnGap: 1.5,
+            rowGap: 1.2,
+          }}
+        >
+          {modulos.map((modulo) => (
+            <Stack
+              key={modulo.nombre}
+              direction="row"
+              spacing={0.8}
+              sx={{
+                alignItems: 'center',
+                minWidth: 0,
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  color: 'success.main',
+                  flexShrink: 0,
+                }}
+              >
+                <CheckCircle2 size={15} />
+              </Box>
+
+              <Typography
+                sx={{
+                  fontSize: 12,
+                  fontWeight: 500,
+                  overflowWrap: 'anywhere',
+                }}
+              >
+                {modulo.nombre}
+              </Typography>
+            </Stack>
+          ))}
+        </Box>
+      )}
+    </Seccion>
   )
 }
 
@@ -189,49 +254,46 @@ export default function UsuarioDetailDialog({
 }) {
   if (!usuario) return null
 
-  const modulos = getModulosVisibles(usuario)
-  const nombreUsuario =
-    usuario.nombre?.trim() || `Usuario #${usuario.id}`
+  const nombre =
+    usuario.nombre?.trim() ||
+    usuario.email ||
+    `Usuario #${usuario.id}`
 
   const tieneCliente = Boolean(usuario.cliente)
   const tieneEmpleado = Boolean(usuario.empleado)
-  const tienePerfiles = tieneCliente || tieneEmpleado
 
-  const handleClose = (event, reason) => {
-    if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
-      return
-    }
-
-    onClose?.()
-  }
+  const perfilInvalido = tieneCliente === tieneEmpleado
 
   return (
     <Dialog
       open={open}
-      onClose={handleClose}
+      onClose={() => {}}
       fullWidth
-      maxWidth="lg"
-      disableEscapeKeyDown
+      maxWidth="md"
       slotProps={{
         paper: {
           sx: {
             borderRadius: 3,
-            maxHeight: 'calc(100dvh - 24px)',
-            width: '100%',
             m: { xs: 1, sm: 2 },
+            maxHeight: 'calc(100dvh - 32px)',
           },
         },
       }}
     >
-      <DialogTitle sx={{ px: 2.5, pt: 1.8, pb: 1 }}>
-        <Typography sx={{ fontSize: 17, fontWeight: 700 }}>
+      <DialogTitle sx={{ px: 2.5, py: 1.8 }}>
+        <Typography
+          sx={{ fontSize: 18, fontWeight: 700 }}
+        >
           Detalles del usuario
         </Typography>
 
         <Typography
-          sx={{ fontSize: 12, color: 'text.secondary', mt: 0.2 }}
+          sx={{
+            fontSize: 12,
+            color: 'text.secondary',
+          }}
         >
-          Información de la cuenta, perfiles vinculados y módulos disponibles.
+          Información de la cuenta y accesos asignados.
         </Typography>
       </DialogTitle>
 
@@ -239,229 +301,114 @@ export default function UsuarioDetailDialog({
         dividers
         sx={{
           px: { xs: 1.5, sm: 2.5 },
-          py: 1.5,
-          overflowY: 'auto',
+          py: 1.8,
         }}
       >
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.3,
-            mb: 1.5,
-          }}
-        >
-          <UserAvatar name={nombreUsuario} size={44} />
+        <Stack spacing={1.5}>
+          {/* Identificación de la cuenta */}
+          <Stack
+            direction="row"
+            spacing={1.3}
+            sx={{ alignItems: 'center' }}
+          >
+            <UserAvatar name={nombre} size={44} />
 
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography
-              sx={{
-                fontSize: 15,
-                fontWeight: 700,
-                overflowWrap: 'anywhere',
-              }}
-            >
-              {nombreUsuario}
-            </Typography>
-
-            <Typography
-              sx={{ fontSize: 11.5, color: 'text.secondary' }}
-            >
-              Identificador de cuenta: #{usuario.id}
-            </Typography>
-          </Box>
-
-          <StatusChip estado={usuario.estado} />
-        </Box>
-
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              md: 'minmax(0, 0.75fr) minmax(0, 1.25fr)',
-            },
-            gap: 1.5,
-            alignItems: 'stretch',
-          }}
-        >
-          <Seccion icon={ShieldCheck} titulo="Información de la cuenta">
-            <Box
-              sx={{
-                display: 'grid',
-                gap: 1.5,
-              }}
-            >
-              <Box
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography
                 sx={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 0.8,
+                  fontSize: 15,
+                  fontWeight: 700,
+                  overflowWrap: 'anywhere',
                 }}
               >
-                <Box
-                  sx={{
-                    color: 'text.secondary',
-                    display: 'flex',
-                    mt: 0.2,
-                  }}
-                >
-                  <Mail size={15} />
-                </Box>
+                {nombre}
+              </Typography>
 
+              <Typography
+                sx={{
+                  fontSize: 12,
+                  color: 'text.secondary',
+                }}
+              >
+                Cuenta #{usuario.id}
+                {usuario.tipoPerfil
+                  ? ` · ${usuario.tipoPerfil}`
+                  : ''}
+              </Typography>
+            </Box>
+
+            <StatusChip estado={usuario.estado} />
+          </Stack>
+
+          {perfilInvalido && (
+            <Alert severity="warning">
+              {tieneCliente && tieneEmpleado
+                ? 'La cuenta tiene más de un perfil asociado.'
+                : 'La cuenta no tiene un perfil asociado.'}
+            </Alert>
+          )}
+
+          {/* Cuenta y perfil distribuidos horizontalmente */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, minmax(0, 1fr))',
+              },
+              gap: 1.5,
+            }}
+          >
+            <Seccion
+              icon={ShieldCheck}
+              titulo="Información de la cuenta"
+            >
+              <Stack spacing={1.2}>
                 <Dato
                   label="Correo electrónico"
-                  value={usuario.email || 'No disponible'}
+                  value={usuario.email}
                 />
-              </Box>
 
-              <Dato
-                label="Rol asignado"
-                value={usuario.rol || 'Sin rol asignado'}
+                <Dato
+                  label="Rol asignado"
+                  value={usuario.rol}
+                />
+
+                <Dato
+                  label="Estado del rol"
+                  value={
+                    usuario.estadoRol
+                      ? <StatusChip estado={usuario.estadoRol} />
+                      : 'No disponible'
+                  }
+                />
+              </Stack>
+            </Seccion>
+
+            {tieneCliente && (
+              <PerfilCard
+                perfil={usuario.cliente}
+                tipo="Cliente"
               />
-
-              <Dato
-                label="Estado de la cuenta"
-                value={<StatusChip estado={usuario.estado} />}
-              />
-            </Box>
-          </Seccion>
-
-          <Seccion icon={UserRound} titulo="Perfiles relacionados">
-            {tienePerfiles ? (
-              <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns:
-                    tieneCliente && tieneEmpleado
-                      ? { xs: '1fr', lg: 'repeat(2, minmax(0, 1fr))' }
-                      : '1fr',
-                  gap: 1,
-                }}
-              >
-                {tieneCliente && (
-                  <PerfilCard
-                    perfil={usuario.cliente}
-                    tipo="cliente"
-                  />
-                )}
-
-                {tieneEmpleado && (
-                  <PerfilCard
-                    perfil={usuario.empleado}
-                    tipo="empleado"
-                  />
-                )}
-              </Box>
-            ) : (
-              <Typography
-                sx={{
-                  fontSize: 12.5,
-                  color: 'text.secondary',
-                }}
-              >
-                Esta cuenta no tiene perfiles de cliente o empleado relacionados.
-              </Typography>
             )}
-          </Seccion>
-        </Box>
 
-        <Box sx={{ mt: 1.5 }}>
-          <Seccion icon={LayoutGrid} titulo="Módulos disponibles">
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: 1,
-                mb: 1.3,
-              }}
-            >
-              <Chip
-                label={`${modulos.length} módulos`}
-                size="small"
-                variant="outlined"
-                sx={{ height: 23, fontSize: 11 }}
+            {tieneEmpleado && (
+              <PerfilCard
+                perfil={usuario.empleado}
+                tipo="Empleado"
               />
-
-              <Typography
-                sx={{
-                  fontSize: 11.5,
-                  color: 'text.secondary',
-                }}
-              >
-                Accesos heredados del rol. Los privilegios se administran desde Roles.
-              </Typography>
-            </Box>
-
-            {modulos.length > 0 ? (
-              <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: {
-                    xs: 'repeat(2, minmax(0, 1fr))',
-                    sm: 'repeat(3, minmax(0, 1fr))',
-                    md: 'repeat(4, minmax(0, 1fr))',
-                    lg: 'repeat(6, minmax(0, 1fr))',
-                  },
-                  gap: 0.8,
-                }}
-              >
-                {modulos.map((modulo) => (
-                  <Box
-                    key={modulo.nombre}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.7,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      borderRadius: 1.5,
-                      px: 1,
-                      py: 0.9,
-                      minWidth: 0,
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        color: 'success.main',
-                        display: 'flex',
-                        flexShrink: 0,
-                      }}
-                    >
-                      <CheckCircle2 size={15} />
-                    </Box>
-
-                    <Typography
-                      sx={{
-                        fontSize: 11.5,
-                        fontWeight: 600,
-                        overflowWrap: 'anywhere',
-                      }}
-                    >
-                      {modulo.nombre}
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
-            ) : (
-              <Typography
-                sx={{
-                  fontSize: 12.5,
-                  color: 'text.secondary',
-                }}
-              >
-                Este rol todavía no tiene módulos disponibles.
-              </Typography>
             )}
-          </Seccion>
-        </Box>
+          </Box>
+
+          <ModulosDisponibles usuario={usuario} />
+        </Stack>
       </DialogContent>
 
-      <DialogActions sx={{ px: 2.5, py: 1.2 }}>
+      <DialogActions sx={{ px: 2.5, py: 1.3 }}>
         <Button
           onClick={onClose}
           variant="outlined"
+          color="inherit"
           size="small"
         >
           Cerrar

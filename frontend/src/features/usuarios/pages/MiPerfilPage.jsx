@@ -1,14 +1,13 @@
-
 import { useState } from 'react'
 import {
   Box,
   Paper,
   Typography,
   Divider,
-  Snackbar,
   Alert,
   Chip,
   Stack,
+  Skeleton,
 } from '@mui/material'
 
 import {
@@ -25,42 +24,66 @@ import {
 
 import { Button } from '@shared/components/Button'
 import UserAvatar from '@shared/components/UserAvatar'
+
+import {
+  NotificacionesContainer,
+  useNotificaciones,
+} from '@shared/notifications'
+
 import usePerfil from '../hooks/usePerfil'
 import EditarPerfilDialog from '../components/EditarPerfilDialog'
 import CambiarPasswordDialog from '../components/CambiarPasswordDialog'
 import { cambiarPassword } from '../services/usuariosService'
 
-function InfoItem({ icon: Icon, label, value }) {
+const cardSx = {
+  borderRadius: 3,
+  borderColor: 'divider',
+  p: 2.5,
+  minWidth: 0,
+}
+
+// Contenedor reutilizable para los iconos.
+function IconoCaja({ icon: Icon, destacado = false }) {
   return (
     <Box
       sx={{
-        display: 'flex',
+        width: 36,
+        height: 36,
+        borderRadius: 2,
+        bgcolor: 'action.hover',
+        color: destacado
+          ? 'primary.main'
+          : 'text.secondary',
+        display: 'grid',
+        placeItems: 'center',
+        flexShrink: 0,
+      }}
+    >
+      <Icon size={18} />
+    </Box>
+  )
+}
+
+// Elemento de información de solo lectura.
+function InfoItem({ icon, label, value, color }) {
+  return (
+    <Stack
+      direction="row"
+      spacing={1.5}
+      sx={{
         alignItems: 'center',
-        gap: 1.5,
         py: 1.25,
         minWidth: 0,
       }}
     >
-      <Box
-        sx={{
-          width: 34,
-          height: 34,
-          borderRadius: 2,
-          bgcolor: 'action.hover',
-          display: 'grid',
-          placeItems: 'center',
-          flexShrink: 0,
-          color: 'text.secondary',
-        }}
-      >
-        <Icon size={17} />
-      </Box>
+      <IconoCaja icon={icon} />
 
       <Box sx={{ minWidth: 0 }}>
         <Typography
           sx={{
             fontSize: 11.5,
             color: 'text.secondary',
+            fontWeight: 500,
           }}
         >
           {label}
@@ -70,46 +93,46 @@ function InfoItem({ icon: Icon, label, value }) {
           sx={{
             fontSize: 13.5,
             fontWeight: 600,
-            color: 'text.primary',
+            color: color || 'text.primary',
             overflowWrap: 'anywhere',
           }}
         >
           {value || 'No registrado'}
         </Typography>
       </Box>
-    </Box>
+    </Stack>
   )
 }
 
-function SectionHeader({ icon: Icon, title, description }) {
+// Encabezado compartido por las secciones del perfil.
+function SectionHeader({ icon, title, description }) {
   return (
     <Stack
       direction="row"
       spacing={1.25}
-      alignItems="center"
-      sx={{ mb: 1.5 }}
+      sx={{
+        alignItems: 'center',
+        mb: 1.5,
+      }}
     >
-      <Box
-        sx={{
-          width: 34,
-          height: 34,
-          borderRadius: 2,
-          bgcolor: 'action.hover',
-          color: 'primary.main',
-          display: 'grid',
-          placeItems: 'center',
-          flexShrink: 0,
-        }}
-      >
-        <Icon size={18} />
-      </Box>
+      <IconoCaja icon={icon} destacado />
 
       <Box>
-        <Typography fontSize={14} fontWeight={700}>
+        <Typography
+          sx={{
+            fontSize: 15,
+            fontWeight: 700,
+          }}
+        >
           {title}
         </Typography>
 
-        <Typography fontSize={11.5} color="text.secondary">
+        <Typography
+          sx={{
+            fontSize: 12,
+            color: 'text.secondary',
+          }}
+        >
           {description}
         </Typography>
       </Box>
@@ -117,68 +140,219 @@ function SectionHeader({ icon: Icon, title, description }) {
   )
 }
 
+function TituloPerfil() {
+  return (
+    <Box sx={{ mb: 2 }}>
+      <Typography
+        component="h1"
+        sx={{
+          fontSize: 22,
+          fontWeight: 700,
+          lineHeight: 1.4,
+        }}
+      >
+        Mi perfil
+      </Typography>
+
+      <Typography
+        sx={{
+          fontSize: 12.5,
+          color: 'text.secondary',
+          mt: 0.25,
+        }}
+      >
+        Administra tu información personal y la seguridad de tu cuenta.
+      </Typography>
+    </Box>
+  )
+}
+
+// Estado visual durante la consulta inicial.
+function PerfilSkeleton() {
+  return (
+    <Stack spacing={2}>
+      <Paper
+        variant="outlined"
+        sx={{
+          ...cardSx,
+          borderTop: '4px solid',
+          borderTopColor: 'primary.main',
+        }}
+      >
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{ alignItems: 'center' }}
+        >
+          <Skeleton
+            variant="circular"
+            width={62}
+            height={62}
+          />
+
+          <Box sx={{ flex: 1 }}>
+            <Skeleton width="45%" height={26} />
+            <Skeleton width="35%" height={20} />
+            <Skeleton width={120} height={24} />
+          </Box>
+        </Stack>
+      </Paper>
+
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',
+            md: '1fr 1fr',
+          },
+          gap: 2,
+        }}
+      >
+        {[0, 1].map((item) => (
+          <Paper
+            key={item}
+            variant="outlined"
+            sx={cardSx}
+          >
+            <Skeleton width="55%" height={25} />
+            <Skeleton width="75%" height={20} />
+
+            <Divider sx={{ my: 1.5 }} />
+
+            {[0, 1, 2].map((fila) => (
+              <Stack
+                key={fila}
+                direction="row"
+                spacing={1.5}
+                sx={{
+                  alignItems: 'center',
+                  py: 1.25,
+                }}
+              >
+                <Skeleton
+                  variant="rounded"
+                  width={36}
+                  height={36}
+                />
+
+                <Box sx={{ flex: 1 }}>
+                  <Skeleton width="40%" />
+                  <Skeleton width="65%" />
+                </Box>
+              </Stack>
+            ))}
+          </Paper>
+        ))}
+      </Box>
+
+      <Paper variant="outlined" sx={cardSx}>
+        <Skeleton width="45%" height={24} />
+        <Skeleton width="60%" height={20} />
+      </Paper>
+    </Stack>
+  )
+}
+
 export default function MiPerfilPage() {
-  const { usuario, loading, editarPerfil } = usePerfil()
+  const {
+    usuario,
+    loading,
+    error,
+    submitting: savingPerfil,
+    editarPerfil,
+  } = usePerfil()
 
-  const [editarPerfilOpen, setEditarPerfilOpen] = useState(false)
-  const [cambiarPasswordOpen, setCambiarPasswordOpen] = useState(false)
-  const [savingPerfil, setSavingPerfil] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+  const [editarPerfilOpen, setEditarPerfilOpen] =
+    useState(false)
 
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-    severity: 'success',
-  })
+  const [cambiarPasswordOpen, setCambiarPasswordOpen] =
+    useState(false)
 
-  const notify = (message, severity = 'success') => {
-    setSnackbar({ open: true, message, severity })
-  }
+  const [savingPassword, setSavingPassword] =
+    useState(false)
 
+  const {
+    notificaciones,
+    mostrarNotificacion,
+    cerrarNotificacion,
+  } = useNotificaciones()
+
+  const ocupado = savingPerfil || savingPassword
+
+  // Actualiza los datos de contacto del usuario.
   const handleGuardarPerfil = async (data) => {
-    if (savingPerfil) return
-    setSavingPerfil(true)
+    if (ocupado) return false
 
     try {
       await editarPerfil(data)
+
       setEditarPerfilOpen(false)
-      notify('Tus datos de contacto han sido actualizados.')
+
+      mostrarNotificacion(
+        'exito',
+        'Tus datos de contacto han sido actualizados.'
+      )
+
+      return true
     } catch (error) {
-      notify(error.message || 'No se pudo actualizar el perfil.', 'error')
-    } finally {
-      setSavingPerfil(false)
+      mostrarNotificacion(
+        'error',
+        error.message || 'No se pudo actualizar el perfil.'
+      )
+
+      return false
     }
   }
 
+  // Cambio de contraseña simulado hasta conectar el backend.
   const handleCambiarPassword = async ({ actual, nueva }) => {
-    if (!usuario?.id || submitting) return
-    setSubmitting(true)
+    if (!usuario?.id || ocupado) return false
+
+    setSavingPassword(true)
 
     try {
-      await cambiarPassword(usuario.id, { actual, nueva })
+      await cambiarPassword(usuario.id, {
+        actual,
+        nueva,
+      })
+
       setCambiarPasswordOpen(false)
-      notify('Tu contraseña ha sido actualizada.')
+
+      mostrarNotificacion(
+        'exito',
+        'Cambio de contraseña simulado correctamente.'
+      )
+
+      return true
     } catch (error) {
-      notify(error.message || 'No se pudo cambiar la contraseña.', 'error')
+      mostrarNotificacion(
+        'error',
+        error.message || 'No se pudo cambiar la contraseña.'
+      )
+
+      return false
     } finally {
-      setSubmitting(false)
+      setSavingPassword(false)
     }
   }
 
-  if (loading || !usuario) {
+  if (loading) {
     return (
-      <Box>
-        <Typography fontSize={20} fontWeight={700} mb={2}>
-          Mi perfil
-        </Typography>
+      <Box sx={{ width: '100%', minWidth: 0 }}>
+        <TituloPerfil />
+        <PerfilSkeleton />
+      </Box>
+    )
+  }
 
-        <Paper variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
-          <Typography color="text.secondary">
-            {loading
-              ? 'Cargando información del perfil...'
-              : 'No se encontró información del perfil.'}
-          </Typography>
-        </Paper>
+  if (error || !usuario) {
+    return (
+      <Box sx={{ width: '100%', minWidth: 0 }}>
+        <TituloPerfil />
+
+        <Alert severity="error">
+          {error || 'No se encontró información del perfil.'}
+        </Alert>
       </Box>
     )
   }
@@ -187,28 +361,31 @@ export default function MiPerfilPage() {
   const correo = usuario.email || 'Sin correo registrado'
   const rol = usuario.rol || 'Sin rol'
   const activo = usuario.estado === 'Activo'
+  const esEmpleado = usuario.tipoPerfil === 'Empleado'
+
+  const documento = [
+    usuario.tipoDocumento,
+    usuario.documento,
+  ].filter(Boolean).join(' · ')
 
   return (
-    <Box sx={{ width: '100%', pb: 2 }}>
-      {/* Título */}
-      <Box sx={{ mb: 2 }}>
-        <Typography fontSize={21} fontWeight={700}>
-          Mi perfil
-        </Typography>
+    <Box
+      sx={{
+        width: '100%',
+        minWidth: 0,
+        pb: 2,
+      }}
+    >
+      <TituloPerfil />
 
-        <Typography fontSize={12.5} color="text.secondary">
-          Administra tu información personal y la seguridad de tu cuenta.
-        </Typography>
-      </Box>
-
-      {/* Encabezado */}
+      {/* Encabezado del perfil */}
       <Paper
         variant="outlined"
         sx={{
-          borderRadius: 3,
+          ...cardSx,
           p: { xs: 2, md: 2.5 },
           mb: 2,
-          borderTop: '3px solid',
+          borderTop: '4px solid',
           borderTopColor: 'primary.main',
         }}
       >
@@ -221,19 +398,50 @@ export default function MiPerfilPage() {
             flexWrap: 'wrap',
           }}
         >
-          <Stack direction="row" spacing={2} alignItems="center">
-            <UserAvatar name={nombre} size={62} fontSize={20} />
+          <Stack
+            direction="row"
+            spacing={2}
+            sx={{
+              alignItems: 'center',
+              minWidth: 0,
+            }}
+          >
+            <UserAvatar
+              name={nombre}
+              size={62}
+              fontSize={20}
+            />
 
-            <Box>
-              <Typography fontSize={18} fontWeight={700}>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography
+                sx={{
+                  fontSize: 20,
+                  fontWeight: 700,
+                  overflowWrap: 'anywhere',
+                }}
+              >
                 {nombre}
               </Typography>
 
-              <Typography fontSize={12.5} color="text.secondary">
+              <Typography
+                sx={{
+                  fontSize: 12.5,
+                  color: 'text.secondary',
+                  overflowWrap: 'anywhere',
+                }}
+              >
                 {correo}
               </Typography>
 
-              <Stack direction="row" spacing={1} sx={{ mt: 0.8 }}>
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                  mt: 0.8,
+                  flexWrap: 'wrap',
+                  rowGap: 0.5,
+                }}
+              >
                 <Chip
                   size="small"
                   label={rol}
@@ -255,6 +463,7 @@ export default function MiPerfilPage() {
           <Button
             variant="secondary"
             leftIcon={<Pencil size={15} />}
+            disabled={ocupado || !activo}
             onClick={() => setEditarPerfilOpen(true)}
           >
             Editar perfil
@@ -262,7 +471,7 @@ export default function MiPerfilPage() {
         </Box>
       </Paper>
 
-      {/* Información */}
+      {/* Información personal y de la cuenta */}
       <Box
         sx={{
           display: 'grid',
@@ -273,14 +482,7 @@ export default function MiPerfilPage() {
           gap: 2,
         }}
       >
-        <Paper
-          variant="outlined"
-          sx={{
-            borderRadius: 3,
-            p: 2.5,
-            minWidth: 0,
-          }}
-        >
+        <Paper variant="outlined" sx={cardSx}>
           <SectionHeader
             icon={UserRound}
             title="Información personal"
@@ -300,26 +502,23 @@ export default function MiPerfilPage() {
           <InfoItem
             icon={IdCard}
             label="Documento de identidad"
-            value={usuario.documento}
+            value={documento}
           />
 
-          <Divider />
+          {esEmpleado && (
+            <>
+              <Divider />
 
-          <InfoItem
-            icon={Phone}
-            label="Teléfono"
-            value={usuario.telefono}
-          />
+              <InfoItem
+                icon={Phone}
+                label="Teléfono"
+                value={usuario.telefono}
+              />
+            </>
+          )}
         </Paper>
 
-        <Paper
-          variant="outlined"
-          sx={{
-            borderRadius: 3,
-            p: 2.5,
-            minWidth: 0,
-          }}
-        >
+        <Paper variant="outlined" sx={cardSx}>
           <SectionHeader
             icon={ShieldCheck}
             title="Información de la cuenta"
@@ -348,16 +547,20 @@ export default function MiPerfilPage() {
             icon={CircleCheck}
             label="Estado de la cuenta"
             value={usuario.estado}
+            color={
+              activo
+                ? 'success.main'
+                : 'text.secondary'
+            }
           />
         </Paper>
       </Box>
 
-      {/* Seguridad */}
+      {/* Seguridad de la cuenta */}
       <Paper
         variant="outlined"
         sx={{
-          borderRadius: 3,
-          p: 2.5,
+          ...cardSx,
           mt: 2,
         }}
       >
@@ -370,27 +573,32 @@ export default function MiPerfilPage() {
             flexWrap: 'wrap',
           }}
         >
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            <Box
-              sx={{
-                width: 38,
-                height: 38,
-                borderRadius: 2,
-                bgcolor: 'action.hover',
-                color: 'primary.main',
-                display: 'grid',
-                placeItems: 'center',
-              }}
-            >
-              <LockKeyhole size={19} />
-            </Box>
+          <Stack
+            direction="row"
+            spacing={1.5}
+            sx={{ alignItems: 'center' }}
+          >
+            <IconoCaja
+              icon={LockKeyhole}
+              destacado
+            />
 
             <Box>
-              <Typography fontSize={14} fontWeight={700}>
+              <Typography
+                sx={{
+                  fontSize: 15,
+                  fontWeight: 700,
+                }}
+              >
                 Seguridad de la cuenta
               </Typography>
 
-              <Typography fontSize={12} color="text.secondary">
+              <Typography
+                sx={{
+                  fontSize: 12,
+                  color: 'text.secondary',
+                }}
+              >
                 Actualiza tu contraseña de acceso.
               </Typography>
             </Box>
@@ -399,6 +607,7 @@ export default function MiPerfilPage() {
           <Button
             variant="secondary"
             leftIcon={<KeyRound size={15} />}
+            disabled={ocupado || !activo}
             onClick={() => setCambiarPasswordOpen(true)}
           >
             Cambiar contraseña
@@ -406,48 +615,40 @@ export default function MiPerfilPage() {
         </Box>
       </Paper>
 
-      {/* Diálogos */}
+      {/* Formularios del perfil */}
       <EditarPerfilDialog
         open={editarPerfilOpen}
         initialData={usuario}
         onClose={() => {
-          if (!savingPerfil) setEditarPerfilOpen(false)
+          if (!savingPerfil) {
+            setEditarPerfilOpen(false)
+          }
         }}
         onSubmit={handleGuardarPerfil}
+        onError={(mensaje) =>
+          mostrarNotificacion('error', mensaje)
+        }
         submitting={savingPerfil}
       />
 
       <CambiarPasswordDialog
         open={cambiarPasswordOpen}
         onClose={() => {
-          if (!submitting) setCambiarPasswordOpen(false)
+          if (!savingPassword) {
+            setCambiarPasswordOpen(false)
+          }
         }}
         onSubmit={handleCambiarPassword}
-        submitting={submitting}
+        onError={(mensaje) =>
+          mostrarNotificacion('error', mensaje)
+        }
+        submitting={savingPassword}
       />
 
-      {/* Notificaciones */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3500}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        onClose={(_, reason) => {
-          if (reason !== 'clickaway') {
-            setSnackbar((prev) => ({ ...prev, open: false }))
-          }
-        }}
-      >
-        <Alert
-          severity={snackbar.severity}
-          variant="filled"
-          onClose={() =>
-            setSnackbar((prev) => ({ ...prev, open: false }))
-          }
-          sx={{ width: '100%', borderRadius: 2 }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+      <NotificacionesContainer
+        notificaciones={notificaciones}
+        onClose={cerrarNotificacion}
+      />
     </Box>
   )
 }

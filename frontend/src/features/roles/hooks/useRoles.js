@@ -1,55 +1,63 @@
-import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import {
   fetchRoles,
   createRole,
   updateRole,
   toggleEstadoRole,
   deleteRole,
+  esRolSistema,
   esEliminable,
+  esDesactivable,
 } from '../services/rolesService'
+
+const PAGE_SIZE = 6
 
 export default function useRoles() {
   const [roles, setRoles] = useState([])
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState(null)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
 
-  const PAGE_SIZE = 10
+  const bloqueo = useRef(false)
 
-  useEffect(() => {
-    let active = true
+  // Consulta inicial y actualización de los roles.
+  const cargarRoles = useCallback(async () => {
+    setLoading(true)
+    setError(null)
 
-    fetchRoles()
-      .then((data) => {
-        if (active) setRoles(data)
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
-
-    return () => {
-      active = false
+    try {
+      const data = await fetchRoles()
+      setRoles(data)
+    } catch (err) {
+      setError(err.message || 'No se pudieron cargar los roles.')
+    } finally {
+      setLoading(false)
     }
   }, [])
 
+  useEffect(() => {
+    cargarRoles()
+  }, [cargarRoles])
+
+  // Búsqueda por ID, nombre o estado.
   const rolesFiltrados = useMemo(() => {
-  const term = search.trim().toLowerCase()
+    const term = search.trim().toLowerCase()
 
-  if (!term) return roles
+    if (!term) return roles
 
-  return roles.filter((rol) => {
-    const estado = String(rol.estado ?? '').trim().toLowerCase()
+    return roles.filter((rol) => {
+      if (term === 'activo' || term === 'inactivo') {
+        return rol.estado.toLowerCase() === term
+      }
 
-    if (term === 'activo' || term === 'inactivo') {
-      return estado === term
-    }
-
-    return (
-      String(rol.id).includes(term) ||
-      String(rol.nombre ?? '').toLowerCase().includes(term)
-    )
-  })
-}, [roles, search])
+      return (
+        String(rol.id).includes(term) ||
+        rol.nombre.toLowerCase().includes(term)
+      )
+    })
+  }, [roles, search])
 
   const pageCount = Math.max(
     1,
@@ -62,6 +70,7 @@ export default function useRoles() {
 
   const rolesPagina = useMemo(() => {
     const start = (page - 1) * PAGE_SIZE
+
     return rolesFiltrados.slice(start, start + PAGE_SIZE)
   }, [rolesFiltrados, page])
 
@@ -70,45 +79,73 @@ export default function useRoles() {
     activos: roles.filter((rol) => rol.estado === 'Activo').length,
   }), [roles])
 
-  const agregarRol = useCallback(async (data) => {
-    const nuevo = await createRole(data)
-    setRoles((prev) => [...prev, nuevo])
-    return nuevo
+  // Centraliza el bloqueo de operaciones simultáneas.
+  const ejecutarAccion = useCallback(async (accion) => {
+    if (bloqueo.current) {
+      throw new Error('Ya hay una operación en curso.')
+    }
+
+    bloqueo.current = true
+    setSubmitting(true)
+
+    try {
+      return await accion()
+    } finally {
+      bloqueo.current = false
+      setSubmitting(false)
+    }
   }, [])
 
-  const editarRol = useCallback(async (id, data) => {
+  // Agrega el nuevo rol al final del listado.
+  const agregarRol = (data) => ejecutarAccion(async () => {
+    const nuevo = await createRole(data)
+
+    setRoles((prev) => [...prev, nuevo])
+    setSearch('')
+    setPage(Math.ceil((roles.length + 1) / PAGE_SIZE))
+
+    return nuevo
+  })
+
+  // Actualiza únicamente el rol seleccionado.
+  const editarRol = (id, data) => ejecutarAccion(async () => {
     const actualizado = await updateRole(id, data)
 
-    if (!actualizado) throw new Error('No se encontró el rol.')
-
     setRoles((prev) =>
-      prev.map((rol) => rol.id === id ? actualizado : rol)
+      prev.map((rol) =>
+        rol.id === actualizado.id ? actualizado : rol
+      )
     )
 
     return actualizado
-  }, [])
+  })
 
-  const cambiarEstado = useCallback(async (id) => {
+  // Activa o desactiva un rol personalizado.
+  const cambiarEstado = (id) => ejecutarAccion(async () => {
     const actualizado = await toggleEstadoRole(id)
 
-    if (!actualizado) throw new Error('No se encontró el rol.')
-
     setRoles((prev) =>
-      prev.map((rol) => rol.id === id ? actualizado : rol)
+      prev.map((rol) =>
+        rol.id === actualizado.id ? actualizado : rol
+      )
     )
 
     return actualizado
-  }, [])
+  })
 
-  const eliminarRol = useCallback(async (id) => {
+  // Elimina un rol que cumple las restricciones del servicio.
+  const eliminarRol = (id) => ejecutarAccion(async () => {
     await deleteRole(id)
-    setRoles((prev) => prev.filter((rol) => rol.id !== id))
-  }, [])
 
-  const cambiarBusqueda = useCallback((value) => {
+    setRoles((prev) =>
+      prev.filter((rol) => rol.id !== Number(id))
+    )
+  })
+
+  const cambiarBusqueda = (value) => {
     setSearch(value)
     setPage(1)
-  }, [])
+  }
 
   return {
     roles: rolesPagina,
@@ -118,13 +155,18 @@ export default function useRoles() {
     pageSize: PAGE_SIZE,
     setPage,
     loading,
+    submitting,
+    error,
     kpis,
     search,
     setSearch: cambiarBusqueda,
+    cargarRoles,
     agregarRol,
     editarRol,
     cambiarEstado,
     eliminarRol,
+    esRolSistema,
     esEliminable,
+    esDesactivable,
   }
 }

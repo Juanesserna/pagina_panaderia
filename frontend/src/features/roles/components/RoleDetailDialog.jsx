@@ -1,346 +1,418 @@
+import { useEffect, useState } from 'react'
 import {
+  Box,
+  Typography,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Box,
-  Typography,
-  Chip,
   Button,
-  Stack,
+  Chip,
+  Collapse,
+  ButtonBase,
+  useMediaQuery,
 } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 
 import {
   ShieldCheck,
   Layers3,
   KeyRound,
+  Users,
   CheckCircle2,
-  Circle,
-  SlidersHorizontal,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 
-import { PRIVILEGIOS_POR_MODULO } from '../services/rolesService'
+import { getModuleIcon } from '@shared/utils/moduleIcons'
+import {
+  MODULOS,
+  PRIVILEGIOS_POR_MODULO,
+} from '../services/rolesService'
 
-function Resumen({ icon: Icon, label, value }) {
-  return (
-    <Stack
-      direction="row"
-      alignItems="center"
-      spacing={1}
-      sx={{
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 2,
-        px: 1.2,
-        py: 0.6,
-        minWidth: 0,
-      }}
-    >
-      <Box
-        sx={{
-          width: 26,
-          height: 26,
-          display: 'grid',
-          placeItems: 'center',
-          borderRadius: 1.5,
-          bgcolor: 'action.hover',
-          color: 'text.secondary',
-          flexShrink: 0,
-        }}
-      >
-        <Icon size={15} />
-      </Box>
-
-      <Box minWidth={0}>
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{ display: 'block', lineHeight: 1.1 }}
-        >
-          {label}
-        </Typography>
-        <Typography variant="subtitle2" fontWeight={700} lineHeight={1.2}>
-          {value}
-        </Typography>
-      </Box>
-    </Stack>
-  )
+const cardSx = {
+  border: 1,
+  borderColor: 'divider',
+  borderTop: 3,
+  borderTopColor: 'primary.main',
+  borderRadius: '8px',
+  bgcolor: 'background.paper',
+  minWidth: 0,
 }
 
-function ModuloCard({ modulo, privilegios }) {
-  const opciones = PRIVILEGIOS_POR_MODULO[modulo] ?? []
-  const asignados = privilegios[modulo] ?? []
-
+function IconoCaja({ icon: Icon, size = 30 }) {
   return (
     <Box
       sx={{
-        minWidth: 0,
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 2,
-        overflow: 'hidden',
-        bgcolor: 'background.paper',
+        width: size,
+        height: size,
+        display: 'grid',
+        placeItems: 'center',
+        borderRadius: 1.5,
+        bgcolor: 'action.hover',
+        color: 'primary.main',
+        flexShrink: 0,
       }}
     >
-      <Box
-        sx={{
-          px: 1.2,
-          py: 0.5,
-          bgcolor: 'action.hover',
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 0.5,
-        }}
-      >
-        <Typography variant="body2" fontWeight={700} noWrap title={modulo}>
-          {modulo}
+      <Icon size={Math.round(size * 0.55)} />
+    </Box>
+  )
+}
+
+// Indicadores de información del rol.
+function Resumen({ icon, label, value }) {
+  return (
+    <Box
+      sx={{
+        ...cardSx,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
+        p: 0.75,
+      }}
+    >
+      <IconoCaja icon={icon} />
+
+      <Box sx={{ minWidth: 0 }}>
+        <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+          {label}
         </Typography>
 
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          fontWeight={600}
-          sx={{ flexShrink: 0 }}
-        >
-          {asignados.length}/{opciones.length}
+        <Typography sx={{ fontSize: 17, fontWeight: 700 }}>
+          {value}
         </Typography>
       </Box>
+    </Box>
+  )
+}
 
-      <Box
+// Tarjeta expandible con los privilegios asignados.
+function ModuloCard({ modulo, asignados, expandido, onToggle }) {
+  const Icono = getModuleIcon(modulo)
+  const total = PRIVILEGIOS_POR_MODULO[modulo]?.length ?? 0
+
+  return (
+    <Box sx={{ ...cardSx, overflow: 'hidden' }}>
+      <ButtonBase
+        onClick={onToggle}
+        aria-expanded={expandido}
         sx={{
+          width: '100%',
           display: 'flex',
-          flexWrap: 'wrap',
-          gap: 0.5,
-          p: 0.8,
-          alignContent: 'flex-start',
+          alignItems: 'center',
+          gap: 1,
+          p: 0.75,
+          textAlign: 'left',
+          '&:hover': { bgcolor: 'action.hover' },
         }}
       >
-        {opciones.map((privilegio) => {
-          const activo = asignados.includes(privilegio.id)
+        <IconoCaja icon={Icono} size={28} />
 
-          return (
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
+            {modulo}
+          </Typography>
+
+          <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
+            {asignados.length} de {total} privilegios
+          </Typography>
+        </Box>
+
+        <Box sx={{ display: 'flex', color: 'text.secondary' }}>
+          {expandido
+            ? <ChevronUp size={17} />
+            : <ChevronDown size={17} />}
+        </Box>
+      </ButtonBase>
+
+      <Collapse in={expandido} unmountOnExit>
+        <Box
+          sx={{
+            borderTop: 1,
+            borderColor: 'divider',
+            display: 'grid',
+            gridTemplateColumns: '1fr',
+            gap: 0.75,
+            p: 0.75,
+          }}
+        >
+          {asignados.map(privilegio => (
             <Box
               key={privilegio.id}
-              title={`${privilegio.nombre} · ${privilegio.id}`}
               sx={{
-                display: 'inline-flex',
+                display: 'flex',
                 alignItems: 'center',
-                gap: 0.4,
-                maxWidth: '100%',
-                px: 0.7,
-                py: 0.25,
+                gap: 0.75,
+                px: 1,
+                py: 0.5,
                 borderRadius: 1,
-                bgcolor: activo ? 'action.selected' : 'action.hover',
-                border: '1px solid',
-                borderColor: activo ? 'divider' : 'transparent',
+                bgcolor: 'action.hover',
               }}
             >
-              {activo ? (
-                <CheckCircle2 size={12} color="currentColor" />
-              ) : (
-                <Circle size={12} color="currentColor" />
-              )}
+              <Box
+                sx={{
+                  display: 'flex',
+                  color: 'success.main',
+                  flexShrink: 0,
+                }}
+              >
+                <CheckCircle2 size={14} />
+              </Box>
 
               <Typography
                 sx={{
-                  fontSize: 10.5,
-                  lineHeight: 1.3,
-                  fontWeight: activo ? 600 : 400,
-                  color: activo ? 'text.primary' : 'text.secondary',
+                  fontSize: 11.5,
+                  lineHeight: 1.4,
                   overflowWrap: 'anywhere',
                 }}
               >
                 {privilegio.nombre}
               </Typography>
             </Box>
-          )
-        })}
-
-        {!opciones.length && (
-          <Typography variant="caption" color="text.secondary">
-            Sin privilegios disponibles.
-          </Typography>
-        )}
-      </Box>
+          ))}
+        </Box>
+      </Collapse>
     </Box>
   )
 }
 
 export default function RoleDetailDialog({ open, rol, onClose }) {
+  const [expandidos, setExpandidos] = useState([])
+
+  const theme = useTheme()
+  const esMediano = useMediaQuery(theme.breakpoints.up('md'))
+  const esPequeno = useMediaQuery(theme.breakpoints.up('sm'))
+
+  const cantidadColumnas = esMediano ? 4 : esPequeno ? 2 : 1
+
+  useEffect(() => {
+    setExpandidos([])
+  }, [open, rol?.id])
+
   if (!rol) return null
 
-  const modulos = rol.modulos ?? []
-  const privilegios = rol.privilegios ?? {}
+  // Solo muestra módulos con privilegios válidos y asignados.
+  const modulos = MODULOS.map(nombre => ({
+    nombre,
+    asignados: PRIVILEGIOS_POR_MODULO[nombre].filter(
+      privilegio =>
+        (rol.privilegios?.[nombre] ?? []).includes(privilegio.id)
+    ),
+  })).filter(modulo => modulo.asignados.length > 0)
 
   const totalPermisos = modulos.reduce(
-    (total, modulo) => total + (privilegios[modulo]?.length ?? 0),
+    (total, modulo) => total + modulo.asignados.length,
     0
   )
 
-  // Reparte los módulos alternados en dos columnas independientes.
-  const columnaIzq = modulos.filter((_, i) => i % 2 === 0)
-  const columnaDer = modulos.filter((_, i) => i % 2 === 1)
+  const todosExpandidos =
+    modulos.length > 0 &&
+    modulos.every(modulo => expandidos.includes(modulo.nombre))
+
+  // Distribuye las tarjetas en columnas independientes.
+  // Cada columna ajusta su altura sin afectar a las demás.
+  const columnas = Array.from(
+    { length: cantidadColumnas },
+    (_, indice) =>
+      modulos.filter((_, posicion) =>
+        posicion % cantidadColumnas === indice
+      )
+  )
+
+  function toggleModulo(nombre) {
+    setExpandidos(prev =>
+      prev.includes(nombre)
+        ? prev.filter(item => item !== nombre)
+        : [...prev, nombre]
+    )
+  }
+
+  function toggleTodos() {
+    setExpandidos(
+      todosExpandidos
+        ? []
+        : modulos.map(modulo => modulo.nombre)
+    )
+  }
 
   return (
     <Dialog
       open={open}
-      onClose={() => {}}
-      disableEscapeKeyDown
+      onClose={(_, reason) => {
+        if (reason === 'escapeKeyDown') onClose()
+      }}
       fullWidth
       maxWidth={false}
+      aria-labelledby="role-detail-title"
       slotProps={{
         paper: {
           sx: {
             width: '94vw',
-            maxWidth: 850,
-            maxHeight: '96vh',
+            maxWidth: 1100,
+            maxHeight: '90dvh',
             m: 1,
             borderRadius: 3,
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
           },
         },
       }}
     >
-      <DialogTitle sx={{ px: 2.5, pt: 1.5, pb: 1.2 }}>
-        <Stack direction="row" alignItems="center" spacing={1.2}>
-          <Box
-            sx={{
-              width: 34,
-              height: 34,
-              display: 'grid',
-              placeItems: 'center',
-              borderRadius: 2,
-              bgcolor: 'action.hover',
-              color: 'text.secondary',
-            }}
-          >
-            <SlidersHorizontal size={18} />
-          </Box>
+      <DialogTitle id="role-detail-title" sx={{ px: 2.5, py: 1.25 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+          <IconoCaja icon={ShieldCheck} size={36} />
 
           <Box>
-            <Typography fontWeight={700} lineHeight={1.2}>
+            <Typography sx={{ fontSize: 17, fontWeight: 700 }}>
               Detalles del rol
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Consulta los módulos y privilegios asignados.
+
+            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+              Consulta la información y los privilegios asignados.
             </Typography>
           </Box>
-        </Stack>
+        </Box>
       </DialogTitle>
 
-      <DialogContent
-        dividers
-        sx={{
-          px: 2.5,
-          py: 1.2,
-          overflowY: 'auto',
-        }}
-      >
-        <Stack spacing={1.2}>
-          {/* Información principal del rol */}
-          <Stack
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-            flexWrap="wrap"
-            gap={1}
-          >
-            <Box>
-              <Typography variant="subtitle1" fontWeight={700}>
-                {rol.nombre}
-              </Typography>
+      <DialogContent dividers sx={{ px: 2, py: 1.25 }}>
+        {/* Información principal */}
+        <Box
+          sx={{
+            ...cardSx,
+            p: 1,
+            mb: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 1,
+          }}
+        >
+          <Box>
+            <Typography sx={{ fontSize: 17, fontWeight: 700 }}>
+              {rol.nombre}
+            </Typography>
 
-              <Typography variant="caption" color="text.secondary">
-                Identificador del rol: #{rol.id}
-              </Typography>
-            </Box>
-
-            <Chip
-              icon={<ShieldCheck size={14} />}
-              label={rol.estado}
-              color={rol.estado === 'Activo' ? 'success' : 'default'}
-              size="small"
-              sx={{ height: 22 }}
-            />
-          </Stack>
-
-          {/* Estadísticas del rol */}
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: '1fr',
-                sm: 'repeat(2, minmax(0, 1fr))',
-              },
-              gap: 1,
-            }}
-          >
-            <Resumen
-              icon={Layers3}
-              label="Módulos asignados"
-              value={modulos.length}
-            />
-
-            <Resumen
-              icon={KeyRound}
-              label="Privilegios asignados"
-              value={totalPermisos}
-            />
+            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+              ID: #{rol.id}
+            </Typography>
           </Box>
 
-          <Typography variant="subtitle2" fontWeight={700}>
-            Permisos por módulo
+          <Chip
+            label={rol.estado}
+            color={rol.estado === 'Activo' ? 'success' : 'default'}
+            size="small"
+            variant="outlined"
+          />
+        </Box>
+
+        {/* Indicadores */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: 'repeat(3, minmax(0, 1fr))',
+            },
+            gap: 1,
+            mb: 1,
+          }}
+        >
+          <Resumen
+            icon={Layers3}
+            label="Módulos asignados"
+            value={modulos.length}
+          />
+
+          <Resumen
+            icon={KeyRound}
+            label="Privilegios asignados"
+            value={totalPermisos}
+          />
+
+          <Resumen
+            icon={Users}
+            label="Usuarios asignados"
+            value={rol.usuariosAsignados ?? '—'}
+          />
+        </Box>
+
+        {/* Controles de visualización */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 1,
+            mb: 0.75,
+          }}
+        >
+          <Typography sx={{ fontSize: 14, fontWeight: 700 }}>
+            Privilegios por módulo
           </Typography>
 
-          {modulos.length > 0 ? (
+          <Button
+            size="small"
+            onClick={toggleTodos}
+            disabled={!modulos.length}
+            startIcon={
+              todosExpandidos
+                ? <ChevronUp size={16} />
+                : <ChevronDown size={16} />
+            }
+          >
+            {todosExpandidos ? 'Contraer todos' : 'Expandir todos'}
+          </Button>
+        </Box>
+
+        {/* Columnas independientes de módulos */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns:
+              `repeat(${cantidadColumnas}, minmax(0, 1fr))`,
+            alignItems: 'start',
+            gap: 1,
+          }}
+        >
+          {columnas.map((columna, indice) => (
             <Box
+              key={indice}
               sx={{
-                display: 'grid',
-                gridTemplateColumns: {
-                  xs: '1fr',
-                  sm: 'repeat(2, minmax(0, 1fr))',
-                },
+                display: 'flex',
+                flexDirection: 'column',
                 gap: 1,
-                alignItems: 'start',
+                minWidth: 0,
               }}
             >
-              <Stack spacing={1}>
-                {columnaIzq.map((modulo) => (
-                  <ModuloCard
-                    key={modulo}
-                    modulo={modulo}
-                    privilegios={privilegios}
-                  />
-                ))}
-              </Stack>
+              {columna.map(modulo => (
+                <ModuloCard
+                  key={modulo.nombre}
+                  modulo={modulo.nombre}
+                  asignados={modulo.asignados}
+                  expandido={expandidos.includes(modulo.nombre)}
+                  onToggle={() => toggleModulo(modulo.nombre)}
+                />
+              ))}
+            </Box>
+          ))}
+        </Box>
 
-              <Stack spacing={1}>
-                {columnaDer.map((modulo) => (
-                  <ModuloCard
-                    key={modulo}
-                    modulo={modulo}
-                    privilegios={privilegios}
-                  />
-                ))}
-              </Stack>
-            </Box>
-          ) : (
-            <Box sx={{ py: 2, textAlign: 'center' }}>
-              <Typography variant="body2" color="text.secondary">
-                Este rol todavía no tiene módulos asignados.
-              </Typography>
-            </Box>
-          )}
-        </Stack>
+        {!modulos.length && (
+          <Typography
+            sx={{
+              fontSize: 13,
+              color: 'text.secondary',
+              textAlign: 'center',
+              py: 3,
+            }}
+          >
+            Este rol no tiene privilegios asignados.
+          </Typography>
+        )}
       </DialogContent>
 
       <DialogActions sx={{ px: 2.5, py: 1 }}>
-        <Button onClick={onClose} variant="contained" size="small">
+        <Button size="small" variant="contained" onClick={onClose}>
           Cerrar
         </Button>
       </DialogActions>

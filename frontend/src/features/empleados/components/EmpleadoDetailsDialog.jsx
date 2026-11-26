@@ -8,41 +8,40 @@ import {
   Box,
   Stack,
   Divider,
-  Avatar,
 } from '@mui/material'
 
 import {
-  UserRound,
   IdCard,
   Phone,
-  ShieldCheck,
-  BriefcaseBusiness,
   Clock3,
+  ShieldCheck,
+  Link2,
+  Unlink,
 } from 'lucide-react'
 
+import UserAvatar from '@shared/components/UserAvatar'
 import { formatearHora } from '../services/empleadosService'
 
+// Información individual del empleado.
 function DetailItem({ label, value }) {
   return (
     <Box sx={{ minWidth: 0 }}>
       <Typography
-        sx={{
-          fontSize: 10,
-          fontWeight: 600,
-          letterSpacing: 0.5,
-          color: 'text.secondary',
-          mb: 0.3,
-        }}
+        variant="caption"
+        color="text.secondary"
+        sx={{ fontWeight: 600 }}
       >
         {label}
       </Typography>
 
       <Typography
         variant="body2"
-        fontWeight={600}
-        sx={{ overflowWrap: 'anywhere' }}
+        sx={{
+          fontWeight: 600,
+          overflowWrap: 'anywhere',
+        }}
       >
-        {value === null || value === undefined || value === ''
+        {value == null || value === ''
           ? 'No registrado'
           : value}
       </Typography>
@@ -50,39 +49,45 @@ function DetailItem({ label, value }) {
   )
 }
 
+// Sección reutilizable del detalle.
 function DetailSection({ icon: Icon, title, children }) {
   return (
-    <Box
-      sx={{
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 2.5,
-        p: 1.5,
-        minWidth: 0,
-      }}
-    >
-      <Stack direction="row" alignItems="center" spacing={1} mb={1.5}>
-        <Box
-          sx={{
-            width: 29,
-            height: 29,
-            borderRadius: 1.5,
-            display: 'grid',
-            placeItems: 'center',
-            bgcolor: 'action.hover',
-            color: 'text.secondary',
-            flexShrink: 0,
-          }}
-        >
-          <Icon size={16} />
+    <Box sx={{
+      border: '1px solid',
+      borderColor: 'divider',
+      borderRadius: '8px',
+      p: 1.5,
+      minWidth: 0,
+    }}>
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{ alignItems: 'center', mb: 1.5 }}
+      >
+        <Box sx={{
+          width: 30,
+          height: 30,
+          borderRadius: '8px',
+          display: 'grid',
+          placeItems: 'center',
+          bgcolor: 'action.hover',
+          color: 'text.secondary',
+          flexShrink: 0,
+        }}>
+          <Icon size={17} />
         </Box>
 
-        <Typography variant="subtitle2" fontWeight={700}>
+        <Typography
+          variant="subtitle2"
+          sx={{ fontWeight: 700 }}
+        >
           {title}
         </Typography>
       </Stack>
 
-      {children}
+      <Stack spacing={1.2}>
+        {children}
+      </Stack>
     </Box>
   )
 }
@@ -94,98 +99,107 @@ export default function EmpleadoDetailsDialog({
 }) {
   if (!empleado) return null
 
-  const iniciales = empleado.nombre
-    ?.trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((parte) => parte[0])
-    .join('')
-    .toUpperCase()
-
   const tieneCuenta = empleado.id_usuario != null
+  const IconoCuenta = tieneCuenta ? Link2 : Unlink
+  const colorCuenta = tieneCuenta
+    ? 'success.main'
+    : 'text.secondary'
 
   return (
     <Dialog
       open={open}
-      onClose={() => {}}
+      onClose={(_, reason) => {
+        if (reason === 'escapeKeyDown') onClose()
+      }}
       fullWidth
       maxWidth="sm"
-      disableEscapeKeyDown
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-          overflow: 'hidden',
-        },
+      aria-labelledby="empleado-detalle-title"
+      slotProps={{
+        paper: { sx: { borderRadius: 3 } },
       }}
     >
-      <DialogTitle sx={{ px: 2.5, pt: 2, pb: 1 }}>
-        <Typography fontWeight={700}>
+      <DialogTitle>
+        <Typography
+          id="empleado-detalle-title"
+          sx={{ fontSize: 17, fontWeight: 700 }}
+        >
           Detalles del empleado
         </Typography>
 
-        <Typography variant="caption" color="text.secondary">
-          Información personal y laboral del colaborador.
+        <Typography variant="body2" color="text.secondary">
+          Información personal y laboral del empleado.
         </Typography>
       </DialogTitle>
 
-      <DialogContent dividers sx={{ px: 2.5, py: 1.5 }}>
-        <Stack spacing={1.5}>
+      <Divider />
+
+      <DialogContent sx={{ py: 2 }}>
+        <Stack spacing={2}>
+          {/* Identificación principal. */}
           <Stack
             direction="row"
-            alignItems="center"
             spacing={1.5}
+            sx={{ alignItems: 'center' }}
           >
-            <Avatar
-              sx={{
-                width: 46,
-                height: 46,
-                bgcolor: 'action.selected',
-                color: 'text.primary',
-                fontWeight: 700,
-                fontSize: 16,
-              }}
-            >
-              {iniciales || <UserRound size={21} />}
-            </Avatar>
+            <UserAvatar name={empleado.nombre} />
 
-            <Box flex={1} minWidth={0}>
-              <Typography fontWeight={700}>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography sx={{
+                fontWeight: 700,
+                overflowWrap: 'anywhere',
+              }}>
                 {empleado.nombre}
               </Typography>
 
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
                 Empleado #{empleado.id}
               </Typography>
             </Box>
+
+            <Stack
+              direction="row"
+              spacing={0.6}
+              sx={{ alignItems: 'center', color: colorCuenta }}
+            >
+              <IconoCuenta size={16} />
+
+              <Typography variant="caption">
+                {tieneCuenta ? 'Cuenta vinculada' : 'Sin cuenta'}
+              </Typography>
+            </Stack>
           </Stack>
 
-          <Divider />
+          {/* Información personal, laboral y de acceso. */}
+          <Box sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: '1fr 1fr',
+            },
+            gap: 1.5,
+          }}>
+            <DetailSection
+              icon={IdCard}
+              title="Identificación"
+            >
+              <DetailItem
+                label="Tipo de documento"
+                value={empleado.tipoDocumento}
+              />
 
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: '1fr',
-                sm: '1fr 1fr',
-              },
-              gap: 1.5,
-            }}
-          >
-            <DetailSection icon={IdCard} title="Identificación">
-              <Stack spacing={1.2}>
-                <DetailItem
-                  label="Tipo de documento"
-                  value={empleado.tipoDocumento}
-                />
-
-                <DetailItem
-                  label="Número de documento"
-                  value={empleado.documento}
-                />
-              </Stack>
+              <DetailItem
+                label="Número de documento"
+                value={empleado.documento}
+              />
             </DetailSection>
 
-            <DetailSection icon={Phone} title="Contacto">
+            <DetailSection
+              icon={Phone}
+              title="Contacto"
+            >
               <DetailItem
                 label="Teléfono celular"
                 value={empleado.telefono}
@@ -193,84 +207,49 @@ export default function EmpleadoDetailsDialog({
             </DetailSection>
 
             <DetailSection
-              icon={BriefcaseBusiness}
-              title="Información laboral"
+              icon={Clock3}
+              title="Horario laboral"
             >
-              <Stack spacing={1.2}>
-                <Stack direction="row" alignItems="center" spacing={0.8}>
-                  <Clock3 size={15} />
+              <Box sx={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 1.5,
+              }}>
+                <DetailItem
+                  label="Hora de entrada"
+                  value={formatearHora(empleado.horaEntrada)}
+                />
 
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                  >
-                    Jornada laboral
-                  </Typography>
-                </Stack>
-
-                <Box
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: 1.5,
-                  }}
-                >
-                  <DetailItem
-                    label="Hora de entrada"
-                    value={formatearHora(empleado.horaEntrada)}
-                  />
-
-                  <DetailItem
-                    label="Hora de salida"
-                    value={formatearHora(empleado.horaSalida)}
-                  />
-                </Box>
-              </Stack>
+                <DetailItem
+                  label="Hora de salida"
+                  value={formatearHora(empleado.horaSalida)}
+                />
+              </Box>
             </DetailSection>
 
             <DetailSection
               icon={ShieldCheck}
               title="Acceso al sistema"
             >
-              <Stack spacing={1}>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <Box
-                    sx={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: '50%',
-                      bgcolor: tieneCuenta
-                        ? 'success.main'
-                        : 'text.disabled',
-                    }}
-                  />
+              <DetailItem
+                label="Identificador de usuario"
+                value={tieneCuenta
+                  ? `#${empleado.id_usuario}`
+                  : 'No asignado'}
+              />
 
-                  <Typography variant="body2" fontWeight={600}>
-                    {tieneCuenta
-                      ? 'Cuenta vinculada'
-                      : 'Sin cuenta vinculada'}
-                  </Typography>
-                </Stack>
-
-                {tieneCuenta && (
-                  <DetailItem
-                    label="Identificador de usuario"
-                    value={empleado.id_usuario}
-                  />
-                )}
-
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ lineHeight: 1.4 }}
-                >
-                  La cuenta y el rol se administran desde Usuarios.
-                </Typography>
-              </Stack>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
+                La cuenta y el rol se administran desde Usuarios.
+              </Typography>
             </DetailSection>
           </Box>
         </Stack>
       </DialogContent>
+
+      <Divider />
 
       <DialogActions sx={{ px: 2.5, py: 1.5 }}>
         <Button

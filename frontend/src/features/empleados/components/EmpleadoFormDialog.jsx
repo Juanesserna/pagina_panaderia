@@ -1,10 +1,28 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+
 import {
-  Dialog, DialogTitle, DialogContent, DialogActions,
-  Typography, Box, TextField, MenuItem, Button, IconButton,
-  InputAdornment, ToggleButton, ToggleButtonGroup,
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Divider,
+  MenuItem,
+  Stack,
+  TextField,
+  Typography,
 } from '@mui/material'
-import { ChevronUp, ChevronDown } from 'lucide-react'
+
+import {
+  UserPlus,
+  Pencil,
+  Clock3,
+  AlertTriangle,
+  CheckCircle2,
+} from 'lucide-react'
+
 import { TIPOS_DOCUMENTO } from '../services/empleadosService'
 
 const EMPTY_FORM = {
@@ -16,23 +34,63 @@ const EMPTY_FORM = {
   horaSalida: '',
 }
 
+const CAMPOS = Object.keys(EMPTY_FORM)
+const FORMATO_HORA = /^(?:[01]\d|2[0-3]):[0-5]\d$/
+
 const inputSx = {
   '& .MuiOutlinedInput-root': {
-    borderRadius: 2,
-    backgroundColor: 'action.hover',
+    borderRadius: '8px',
+    bgcolor: 'background.alt',
+    minHeight: 40,
+
+    '& fieldset': {
+      borderColor: 'divider',
+      borderRadius: '8px',
+    },
+
+    '&:hover fieldset': {
+      borderColor: 'text.secondary',
+    },
+
+    '&.Mui-focused fieldset': {
+      borderColor: 'primary.main',
+    },
+
+    '&.Mui-error fieldset': {
+      borderColor: 'error.main',
+    },
+  },
+
+  '& .MuiOutlinedInput-input': {
+    background: 'transparent',
+    boxShadow: 'none',
+    border: 0,
+  },
+
+  '& input:-webkit-autofill': {
+    WebkitBoxShadow: theme =>
+      `0 0 0 100px ${theme.palette.background.alt} inset`,
+    WebkitTextFillColor: theme =>
+      theme.palette.text.primary,
+  },
+
+  '& .MuiFormHelperText-root': {
+    fontSize: 11,
+    mx: 0.5,
   },
 }
 
+// Obtener únicamente los datos editables.
 function obtenerDatosEmpleado(empleado) {
-  if (!empleado) return { ...EMPTY_FORM }
   return Object.fromEntries(
-    Object.keys(EMPTY_FORM).map((campo) => [
-      campo, empleado[campo] ?? EMPTY_FORM[campo],
+    CAMPOS.map(campo => [
+      campo,
+      empleado?.[campo] ?? EMPTY_FORM[campo],
     ])
   )
 }
 
-function normalizarFormulario(form) {
+function normalizarDatos(form) {
   return {
     ...form,
     nombre: form.nombre.trim().replace(/\s+/g, ' '),
@@ -43,400 +101,589 @@ function normalizarFormulario(form) {
   }
 }
 
-function validarCampo(campo, valor, tipoDocumento) {
-  const dato = String(valor ?? '').trim()
-  if (!dato) return 'Este campo es obligatorio.'
+// Validaciones coherentes con empleadosService.
+function validarDatos(form) {
+  const datos = normalizarDatos(form)
+  const errores = {}
 
-  switch (campo) {
-    case 'nombre':
-      if (dato.length < 3 || dato.length > 80)
-        return 'El nombre debe tener entre 3 y 80 caracteres.'
-      if (!/^[\p{L}\p{M}]+(?:[ '\u2019-][\p{L}\p{M}]+)*$/u.test(dato))
-        return 'El nombre contiene caracteres no permitidos.'
-      break
-    case 'tipoDocumento':
-      if (!TIPOS_DOCUMENTO.includes(dato))
-        return 'Selecciona un tipo de documento válido.'
-      break
-    case 'documento':
-      if (tipoDocumento === 'Pasaporte') {
-        if (!/^[A-Z0-9]{5,15}$/i.test(dato))
-          return 'El pasaporte debe tener entre 5 y 15 caracteres alfanuméricos.'
-      } else if (!/^\d{5,15}$/.test(dato)) {
-        return 'El documento debe tener entre 5 y 15 números.'
-      }
-      break
-    case 'telefono':
-      if (!/^3\d{9}$/.test(dato))
-        return 'Ingresa un número celular válido de 10 dígitos.'
-      break
-    case 'horaEntrada':
-    case 'horaSalida':
-      if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(dato))
-        return 'Ingresa una hora válida.'
-      break
-    default:
-      break
-  }
-  return ''
-}
-
-function FieldLabel({ children }) {
-  return (
-    <Typography sx={{
-      fontSize: 11, fontWeight: 600, letterSpacing: 0.5,
-      color: 'text.secondary', mb: 0.5,
-    }}>
-      {children}
-    </Typography>
-  )
-}
-
-function convertirA12(hora) {
-  if (!/^\d{2}:\d{2}$/.test(hora)) return ''
-  const [h, m] = hora.split(':').map(Number)
-  return `${String(h % 12 || 12).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-}
-
-function convertirA24(hora12, periodo) {
-  const match = /^(\d{1,2}):(\d{2})$/.exec(hora12)
-  if (!match) return ''
-  const h = Number(match[1])
-  const m = Number(match[2])
-  if (h < 1 || h > 12 || m > 59) return ''
-  const hora24 = (h % 12) + (periodo === 'PM' ? 12 : 0)
-  return `${String(hora24).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-}
-
-function ajustarHora(hora, direccion) {
-  if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(hora))
-    return direccion > 0 ? '00:00' : '23:30'
-
-  const [h, m] = hora.split(':').map(Number)
-  const total = (h * 60 + m + direccion * 30 + 1440) % 1440
-  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
-}
-
-function SelectorHora({
-  label, value, error, disabled, onChange, onBlur, onKeyDown,
-}) {
-  const [texto, setTexto] = useState('')
-  const [editando, setEditando] = useState(false)
-
-  const periodo = value && Number(value.slice(0, 2)) >= 12
-    ? 'PM' : 'AM'
-
-  useEffect(() => {
-    if (!editando) {
-      setTexto(convertirA12(value))
+  CAMPOS.forEach(campo => {
+    if (!datos[campo]) {
+      errores[campo] = 'Este campo es obligatorio.'
     }
-  }, [value, editando])
+  })
 
-  const cambiarTexto = (nuevo) => {
-    const limpio = nuevo.replace(/[^\d:]/g, '').slice(0, 5)
-    setTexto(limpio)
-    setEditando(true)
-    onChange(convertirA24(limpio, periodo))
+  if (datos.nombre) {
+    if (datos.nombre.length < 3 || datos.nombre.length > 80) {
+      errores.nombre = 'El nombre debe tener entre 3 y 80 caracteres.'
+    } else if (
+      !/^[\p{L}\p{M}]+(?:[ '\u2019-][\p{L}\p{M}]+)*$/u.test(datos.nombre)
+    ) {
+      errores.nombre = 'El nombre contiene caracteres no permitidos.'
+    }
   }
 
-  const cambiarPeriodo = () => {
-    const nuevo = periodo === 'AM' ? 'PM' : 'AM'
-    const hora = convertirA24(texto, nuevo)
-    if (hora) onChange(hora)
+  if (!TIPOS_DOCUMENTO.includes(datos.tipoDocumento)) {
+    errores.tipoDocumento = 'Selecciona un tipo de documento válido.'
   }
 
-  const mover = (direccion) => {
-    const nuevaHora = ajustarHora(value, direccion)
-    setEditando(false)
-    setTexto(convertirA12(nuevaHora))
-    onChange(nuevaHora)
+  if (datos.documento) {
+    if (datos.tipoDocumento === 'Pasaporte') {
+      if (!/^[A-Z0-9]{5,15}$/i.test(datos.documento)) {
+        errores.documento = 'Ingresa entre 5 y 15 caracteres alfanuméricos.'
+      }
+    } else if (!/^\d{5,15}$/.test(datos.documento)) {
+      errores.documento = 'Ingresa entre 5 y 15 números.'
+    }
   }
 
+  if (datos.telefono && !/^3\d{9}$/.test(datos.telefono)) {
+    errores.telefono = 'Ingresa un celular colombiano válido de 10 dígitos.'
+  }
+
+  for (const campo of ['horaEntrada', 'horaSalida']) {
+    if (datos[campo] && !FORMATO_HORA.test(datos[campo])) {
+      errores[campo] = 'Selecciona una hora válida.'
+    }
+  }
+
+  if (
+    datos.horaEntrada &&
+    datos.horaSalida &&
+    datos.horaEntrada === datos.horaSalida
+  ) {
+    errores.horaSalida = 'Debe ser diferente de la hora de entrada.'
+  }
+
+  return errores
+}
+
+// Etiqueta uniforme de los campos obligatorios.
+function Campo({ label, id, children }) {
   return (
-    <Box>
-      <FieldLabel>{label}</FieldLabel>
-
-      <TextField
-        fullWidth
-        size="small"
-        required
-        value={texto}
-        placeholder="HH:mm"
-        disabled={disabled}
-        error={Boolean(error)}
-        helperText={error}
-        onChange={(e) => cambiarTexto(e.target.value)}
-        onFocus={() => setEditando(true)}
-        onBlur={() => {
-          setEditando(false)
-          onBlur()
+    <Box sx={{ minWidth: 0 }}>
+      <Typography
+        component="label"
+        htmlFor={id}
+        sx={{
+          display: 'block',
+          fontSize: 11,
+          fontWeight: 600,
+          color: 'text.secondary',
+          mb: 0.5,
         }}
-        onKeyDown={onKeyDown}
-        slotProps={{
-          htmlInput: {
-            maxLength: 5,
-            inputMode: 'numeric',
-            'aria-label': label,
-          },
-          input: {
-            endAdornment: (
-              <InputAdornment position="end" sx={{ ml: 0 }}>
-                <Box sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.5,
-                }}>
-                  <Button
-                    type="button"
-                    size="small"
-                    disabled={disabled}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={cambiarPeriodo}
-                    sx={{
-                      minWidth: 40,
-                      px: 0.3,
-                      fontSize: 10,
-                      fontWeight: 700,
-                      color: 'text.secondary',
-                    }}
-                  >
-                    {periodo === 'AM' ? 'a. m.' : 'p. m.'}
-                  </Button>
+      >
+        {label}{' '}
+        <Box component="span" sx={{ color: 'error.main' }}>
+          *
+        </Box>
+      </Typography>
 
-                  <Box sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                  }}>
-                    {[
-                      { direccion: 1, Icon: ChevronUp },
-                      { direccion: -1, Icon: ChevronDown },
-                    ].map(({ direccion, Icon }) => (
-                      <IconButton
-                        key={direccion}
-                        type="button"
-                        size="small"
-                        disabled={disabled}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => mover(direccion)}
-                        sx={{
-                          p: 0,
-                          width: 18,
-                          height: 17,
-                          borderRadius: 0.5,
-                        }}
-                      >
-                        <Icon size={13} />
-                      </IconButton>
-                    ))}
-                  </Box>
-                </Box>
-              </InputAdornment>
-            ),
-          },
-        }}
-        sx={inputSx}
-      />
+      {children}
     </Box>
   )
 }
 
 export default function EmpleadoFormDialog({
-  open, empleado = null, submitting = false,
-  onSubmit, onCancel, onError, onDirtyChange,
+  open,
+  empleado = null,
+  submitting = false,
+  onSubmit,
+  onCancel,
+  onError,
 }) {
   const [form, setForm] = useState(EMPTY_FORM)
-  const [initialForm, setInitialForm] = useState(EMPTY_FORM)
   const [touched, setTouched] = useState({})
+  const [confirmacion, setConfirmacion] = useState(null)
+  const [guardando, setGuardando] = useState(false)
+
+  const inicial = useRef(EMPTY_FORM)
+  const formulario = useRef(null)
+  const enviando = useRef(false)
+
   const esEdicion = Boolean(empleado)
+  const ocupado = submitting || guardando
 
   useEffect(() => {
     if (!open) return
+
     const datos = obtenerDatosEmpleado(empleado)
+
+    inicial.current = datos
     setForm(datos)
-    setInitialForm(datos)
     setTouched({})
-    onDirtyChange?.(false)
-  }, [open, empleado, onDirtyChange])
+    setConfirmacion(null)
+  }, [open, empleado])
 
-  const dirty = useMemo(
-    () => JSON.stringify(form) !== JSON.stringify(initialForm),
-    [form, initialForm]
-  )
+  const dirty =
+    JSON.stringify(form) !== JSON.stringify(inicial.current)
 
-  useEffect(() => {
-    onDirtyChange?.(dirty)
-  }, [dirty, onDirtyChange])
+  const cambiosValidos =
+    JSON.stringify(normalizarDatos(form)) !==
+    JSON.stringify(normalizarDatos(inicial.current))
 
-  const errors = Object.fromEntries(
-    Object.keys(EMPTY_FORM).map((campo) => [
-      campo, validarCampo(campo, form[campo], form.tipoDocumento),
-    ])
-  )
+  const errores = validarDatos(form)
 
-  if (form.horaEntrada && form.horaSalida &&
-      form.horaEntrada === form.horaSalida) {
-    errors.horaSalida = 'La hora de salida debe ser diferente de la entrada.'
+  function marcarTocado(campo) {
+    setTouched(prev => ({ ...prev, [campo]: true }))
   }
 
-  const isValid = Object.values(errors).every((error) => !error)
-  const marcarTocado = (campo) =>
-    setTouched((prev) => ({ ...prev, [campo]: true }))
-
-  const cambiarCampo = (campo, valor) => {
+  function cambiarCampo(campo, valor) {
     let limpio = valor
 
-    if (campo === 'nombre')
-      limpio = valor.replace(/[^\p{L}\p{M} '\u2019-]/gu, '')
+    if (campo === 'nombre') {
+      limpio = valor.replace(/[^\p{L}\p{M} '\u2019-]/gu, '').slice(0, 80)
+    }
 
-    if (campo === 'documento')
+    if (campo === 'documento') {
       limpio = form.tipoDocumento === 'Pasaporte'
-        ? valor.replace(/[^a-zA-Z0-9]/g, '').slice(0, 15)
+        ? valor.replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 15)
         : valor.replace(/\D/g, '').slice(0, 15)
+    }
 
-    if (campo === 'telefono')
+    if (campo === 'telefono') {
       limpio = valor.replace(/\D/g, '').slice(0, 10)
+    }
 
     if (campo === 'tipoDocumento') {
-      const compatible = valor === 'Pasaporte'
-        ? /^[a-zA-Z0-9]*$/.test(form.documento)
-        : /^\d*$/.test(form.documento)
-
-      setForm((prev) => ({
+      setForm(prev => ({
         ...prev,
         tipoDocumento: valor,
-        documento: compatible ? prev.documento : '',
+        documento: valor === 'Pasaporte'
+          ? prev.documento.toUpperCase()
+          : /^\d*$/.test(prev.documento)
+            ? prev.documento
+            : '',
       }))
-      marcarTocado('tipoDocumento')
-      if (!compatible)
-        setTouched((prev) => ({ ...prev, documento: false }))
+
+      marcarTocado(campo)
       return
     }
 
-    setForm((prev) => ({ ...prev, [campo]: limpio }))
+    setForm(prev => ({ ...prev, [campo]: limpio }))
   }
 
-  const manejarTab = (campo) => (event) => {
+  // TAB y Shift + TAB no permiten omitir campos inválidos.
+  function manejarTab(campo, event) {
     if (event.key !== 'Tab') return
-    if (errors[campo]) {
+
+    if (event.target.getAttribute('aria-expanded') === 'true') {
+      return
+    }
+
+    if (errores[campo]) {
       event.preventDefault()
+      event.stopPropagation()
       marcarTocado(campo)
     }
   }
 
-  const manejarSubmit = async (event) => {
-    event.preventDefault()
-    if (submitting) return
-
-    setTouched(Object.fromEntries(
-      Object.keys(EMPTY_FORM).map((campo) => [campo, true])
-    ))
-
-    if (!isValid) {
-      onError?.('Completa todos los campos y corrige los datos ingresados.')
-      return
-    }
-
-    try {
-      await onSubmit(normalizarFormulario(form))
-    } catch {
-      // La página principal gestiona la notificación.
+  function propsCampo(campo) {
+    return {
+      id: `empleado-${campo}`,
+      name: campo,
+      fullWidth: true,
+      size: 'small',
+      required: true,
+      disabled: ocupado,
+      value: form[campo],
+      error: Boolean(touched[campo] && errores[campo]),
+      helperText: touched[campo] ? errores[campo] : '',
+      onChange: e => cambiarCampo(campo, e.target.value),
+      onBlur: () => marcarTocado(campo),
+      onKeyDown: e => manejarTab(campo, e),
+      sx: inputSx,
     }
   }
 
-  const campos = [
-    { name: 'nombre', label: 'Nombre completo', placeholder: 'Ej. Carlos Andrés Gómez' },
-    { name: 'tipoDocumento', label: 'Tipo de documento', select: true },
-    { name: 'documento', label: 'Número de documento', placeholder: 'Ingresa el documento' },
-    { name: 'telefono', label: 'Teléfono celular', placeholder: 'Ej. 3001234567' },
-  ]
+  function validarFormulario() {
+    setTouched(
+      Object.fromEntries(CAMPOS.map(campo => [campo, true]))
+    )
+
+    const primerError = CAMPOS.find(campo => errores[campo])
+
+    if (!primerError) return true
+
+    onError?.('Completa todos los campos y corrige los datos ingresados.')
+
+    requestAnimationFrame(() => {
+      const elemento = formulario.current?.querySelector(
+        `#empleado-${primerError}`
+      )
+
+      elemento?.focus()
+    })
+
+    return false
+  }
+
+  async function guardar() {
+    if (ocupado || enviando.current) return
+    if (!validarFormulario()) return
+    if (esEdicion && !cambiosValidos) return
+
+    enviando.current = true
+    setGuardando(true)
+
+    try {
+      await onSubmit(normalizarDatos(form))
+    } catch (error) {
+      onError?.(error.message || 'No se pudo guardar el empleado.')
+    } finally {
+      enviando.current = false
+      setGuardando(false)
+    }
+  }
+
+  function manejarSubmit(event) {
+    event.preventDefault()
+
+    if (ocupado || enviando.current) return
+    if (!validarFormulario()) return
+
+    if (esEdicion) {
+      if (cambiosValidos) {
+        setConfirmacion('guardar')
+      }
+      return
+    }
+
+    guardar()
+  }
+
+  function cancelar() {
+    if (ocupado || enviando.current) return
+
+    if (dirty) {
+      setConfirmacion('salir')
+    } else {
+      onCancel()
+    }
+  }
+
+  function restaurar() {
+    setForm({ ...inicial.current })
+    setTouched({})
+  }
+
+  function confirmarAccion() {
+    const accion = confirmacion
+    setConfirmacion(null)
+
+    if (accion === 'salir') onCancel()
+    if (accion === 'restaurar') restaurar()
+    if (accion === 'guardar') guardar()
+  }
+
+  const confirmaciones = {
+    salir: {
+      titulo: '¿Deseas salir del formulario?',
+      mensaje: 'Los cambios realizados no se guardarán.',
+      boton: 'Salir sin guardar',
+      color: 'warning',
+    },
+    restaurar: {
+      titulo: esEdicion
+        ? '¿Restaurar los datos originales?'
+        : '¿Limpiar el formulario?',
+      mensaje: 'Se descartarán los cambios realizados.',
+      boton: esEdicion ? 'Restaurar' : 'Limpiar',
+      color: 'warning',
+    },
+    guardar: {
+      titulo: '¿Guardar los cambios?',
+      mensaje: 'Se actualizará la información del empleado.',
+      boton: 'Guardar cambios',
+      color: 'primary',
+    },
+  }
+
+  const actual = confirmaciones[confirmacion]
+  const Icono = esEdicion ? Pencil : UserPlus
 
   return (
-    <Dialog
-      open={open}
-      onClose={() => {}}
-      fullWidth
-      maxWidth="sm"
-      disableEscapeKeyDown
-      slotProps={{ paper: { sx: { borderRadius: 3 } } }}
-    >
-      <form onSubmit={manejarSubmit} noValidate>
-        <DialogTitle sx={{ pb: 1 }}>
-          <Typography fontWeight={700}>
-            {esEdicion ? 'Editar empleado' : 'Registrar empleado'}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Completa la información laboral del empleado.
-          </Typography>
-        </DialogTitle>
+    <>
+      <Dialog
+        open={open}
+        onClose={(_, reason) => {
+          if (reason === 'escapeKeyDown') cancelar()
+        }}
+        fullWidth
+        maxWidth="sm"
+        aria-labelledby="empleado-form-title"
+        slotProps={{
+          paper: { sx: { borderRadius: 3 } },
+        }}
+      >
+        <Box
+          component="form"
+          ref={formulario}
+          onSubmit={manejarSubmit}
+          noValidate
+        >
+          <DialogTitle>
+            <Stack
+              direction="row"
+              spacing={1.5}
+              sx={{ alignItems: 'center' }}
+            >
+              <Box sx={{
+                width: 40,
+                height: 40,
+                borderRadius: '8px',
+                bgcolor: 'action.hover',
+                color: 'primary.main',
+                display: 'grid',
+                placeItems: 'center',
+                flexShrink: 0,
+              }}>
+                <Icono size={21} />
+              </Box>
 
-        <DialogContent dividers>
-          <Box sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-            gap: 2, pt: 1,
-          }}>
-            {campos.map((campo) => (
-              <Box key={campo.name}>
-                <FieldLabel>{campo.label}</FieldLabel>
+              <Box>
+                <Typography
+                  id="empleado-form-title"
+                  sx={{ fontSize: 17, fontWeight: 700 }}
+                >
+                  {esEdicion ? 'Editar empleado' : 'Registrar empleado'}
+                </Typography>
+
+                <Typography variant="body2" color="text.secondary">
+                  Completa la información personal y laboral.
+                </Typography>
+              </Box>
+            </Stack>
+          </DialogTitle>
+
+          <Divider />
+
+          <DialogContent sx={{ py: 2 }}>
+            <Stack spacing={1.8}>
+              <Campo
+                label="Nombre completo"
+                id="empleado-nombre"
+              >
                 <TextField
-                  fullWidth size="small" required
-                  name={campo.name}
-                  placeholder={campo.placeholder}
-                  value={form[campo.name]}
-                  select={Boolean(campo.select)}
-                  onChange={(e) => cambiarCampo(campo.name, e.target.value)}
-                  onBlur={() => marcarTocado(campo.name)}
-                  onKeyDown={manejarTab(campo.name)}
-                  error={Boolean(touched[campo.name] && errors[campo.name])}
-                  helperText={touched[campo.name] ? errors[campo.name] : ''}
-                  disabled={submitting}
-                  sx={inputSx}
+                  {...propsCampo('nombre')}
+                  placeholder="Ej. Carlos Andrés Gómez"
+                  slotProps={{
+                    htmlInput: { maxLength: 80 },
+                  }}
+                />
+              </Campo>
+
+              <Box sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  sm: '1fr 1fr',
+                },
+                gap: 1.5,
+              }}>
+                <Campo
+                  label="Tipo de documento"
+                  id="empleado-tipoDocumento"
+                >
+                  <TextField
+                    {...propsCampo('tipoDocumento')}
+                    select
+                  >
+                    {TIPOS_DOCUMENTO.map(tipo => (
+                      <MenuItem key={tipo} value={tipo}>
+                        {tipo}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Campo>
+
+                <Campo
+                  label="Número de documento"
+                  id="empleado-documento"
+                >
+                  <TextField
+                    {...propsCampo('documento')}
+                    placeholder="Ingresa el documento"
+                    slotProps={{
+                      htmlInput: {
+                        maxLength: 15,
+                        inputMode: form.tipoDocumento === 'Pasaporte'
+                          ? 'text'
+                          : 'numeric',
+                      },
+                    }}
+                  />
+                </Campo>
+              </Box>
+
+              <Campo
+                label="Teléfono celular"
+                id="empleado-telefono"
+              >
+                <TextField
+                  {...propsCampo('telefono')}
+                  placeholder="Ej. 3001234567"
                   slotProps={{
                     htmlInput: {
-                      maxLength: campo.name === 'nombre' ? 80
-                        : campo.name === 'telefono' ? 10
-                        : campo.name === 'documento' ? 15 : undefined,
-                      inputMode: campo.name === 'telefono' ||
-                        (campo.name === 'documento' && form.tipoDocumento !== 'Pasaporte')
-                        ? 'numeric' : undefined,
+                      maxLength: 10,
+                      inputMode: 'numeric',
                     },
                   }}
-                >
-                  {campo.select && TIPOS_DOCUMENTO.map((tipo) => (
-                    <MenuItem key={tipo} value={tipo}>{tipo}</MenuItem>
-                  ))}
-                </TextField>
-              </Box>
-            ))}
+                />
+              </Campo>
 
-            {['horaEntrada', 'horaSalida'].map((campo) => (
-              <SelectorHora
-                key={campo}
-                label={campo === 'horaEntrada' ? 'Hora de entrada' : 'Hora de salida'}
-                value={form[campo]}
-                error={touched[campo] ? errors[campo] : ''}
-                disabled={submitting}
-                onChange={(valor) => {
-                  cambiarCampo(campo, valor)
-                  marcarTocado(campo)
-                }}
-                onBlur={() => marcarTocado(campo)}
-                onKeyDown={manejarTab(campo)}
-              />
-            ))}
-          </Box>
+              <Divider />
+
+              {/* Horario laboral habitual. */}
+              <Stack spacing={1.2}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{ alignItems: 'center' }}
+                >
+                  <Clock3 size={17} />
+
+                  <Typography sx={{ fontWeight: 600 }}>
+                    Horario laboral
+                  </Typography>
+                </Stack>
+
+                <Box sx={{
+                  display: 'grid',
+                  gridTemplateColumns: {
+                    xs: '1fr',
+                    sm: '1fr 1fr',
+                  },
+                  gap: 1.5,
+                }}>
+                  {[
+                    ['horaEntrada', 'Hora de entrada'],
+                    ['horaSalida', 'Hora de salida'],
+                  ].map(([campo, label]) => (
+                    <Campo
+                      key={campo}
+                      label={label}
+                      id={`empleado-${campo}`}
+                    >
+                      <TextField
+                        {...propsCampo(campo)}
+                        type="time"
+                        slotProps={{
+                          htmlInput: { step: 60 },
+                        }}
+                      />
+                    </Campo>
+                  ))}
+                </Box>
+
+                <Typography variant="caption" color="text.secondary">
+                  Selecciona las horas habituales de trabajo del empleado.
+                </Typography>
+              </Stack>
+            </Stack>
+          </DialogContent>
+
+          <Divider />
+
+          <DialogActions sx={{ px: 2.5, py: 1.5 }}>
+            <Button
+              color="inherit"
+              disabled={ocupado || !dirty}
+              onClick={() => setConfirmacion('restaurar')}
+              sx={{ mr: 'auto' }}
+            >
+              {esEdicion ? 'Restaurar' : 'Limpiar'}
+            </Button>
+
+            <Button
+              color="inherit"
+              onClick={cancelar}
+              disabled={ocupado}
+            >
+              Cancelar
+            </Button>
+
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={
+                ocupado || (esEdicion && !cambiosValidos)
+              }
+              startIcon={
+                ocupado
+                  ? <CircularProgress size={15} color="inherit" />
+                  : null
+              }
+            >
+              {ocupado
+                ? 'Guardando...'
+                : esEdicion
+                  ? 'Guardar cambios'
+                  : 'Registrar empleado'}
+            </Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
+
+      {/* Confirmaciones centralizadas del formulario. */}
+      <Dialog
+        open={open && Boolean(confirmacion)}
+        onClose={(_, reason) => {
+          if (reason === 'escapeKeyDown') {
+            setConfirmacion(null)
+          }
+        }}
+        fullWidth
+        maxWidth="xs"
+        slotProps={{
+          paper: { sx: { borderRadius: 3 } },
+        }}
+      >
+        <DialogTitle>
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ alignItems: 'center' }}
+          >
+            <Box sx={{
+              display: 'flex',
+              color: confirmacion === 'guardar'
+                ? 'success.main'
+                : 'warning.main',
+            }}>
+              {confirmacion === 'guardar'
+                ? <CheckCircle2 size={23} />
+                : <AlertTriangle size={23} />}
+            </Box>
+
+            <Typography sx={{ fontWeight: 700 }}>
+              {actual?.titulo}
+            </Typography>
+          </Stack>
+        </DialogTitle>
+
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            {actual?.mensaje}
+          </Typography>
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
-          <Button onClick={onCancel} disabled={submitting} color="inherit">
+        <DialogActions>
+          <Button
+            color="inherit"
+            onClick={() => setConfirmacion(null)}
+          >
             Cancelar
           </Button>
-          <Button type="submit" variant="contained" disabled={submitting}>
-            {submitting ? 'Guardando...'
-              : esEdicion ? 'Guardar cambios' : 'Registrar empleado'}
+
+          <Button
+            variant="contained"
+            color={actual?.color || 'primary'}
+            onClick={confirmarAccion}
+          >
+            {actual?.boton}
           </Button>
         </DialogActions>
-      </form>
-    </Dialog>
+      </Dialog>
+    </>
   )
 }

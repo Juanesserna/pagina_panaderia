@@ -1,8 +1,8 @@
 
- // Servicio 100% simulado: todavía no hay backend conectado.
- // La información laboral pertenece a Empleados.
- // Las credenciales y los roles pertenecen a Usuarios.
- // El horario se registra mediante hora de entrada y salida.
+// Servicio 100% simulado: todavía no hay backend conectado.
+// La información laboral pertenece a Empleados.
+// Las credenciales y los roles pertenecen a Usuarios.
+// El horario se registra mediante hora de entrada y salida.
 
 export const TIPOS_DOCUMENTO = [
   'Cédula de ciudadanía',
@@ -10,6 +10,7 @@ export const TIPOS_DOCUMENTO = [
   'Cédula de extranjería',
   'Pasaporte',
 ]
+
 
 const empleadosIniciales = [
   {
@@ -30,7 +31,7 @@ const empleadosIniciales = [
     telefono: '3102345678',
     horaEntrada: '14:00',
     horaSalida: '22:00',
-    id_usuario: null,
+    id_usuario: 4,
   },
   {
     id: 3,
@@ -60,7 +61,7 @@ const empleadosIniciales = [
     telefono: '3155678901',
     horaEntrada: '14:00',
     horaSalida: '22:00',
-    id_usuario: null,
+    id_usuario: 2,
   },
   {
     id: 6,
@@ -72,7 +73,68 @@ const empleadosIniciales = [
     horaSalida: '17:00',
     id_usuario: null,
   },
+  {
+    id: 7,
+    nombre: 'Santiago Alejandro Gómez',
+    tipoDocumento: 'Cédula de ciudadanía',
+    documento: '1089012345',
+    telefono: '3000000007',
+    horaEntrada: '06:00',
+    horaSalida: '14:00',
+    id_usuario: null,
+  },
+  {
+    id: 8,
+    nombre: 'Valentina Andrea Castro',
+    tipoDocumento: 'Cédula de ciudadanía',
+    documento: '1090123456',
+    telefono: '3000000008',
+    horaEntrada: '14:00',
+    horaSalida: '22:00',
+    id_usuario: null,
+  },
+  {
+    id: 9,
+    nombre: 'Miguel Ángel Restrepo',
+    tipoDocumento: 'Cédula de ciudadanía',
+    documento: '1101234567',
+    telefono: '3000000009',
+    horaEntrada: '08:00',
+    horaSalida: '17:00',
+    id_usuario: null,
+  },
+  {
+    id: 10,
+    nombre: 'Isabella Sofía Moreno',
+    tipoDocumento: 'Cédula de ciudadanía',
+    documento: '1112345678',
+    telefono: '3000000010',
+    horaEntrada: '06:00',
+    horaSalida: '14:00',
+    id_usuario: null,
+  },
+  {
+    id: 11,
+    nombre: 'Gabriel Antonio Mendoza',
+    tipoDocumento: 'Cédula de extranjería',
+    documento: '900123456',
+    telefono: '3000000011',
+    horaEntrada: '14:00',
+    horaSalida: '22:00',
+    id_usuario: null,
+  },
+  {
+    id: 12,
+    nombre: 'Alejandro Martín Vargas',
+    tipoDocumento: 'Pasaporte',
+    documento: 'AB123456',
+    telefono: '3000000012',
+    horaEntrada: '08:00',
+    horaSalida: '17:00',
+    id_usuario: null,
+  },
 ]
+
 
 let empleados = [...empleadosIniciales]
 let siguienteId = Math.max(...empleados.map(({ id }) => id)) + 1
@@ -257,4 +319,33 @@ export async function updateEmpleado(id, data) {
   )
 
   return { ...empleados.find((item) => item.id === id) }
+}
+
+// Vincula una cuenta de acceso con un empleado existente.
+export function vincularUsuarioEmpleado(idEmpleado, idUsuario) {
+  const empleado = empleados.find(
+    (item) => item.id === Number(idEmpleado)
+  )
+
+  if (!empleado) {
+    throw new Error('El empleado seleccionado no existe.')
+  }
+
+  if (empleado.id_usuario != null) {
+    throw new Error('Este empleado ya tiene una cuenta de acceso.')
+  }
+
+  const usuarioId = Number(idUsuario)
+
+  if (!Number.isSafeInteger(usuarioId) || usuarioId <= 0) {
+    throw new Error('El identificador del usuario no es válido.')
+  }
+
+  if (empleados.some((item) => item.id_usuario === usuarioId)) {
+    throw new Error('Esta cuenta ya está vinculada a otro empleado.')
+  }
+
+  empleado.id_usuario = usuarioId
+
+  return { ...empleado }
 }

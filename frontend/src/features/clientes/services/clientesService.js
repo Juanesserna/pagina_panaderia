@@ -25,7 +25,7 @@ let clientes = [
     tipoDocumento: 'Cédula de ciudadanía',
     documento: '3344556677',
     registrado: null,
-    id_usuario: null,
+    id_usuario: 5,
   },
   {
     id: 3,
@@ -41,7 +41,7 @@ let clientes = [
     tipoDocumento: 'Cédula de ciudadanía',
     documento: '4567891230',
     registrado: null,
-    id_usuario: null,
+    id_usuario: 3,
   },
   {
     id: 5,
@@ -65,7 +65,7 @@ let clientes = [
     tipoDocumento: 'Cédula de extranjería',
     documento: '876543210',
     registrado: null,
-    id_usuario: null,
+    id_usuario: 6,
   },
   {
     id: 8,
@@ -73,7 +73,7 @@ let clientes = [
     tipoDocumento: 'Pasaporte',
     documento: 'AB123456',
     registrado: null,
-    id_usuario: null,
+    id_usuario: 7,
   },
   {
     id: 9,
@@ -97,7 +97,7 @@ let clientes = [
     tipoDocumento: 'Cédula de ciudadanía',
     documento: '6543210987',
     registrado: null,
-    id_usuario: null,
+    id_usuario: 8,
   },
   {
     id: 12,
@@ -204,7 +204,7 @@ export async function createCliente(data) {
     id_usuario: null,
   }
 
-  clientes = [nuevo, ...clientes]
+  clientes = [...clientes, nuevo]
 
   return { ...nuevo }
 }
@@ -236,4 +236,33 @@ export async function updateCliente(id, data) {
   const actualizado = clientes.find((c) => c.id === id)
 
   return { ...actualizado }
+}
+
+// Vincula una cuenta de acceso con un cliente existente.
+export function vincularUsuarioCliente(idCliente, idUsuario) {
+  const cliente = clientes.find(
+    (item) => item.id === Number(idCliente)
+  )
+
+  if (!cliente) {
+    throw new Error('El cliente seleccionado no existe.')
+  }
+
+  if (cliente.id_usuario != null) {
+    throw new Error('Este cliente ya tiene una cuenta de acceso.')
+  }
+
+  const usuarioId = Number(idUsuario)
+
+  if (!Number.isSafeInteger(usuarioId) || usuarioId <= 0) {
+    throw new Error('El identificador del usuario no es válido.')
+  }
+
+  if (clientes.some((item) => item.id_usuario === usuarioId)) {
+    throw new Error('Esta cuenta ya está vinculada a otro cliente.')
+  }
+
+  cliente.id_usuario = usuarioId
+
+  return { ...cliente }
 }

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
@@ -7,7 +8,17 @@ import { Filter, X } from 'lucide-react'
 import AddIcon from '@mui/icons-material/Add'
 
 import { Button, SearchInput, Select } from '@shared/ui'
-import { ROLES, ESTADOS } from '../services/usuariosService'
+
+import { ESTADOS } from '../services/usuariosService'
+import { fetchRoles } from '../../roles/services/rolesService'
+
+const opcionesEstado = [
+  { value: 'Todos', label: 'Todos los estados' },
+  ...ESTADOS.map((estado) => ({
+    value: estado,
+    label: estado,
+  })),
+]
 
 export default function UsuariosToolbar({
   search,
@@ -22,21 +33,58 @@ export default function UsuariosToolbar({
   hayFiltrosActivos,
   onLimpiarFiltros,
 }) {
+  const [roles, setRoles] = useState([])
+  const [cargandoRoles, setCargandoRoles] = useState(false)
+  const [errorRoles, setErrorRoles] = useState('')
+
+  // Consultar los roles actuales al abrir los filtros.
+  useEffect(() => {
+    if (!filtersOpen) return
+
+    let activo = true
+
+    setCargandoRoles(true)
+    setErrorRoles('')
+
+    fetchRoles()
+      .then((data) => {
+        if (activo) setRoles(data)
+      })
+      .catch(() => {
+        if (activo) {
+          setErrorRoles('No se pudieron cargar los roles.')
+        }
+      })
+      .finally(() => {
+        if (activo) setCargandoRoles(false)
+      })
+
+    return () => {
+      activo = false
+    }
+  }, [filtersOpen])
+
   const opcionesRol = [
     { value: 'Todos', label: 'Todos los roles' },
-    ...ROLES.map((rol) => ({
-      value: rol,
-      label: rol,
+    ...roles.map((rol) => ({
+      value: rol.nombre,
+      label:
+        rol.estado === 'Inactivo'
+          ? `${rol.nombre} (Inactivo)`
+          : rol.nombre,
     })),
   ]
 
-  const opcionesEstado = [
-    { value: 'Todos', label: 'Todos los estados' },
-    ...ESTADOS.map((estado) => ({
-      value: estado,
-      label: estado,
-    })),
-  ]
+  // Conservar temporalmente el filtro seleccionado.
+  if (
+    rolFiltro !== 'Todos' &&
+    !opcionesRol.some((opcion) => opcion.value === rolFiltro)
+  ) {
+    opcionesRol.push({
+      value: rolFiltro,
+      label: rolFiltro,
+    })
+  }
 
   return (
     <Box>
@@ -73,7 +121,7 @@ export default function UsuariosToolbar({
             }}
           >
             <SearchInput
-              placeholder="Buscar por nombre o correo..."
+              placeholder="Buscar usuarios..."
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
             />
@@ -120,7 +168,23 @@ export default function UsuariosToolbar({
               value={rolFiltro}
               onChange={(e) => onRolFiltroChange(e.target.value)}
               options={opcionesRol}
+              disabled={cargandoRoles || Boolean(errorRoles)}
             />
+
+            {cargandoRoles && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+              >
+                Cargando roles...
+              </Typography>
+            )}
+
+            {errorRoles && (
+              <Typography variant="caption" color="error">
+                {errorRoles}
+              </Typography>
+            )}
           </Box>
 
           <Box sx={{ width: 180, maxWidth: '100%' }}>

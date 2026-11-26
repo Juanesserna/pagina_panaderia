@@ -1,19 +1,71 @@
-import Table from '@mui/material/Table'
-import TableHead from '@mui/material/TableHead'
-import TableBody from '@mui/material/TableBody'
-import TableRow from '@mui/material/TableRow'
-import TableCell from '@mui/material/TableCell'
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
-import IconButton from '@mui/material/IconButton'
-import Tooltip from '@mui/material/Tooltip'
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
-import { Pencil } from 'lucide-react'
+import {
+  Box, Typography, Table, TableHead, TableBody,
+  TableRow, TableCell, IconButton, Tooltip, Skeleton,
+} from '@mui/material'
+
+import { Eye, Pencil } from 'lucide-react'
 import UserAvatar from '@shared/components/UserAvatar'
+
+const COLUMNAS = ['Cliente', 'Documento', 'Cuenta', 'Acciones']
 
 const headCellSx = {
   typography: 'overline',
   color: 'text.secondary',
+  whiteSpace: 'nowrap',
+  py: 1,
+}
+
+// Filas de carga consistentes con la paginación.
+function FilasCarga() {
+  return Array.from({ length: 6 }, (_, i) => (
+    <TableRow key={i}>
+      <TableCell>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Skeleton variant="circular" width={36} height={36} />
+
+          <Box>
+            <Skeleton width={130} />
+            <Skeleton width={45} />
+          </Box>
+        </Box>
+      </TableCell>
+
+      <TableCell>
+        <Skeleton width={120} />
+        <Skeleton width={85} />
+      </TableCell>
+
+      <TableCell>
+        <Skeleton width={100} />
+      </TableCell>
+
+      <TableCell align="right">
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+          <Skeleton variant="rounded" width={26} height={26} />
+          <Skeleton variant="rounded" width={26} height={26} />
+        </Box>
+      </TableCell>
+    </TableRow>
+  ))
+}
+
+// Acción reutilizable de la tabla.
+function Accion({ icon: Icon, titulo, onClick }) {
+  return (
+    <Tooltip title={titulo}>
+      <IconButton
+        size="small"
+        aria-label={titulo}
+        onClick={onClick}
+        sx={{
+          color: 'text.secondary',
+          '&:hover': { color: 'primary.main' },
+        }}
+      >
+        <Icon size={18} />
+      </IconButton>
+    </Tooltip>
+  )
 }
 
 export default function ClientesTable({
@@ -22,96 +74,135 @@ export default function ClientesTable({
   onVer,
   onEditar,
 }) {
-  if (!loading && clientes.length === 0) {
-    return (
-      <Box sx={{ py: 6, textAlign: 'center' }}>
-        <Typography variant="body2" color="text.secondary">
-          No se encontraron clientes con los filtros aplicados.
-        </Typography>
-      </Box>
-    )
-  }
-
   return (
-    <Table>
-      <TableHead>
-        <TableRow>
-          <TableCell sx={headCellSx}>Cliente</TableCell>
-          <TableCell sx={headCellSx}>Documento</TableCell>
-          <TableCell sx={headCellSx}>Cuenta</TableCell>
-          <TableCell sx={headCellSx} align="right">
-            Acciones
-          </TableCell>
-        </TableRow>
-      </TableHead>
+    <Box sx={{ width: '100%', overflowX: 'auto' }}>
+      <Table
+        size="small"
+        sx={{
+          '& .MuiTableBody-root .MuiTableCell-root': {
+            py: 0.75,
+            verticalAlign: 'middle',
+          },
+        }}
+      >
+        <TableHead>
+          <TableRow>
+            {COLUMNAS.map(columna => (
+              <TableCell
+                key={columna}
+                sx={headCellSx}
+                align={columna === 'Acciones' ? 'right' : 'left'}
+              >
+                {columna}
+              </TableCell>
+            ))}
+          </TableRow>
+        </TableHead>
 
-      <TableBody>
-        {clientes.map((cliente) => (
-          <TableRow
-            key={cliente.id}
-            sx={{ '&:last-child td': { borderBottom: 0 } }}
-          >
-            <TableCell>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <UserAvatar name={cliente.nombre} />
-
-                <Box>
-                  <Typography variant="body1" color="text.primary">
-                    {cliente.nombre}
-                  </Typography>
-
-                  <Typography variant="caption" color="text.secondary">
-                    ID: {cliente.id}
+        <TableBody>
+          {loading ? (
+            <FilasCarga />
+          ) : clientes.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={COLUMNAS.length}>
+                <Box sx={{ py: 5, textAlign: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    No se encontraron clientes.
                   </Typography>
                 </Box>
-              </Box>
-            </TableCell>
+              </TableCell>
+            </TableRow>
+          ) : (
+            clientes.map(cliente => {
+              const conCuenta = cliente.id_usuario != null
 
-            <TableCell>
-              <Typography variant="body2" color="text.primary">
-                {cliente.tipoDocumento}
-              </Typography>
-
-              <Typography variant="caption" color="text.secondary">
-                {cliente.documento}
-              </Typography>
-            </TableCell>
-
-            <TableCell>
-              <Typography
-                variant="body2"
-                color={cliente.id_usuario != null ? 'success.main' : 'text.secondary'}
-              >
-                {cliente.id_usuario != null
-                  ? 'Cuenta vinculada'
-                  : 'Sin cuenta'}
-              </Typography>
-            </TableCell>
-
-            <TableCell align="right">
-              <Tooltip title="Ver detalle">
-                <IconButton
-                  size="small"
-                  onClick={() => onVer(cliente)}
-                  sx={{ color: 'text.secondary' }}
+              return (
+                <TableRow
+                  key={cliente.id}
+                  hover
+                  sx={{ '&:last-child td': { borderBottom: 0 } }}
                 >
-                  <VisibilityOutlinedIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
+                  <TableCell>
+                    <Box sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1.5,
+                      minWidth: 180,
+                    }}>
+                      <UserAvatar name={cliente.nombre} />
 
-              <Tooltip title="Editar">
-                <IconButton
-                  size="small"
-                  onClick={() => onEditar(cliente)}
-                  sx={{ color: 'text.secondary' }}
-                >
-                  <Pencil size={18} />
-                </IconButton>
-              </Tooltip>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography
+                          variant="body1"
+                          sx={{
+                            fontWeight: 600,
+                            overflowWrap: 'anywhere',
+                          }}
+                        >
+                          {cliente.nombre}
+                        </Typography>
+
+                        <Typography variant="caption" component="div">
+                          ID: {cliente.id}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </TableCell>
+
+                  <TableCell>
+                    <Typography variant="body2" color="text.primary">
+                      {cliente.tipoDocumento}
+                    </Typography>
+
+                    <Typography variant="caption" component="div">
+                      {cliente.documento}
+                    </Typography>
+                  </TableCell>
+
+                  <TableCell>
+                    <Box sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.8,
+                      whiteSpace: 'nowrap',
+                    }}>
+                      <Box sx={{
+                        width: 7,
+                        height: 7,
+                        borderRadius: '50%',
+                        bgcolor: conCuenta
+                          ? 'success.main'
+                          : 'text.disabled',
+                      }} />
+
+                      <Typography
+                        variant="body2"
+                        color={conCuenta ? 'success.main' : 'text.secondary'}
+                      >
+                        {conCuenta ? 'Cuenta vinculada' : 'Sin cuenta'}
+                      </Typography>
+                    </Box>
+                  </TableCell>
+
+                  <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                    <Accion
+                      icon={Eye}
+                      titulo="Ver detalle del cliente"
+                      onClick={() => onVer(cliente)}
+                    />
+
+                    <Accion
+                      icon={Pencil}
+                      titulo="Editar cliente"
+                      onClick={() => onEditar(cliente)}
+                    />
+                  </TableCell>
+                </TableRow>
+              )
+            })
+          )}
+        </TableBody>
+      </Table>
+    </Box>
   )
 }

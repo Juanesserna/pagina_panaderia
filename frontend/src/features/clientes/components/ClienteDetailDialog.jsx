@@ -1,61 +1,78 @@
+import {
+  Dialog, DialogTitle, DialogContent, DialogActions,
+  Box, Typography, Divider, Button, Stack,
+} from '@mui/material'
 
-import Dialog from '@mui/material/Dialog'
-import DialogTitle from '@mui/material/DialogTitle'
-import DialogContent from '@mui/material/DialogContent'
-import DialogActions from '@mui/material/DialogActions'
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
-import Divider from '@mui/material/Divider'
-import Button from '@mui/material/Button'
-import Stack from '@mui/material/Stack'
-import CreditCardOutlinedIcon from '@mui/icons-material/CreditCardOutlined'
-import LinkOutlinedIcon from '@mui/icons-material/LinkOutlined'
+import {
+  IdCard, ShieldCheck, Link2, Unlink,
+} from 'lucide-react'
+
 import UserAvatar from '@shared/components/UserAvatar'
 
-function DetailItem({ icon, label, value }) {
+// Presentación compacta de cada dato.
+function DetailItem({ label, value, color = 'text.primary' }) {
   return (
-    <Stack
-      direction="row"
-      alignItems="center"
-      spacing={1.5}
-      sx={{ py: 1.2, minWidth: 0 }}
-    >
-      <Box
+    <Box sx={{ minWidth: 0 }}>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        component="div"
+        sx={{ fontWeight: 600, mb: 0.3 }}
+      >
+        {label}
+      </Typography>
+
+      <Typography
+        variant="body2"
         sx={{
-          width: 32,
-          height: 32,
-          borderRadius: 2,
-          display: 'grid',
-          placeItems: 'center',
-          bgcolor: 'action.hover',
-          color: 'text.secondary',
-          flexShrink: 0,
+          fontWeight: 600,
+          color,
+          overflowWrap: 'anywhere',
         }}
       >
-        {icon}
-      </Box>
+        {value ?? 'No registrado'}
+      </Typography>
+    </Box>
+  )
+}
 
-      <Box flex={1} minWidth={0}>
-        <Typography
-          sx={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: 'text.secondary',
-            mb: 0.3,
-          }}
-        >
-          {label}
-        </Typography>
+// Tarjeta de información reutilizable.
+function DetailSection({ icon: Icon, title, children }) {
+  return (
+    <Box sx={{
+      border: '1px solid',
+      borderColor: 'divider',
+      borderRadius: '8px',
+      p: 1.5,
+      minWidth: 0,
+    }}>
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{ alignItems: 'center', mb: 1.5 }}
+      >
+        <Box sx={{
+          width: 30,
+          height: 30,
+          flexShrink: 0,
+          display: 'grid',
+          placeItems: 'center',
+          borderRadius: '8px',
+          bgcolor: 'action.hover',
+          color: 'text.secondary',
+        }}>
+          <Icon size={17} />
+        </Box>
 
-        <Typography
-          variant="body2"
-          fontWeight={600}
-          sx={{ overflowWrap: 'anywhere' }}
-        >
-          {value || 'No registrado'}
+        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+          {title}
         </Typography>
-      </Box>
-    </Stack>
+      </Stack>
+
+      <Stack spacing={1.5}>
+        {children}
+      </Stack>
+    </Box>
   )
 }
 
@@ -67,43 +84,62 @@ export default function ClienteDetailDialog({
   if (!cliente) return null
 
   const tieneCuenta = cliente.id_usuario != null
+  const IconoCuenta = tieneCuenta ? Link2 : Unlink
+
+  const textoCuenta = tieneCuenta
+    ? 'Cuenta vinculada'
+    : 'Sin cuenta vinculada'
+
+  const colorCuenta = tieneCuenta
+    ? 'success.main'
+    : 'text.secondary'
 
   return (
     <Dialog
       open={open}
-      onClose={() => {}}
+      onClose={(_, reason) => {
+        if (reason === 'escapeKeyDown') onClose()
+      }}
       fullWidth
-      maxWidth="xs"
-      disableEscapeKeyDown
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-          overflow: 'hidden',
+      maxWidth="sm"
+      aria-labelledby="cliente-detalle-titulo"
+      slotProps={{
+        paper: {
+          sx: { borderRadius: 3 },
         },
       }}
     >
-      <DialogTitle sx={{ px: 2.5, pt: 2, pb: 1 }}>
-        <Typography fontWeight={700}>
+      <DialogTitle sx={{ px: 2.5, py: 2 }}>
+        <Typography
+          id="cliente-detalle-titulo"
+          sx={{ fontSize: 17, fontWeight: 700 }}
+        >
           Detalles del cliente
         </Typography>
 
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="body2" color="text.secondary">
           Información personal y de acceso del cliente.
         </Typography>
       </DialogTitle>
 
-      <DialogContent dividers sx={{ px: 2.5, py: 1.5 }}>
-        <Stack spacing={1.5}>
+      <Divider />
+
+      <DialogContent sx={{ px: 2.5, py: 2 }}>
+        <Stack spacing={2}>
+          {/* Resumen del cliente. */}
           <Stack
             direction="row"
-            alignItems="center"
             spacing={1.5}
-            sx={{ py: 0.5 }}
+            sx={{ alignItems: 'center', flexWrap: 'wrap' }}
           >
             <UserAvatar name={cliente.nombre} />
 
-            <Box flex={1} minWidth={0}>
-              <Typography fontWeight={700}>
+            <Box sx={{ flex: 1, minWidth: 120 }}>
+              <Typography sx={{
+                fontWeight: 700,
+                fontSize: 15,
+                overflowWrap: 'anywhere',
+              }}>
                 {cliente.nombre}
               </Typography>
 
@@ -111,79 +147,64 @@ export default function ClienteDetailDialog({
                 Cliente #{cliente.id}
               </Typography>
             </Box>
+
+            <Box sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.75,
+              color: colorCuenta,
+            }}>
+              <IconoCuenta size={16} />
+
+              <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                {textoCuenta}
+              </Typography>
+            </Box>
           </Stack>
 
-          <Divider />
+          {/* Información distribuida en dos tarjetas. */}
+          <Box sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: 'repeat(2, minmax(0, 1fr))',
+            },
+            gap: 1.5,
+          }}>
+            <DetailSection icon={IdCard} title="Identificación">
+              <DetailItem
+                label="Tipo de documento"
+                value={cliente.tipoDocumento}
+              />
 
-          <Box
-            sx={{
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 2.5,
-              px: 1.5,
-            }}
-          >
-            <Typography
-              variant="subtitle2"
-              fontWeight={700}
-              sx={{ pt: 1.5 }}
-            >
-              Identificación
-            </Typography>
+              <DetailItem
+                label="Número de documento"
+                value={cliente.documento}
+              />
+            </DetailSection>
 
-            <DetailItem
-              icon={<CreditCardOutlinedIcon fontSize="small" />}
-              label="Tipo de documento"
-              value={cliente.tipoDocumento}
-            />
+            <DetailSection icon={ShieldCheck} title="Acceso al sistema">
+              <DetailItem
+                label="Cuenta de acceso"
+                value={textoCuenta}
+                color={colorCuenta}
+              />
 
-            <Divider />
-
-            <DetailItem
-              icon={<CreditCardOutlinedIcon fontSize="small" />}
-              label="Número de documento"
-              value={cliente.documento}
-            />
-          </Box>
-
-          <Box
-            sx={{
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 2.5,
-              px: 1.5,
-            }}
-          >
-            <Typography
-              variant="subtitle2"
-              fontWeight={700}
-              sx={{ pt: 1.5 }}
-            >
-              Acceso al sistema
-            </Typography>
-
-            <DetailItem
-              icon={<LinkOutlinedIcon fontSize="small" />}
-              label="Cuenta de acceso"
-              value={tieneCuenta ? 'Cuenta vinculada' : 'Sin cuenta vinculada'}
-            />
-
-            {tieneCuenta && (
-              <>
-                <Divider />
-                <DetailItem
-                  icon={<LinkOutlinedIcon fontSize="small" />}
-                  label="Identificador de usuario"
-                  value={cliente.id_usuario}
-                />
-              </>
-            )}
+              <DetailItem
+                label="Identificador de usuario"
+                value={tieneCuenta
+                  ? `#${cliente.id_usuario}`
+                  : 'No asignado'}
+              />
+            </DetailSection>
           </Box>
         </Stack>
       </DialogContent>
 
+      <Divider />
+
       <DialogActions sx={{ px: 2.5, py: 1.5 }}>
-        <Button onClick={onClose} variant="contained" size="small">
+        <Button variant="contained" onClick={onClose}>
           Cerrar
         </Button>
       </DialogActions>

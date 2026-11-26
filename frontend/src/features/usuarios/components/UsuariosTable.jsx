@@ -1,22 +1,21 @@
+import {
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  Box,
+  Typography,
+  IconButton,
+  Tooltip,
+  Skeleton,
+} from '@mui/material'
 
-import Table from '@mui/material/Table'
-import TableHead from '@mui/material/TableHead'
-import TableBody from '@mui/material/TableBody'
-import TableRow from '@mui/material/TableRow'
-import TableCell from '@mui/material/TableCell'
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
-import IconButton from '@mui/material/IconButton'
-import Tooltip from '@mui/material/Tooltip'
-
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
-import { Pencil, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Eye, Pencil } from 'lucide-react'
 
 import UserAvatar from '@shared/components/UserAvatar'
+import EstadoSwitch from '@shared/ui/EstadoSwitch'
 import { AVATAR_PALETTE, colorFromName } from '@shared/utils/colors'
-
-import StatusChip from './StatusChip'
-import { esUnicoGerente } from '../services/usuariosService'
 
 const ROLE_TEXT_COLORS = {
   Gerente: AVATAR_PALETTE[0].color,
@@ -25,200 +24,257 @@ const ROLE_TEXT_COLORS = {
   Vendedor: AVATAR_PALETTE[3].color,
 }
 
-function colorForRole(rol) {
-  return ROLE_TEXT_COLORS[rol] ?? colorFromName(rol || 'Usuario').color
-}
-
-function obtenerTipoRelacion(usuario) {
-  if (usuario.cliente && usuario.empleado) {
-    return 'Cliente y empleado asociado'
-  }
-
-  if (usuario.cliente) {
-    return 'Cliente asociado'
-  }
-
-  if (usuario.empleado) {
-    return 'Empleado asociado'
-  }
-
-  return 'Cuenta sin perfil asociado'
-}
+const COLUMNAS = [
+  'Cuenta de usuario',
+  'Rol',
+  'Estado',
+  'Acciones',
+]
 
 const headCellSx = {
   typography: 'overline',
   color: 'text.secondary',
   whiteSpace: 'nowrap',
+  py: 1,
+}
+
+function colorForRole(rol) {
+  return (
+    ROLE_TEXT_COLORS[rol] ??
+    colorFromName(rol || 'Usuario').color
+  )
+}
+
+function obtenerMotivoBloqueo(usuario, esUnicoGerente) {
+  if (esUnicoGerente(usuario)) {
+    return 'No puedes desactivar al único Gerente activo.'
+  }
+
+  if (
+    usuario.estado === 'Inactivo' &&
+    usuario.estadoRol !== 'Activo'
+  ) {
+    return 'No puedes activar esta cuenta mientras su rol esté inactivo o no esté disponible.'
+  }
+
+  return ''
 }
 
 export default function UsuariosTable({
-  usuarios,
-  loading,
+  usuarios = [],
+  loading = false,
+  submitting = false,
   onVer,
   onEditar,
   onInhabilitar,
+  esUnicoGerente,
 }) {
-  if (!loading && usuarios.length === 0) {
-    return (
-      <Box sx={{ py: 6, textAlign: 'center' }}>
-        <Typography variant="body2" color="text.secondary">
-          No se encontraron usuarios con los filtros aplicados.
-        </Typography>
-      </Box>
-    )
-  }
-
   return (
-    <Box sx={{ width: '100%', overflowX: 'auto' }}>
-      <Table>
+    <Box
+      sx={{
+        width: '100%',
+        overflowX: 'auto',
+        minHeight: 380,
+      }}
+    >
+      <Table
+        size="small"
+        sx={{
+          '& .MuiTableBody-root .MuiTableCell-root': {
+            py: 0.5,
+            verticalAlign: 'middle',
+          },
+        }}
+      >
         <TableHead>
           <TableRow>
-            <TableCell sx={headCellSx}>Cuenta de usuario</TableCell>
-            <TableCell sx={headCellSx}>Rol</TableCell>
-            <TableCell sx={headCellSx}>Estado</TableCell>
-            <TableCell sx={headCellSx} align="right">
-              Acciones
-            </TableCell>
+            {COLUMNAS.map((columna) => (
+              <TableCell
+                key={columna}
+                sx={headCellSx}
+                align={columna === 'Acciones' ? 'right' : 'left'}
+              >
+                {columna}
+              </TableCell>
+            ))}
           </TableRow>
         </TableHead>
 
         <TableBody>
-          {usuarios.map((usuario) => {
-            const tienePerfil = Boolean(
-              usuario.cliente || usuario.empleado
-            )
-
-            const nombre = usuario.nombre?.trim()
-
-            // Si no tiene perfil asociado, el correo es el título.
-            const titulo = nombre || usuario.email || `Cuenta #${usuario.id}`
-
-            const esGerenteProtegido =
-              usuario.estado === 'Activo' && esUnicoGerente(usuario)
-
-            return (
-              <TableRow
-                key={usuario.id}
-                sx={{
-                  '&:last-child td': { borderBottom: 0 },
-                }}
-              >
-                <TableCell>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1.5,
-                      minWidth: 180,
-                    }}
+          {loading ? (
+            Array.from({ length: 6 }, (_, index) => (
+              <TableRow key={index}>
+                {COLUMNAS.map((columna) => (
+                  <TableCell key={columna}>
+                    <Skeleton height={42} />
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : usuarios.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={COLUMNAS.length}>
+                <Box sx={{ py: 6, textAlign: 'center' }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
                   >
-                    <UserAvatar name={titulo} />
+                    No se encontraron usuarios con los filtros aplicados.
+                  </Typography>
+                </Box>
+              </TableCell>
+            </TableRow>
+          ) : (
+            usuarios.map((usuario) => {
+              const titulo =
+                usuario.nombre?.trim() ||
+                usuario.email ||
+                `Cuenta #${usuario.id}`
 
-                    <Box sx={{ minWidth: 0 }}>
-                      <Typography
-                        variant="body1"
-                        color="text.primary"
-                        sx={{
-                          fontWeight: 600,
-                          overflowWrap: 'anywhere',
-                        }}
-                      >
-                        {titulo}
-                      </Typography>
+              const motivoBloqueo = obtenerMotivoBloqueo(
+                usuario,
+                esUnicoGerente
+              )
 
-                      {tienePerfil && (
+              return (
+                <TableRow
+                  key={usuario.id}
+                  hover
+                  sx={{
+                    '&:last-child td': {
+                      borderBottom: 0,
+                    },
+                  }}
+                >
+                  <TableCell>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1.5,
+                        minWidth: 180,
+                      }}
+                    >
+                      <UserAvatar name={titulo} />
+
+                      <Box sx={{ minWidth: 0 }}>
                         <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ overflowWrap: 'anywhere' }}
+                          variant="body1"
+                          sx={{
+                            fontWeight: 600,
+                            lineHeight: 1.4,
+                            overflowWrap: 'anywhere',
+                          }}
                         >
-                          {usuario.email}
+                          {titulo}
                         </Typography>
-                      )}
 
+                        {usuario.nombre && (
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{
+                              lineHeight: 1.4,
+                              overflowWrap: 'anywhere',
+                            }}
+                          >
+                            {usuario.email}
+                          </Typography>
+                        )}
+
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          component="div"
+                          sx={{ lineHeight: 1.4 }}
+                        >
+                          {usuario.tipoPerfil ||
+                            'Sin perfil asociado'}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </TableCell>
+
+                  <TableCell>
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        color: colorForRole(usuario.rol),
+                        fontWeight: 600,
+                      }}
+                    >
+                      {usuario.rol || 'Sin rol'}
+                    </Typography>
+
+                    {usuario.estadoRol === 'Inactivo' && (
                       <Typography
                         variant="caption"
-                        color="text.secondary"
+                        color="warning.main"
+                        component="div"
                       >
-                        {obtenerTipoRelacion(usuario)}
+                        Rol inactivo
                       </Typography>
-                    </Box>
-                  </Box>
-                </TableCell>
+                    )}
+                  </TableCell>
 
-                <TableCell>
-                  <Typography
-                    variant="body1"
-                    sx={{
-                      color: colorForRole(usuario.rol),
-                      fontWeight: 600,
-                    }}
-                  >
-                    {usuario.rol || 'Sin rol'}
-                  </Typography>
-                </TableCell>
-
-                <TableCell>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.5,
-                    }}
-                  >
-                    <StatusChip estado={usuario.estado} />
-
-                    <Tooltip
-                      title={
-                        esGerenteProtegido
-                          ? 'No se puede inhabilitar al único Gerente'
-                          : usuario.estado === 'Activo'
-                            ? 'Inhabilitar'
-                            : 'Reactivar'
+                  <TableCell>
+                    <EstadoSwitch
+                      activo={usuario.estado === 'Activo'}
+                      nombre={titulo}
+                      disabled={
+                        submitting || Boolean(motivoBloqueo)
                       }
-                    >
-                      <span>
-                        <IconButton
-                          size="small"
-                          disabled={esGerenteProtegido}
-                          onClick={() => onInhabilitar(usuario)}
-                          sx={{ color: 'text.secondary' }}
-                        >
-                          {usuario.estado === 'Activo' ? (
-                            <ToggleRight size={18} />
-                          ) : (
-                            <ToggleLeft size={18} />
-                          )}
-                        </IconButton>
-                      </span>
-                    </Tooltip>
-                  </Box>
-                </TableCell>
+                      motivo={
+                        motivoBloqueo ||
+                        (submitting
+                          ? 'Hay una operación en proceso.'
+                          : '')
+                      }
+                      onChange={() => onInhabilitar(usuario)}
+                    />
+                  </TableCell>
 
-                <TableCell align="right">
-                  <Tooltip title="Ver detalle">
-                    <IconButton
-                      size="small"
-                      onClick={() => onVer(usuario)}
-                      sx={{ color: 'text.secondary' }}
+                  <TableCell align="right">
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'flex-end',
+                        gap: 0.5,
+                      }}
                     >
-                      <VisibilityOutlinedIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
+                      <Tooltip title="Ver detalle">
+                        <span>
+                          <IconButton
+                            size="small"
+                            disabled={submitting}
+                            onClick={() => onVer(usuario)}
+                            aria-label={`Ver detalle de ${titulo}`}
+                            sx={{ color: 'text.secondary' }}
+                          >
+                            <Eye size={18} />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
 
-                  <Tooltip title="Editar">
-                    <IconButton
-                      size="small"
-                      onClick={() => onEditar(usuario)}
-                      sx={{ color: 'text.secondary' }}
-                    >
-                      <Pencil size={18} />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
-              </TableRow>
-            )
-          })}
+                      <Tooltip title="Editar">
+                        <span>
+                          <IconButton
+                            size="small"
+                            disabled={submitting}
+                            onClick={() => onEditar(usuario)}
+                            aria-label={`Editar a ${titulo}`}
+                            sx={{ color: 'text.secondary' }}
+                          >
+                            <Pencil size={18} />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              )
+            })
+          )}
         </TableBody>
       </Table>
     </Box>
