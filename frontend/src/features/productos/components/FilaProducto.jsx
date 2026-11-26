@@ -1,7 +1,9 @@
 import { TableRow, TableCell, Typography, Box, useTheme } from '@mui/material'
 import { alpha } from '@mui/material/styles'
+import { ImageWithFallback, StatusBadge } from '@shared/ui'
 import { formatPrice } from '../services/productos.service'
 import { CELL_SX } from './comunes/tablaEstilos'
+import { etiquetaTipo } from './comunes/opcionesProducto'
 import EstadoProducto from './EstadoProducto'
 import AccionesProducto from './AccionesProducto'
 
@@ -9,6 +11,8 @@ import AccionesProducto from './AccionesProducto'
 // "index" se usa para alternar el color de fondo de las filas.
 export default function FilaProducto({ producto: p, index, onVer, onEdit, onEliminar, onCambiarEstado }) {
   const theme = useTheme()
+  const esVendible = p.esVendible !== false
+  const sinReceta = !Array.isArray(p.receta) || p.receta.length === 0
 
   return (
     <TableRow
@@ -24,20 +28,49 @@ export default function FilaProducto({ producto: p, index, onVer, onEdit, onElim
       </TableCell>
       <TableCell sx={CELL_SX}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-          <Box
-            component="img"
-            src={p.imagenUrl}
-            alt={p.nombre}
-            sx={{
-              width: 32,
-              height: 32,
-              borderRadius: 1,
-              objectFit: 'cover',
-            }}
-          />
-          <Typography variant="body1" sx={{ color: theme.palette.text.primary }}>
-            {p.nombre}
-          </Typography>
+          {p.imagenUrl ? (
+            <ImageWithFallback
+              src={p.imagenUrl}
+              alt={p.nombre}
+              style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }}
+            />
+          ) : (
+            <Box
+              sx={{
+                width: 32,
+                height: 32,
+                borderRadius: 1,
+                bgcolor: 'action.hover',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+                {p.nombre.charAt(0)}
+              </Typography>
+            </Box>
+          )}
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="body1" sx={{ color: theme.palette.text.primary }}>
+              {p.nombre}
+            </Typography>
+            {(!esVendible || sinReceta) && (
+              <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
+                {!esVendible && (
+                  <StatusBadge variant="accent" size="md">
+                    Insumo
+                  </StatusBadge>
+                )}
+                {sinReceta && (
+                  <StatusBadge variant="warning" size="md">
+                    Sin receta
+                  </StatusBadge>
+                )}
+              </Box>
+            )}
+          </Box>
         </Box>
       </TableCell>
       <TableCell sx={CELL_SX}>
@@ -45,9 +78,19 @@ export default function FilaProducto({ producto: p, index, onVer, onEdit, onElim
           {p.categoria}
         </Typography>
       </TableCell>
+      <TableCell sx={CELL_SX}>
+        <Typography variant="body1" sx={{ color: theme.palette.text.primary }}>
+          {etiquetaTipo(p.tipo)}
+        </Typography>
+      </TableCell>
+      <TableCell sx={CELL_SX}>
+        <StatusBadge variant={esVendible ? 'success' : 'info'} size="md">
+          {esVendible ? 'Sí' : 'No'}
+        </StatusBadge>
+      </TableCell>
       <TableCell sx={{ ...CELL_SX, textAlign: 'right' }}>
         <Typography variant="subtitle1" sx={{ color: theme.palette.text.primary }}>
-          {formatPrice(p.precioVenta)}
+          {esVendible ? formatPrice(p.precioVenta) : '—'}
         </Typography>
       </TableCell>
       <TableCell sx={CELL_SX}>

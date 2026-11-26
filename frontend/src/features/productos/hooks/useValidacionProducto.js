@@ -3,6 +3,8 @@ import { useState, useCallback } from 'react'
 const VALORES_INICIALES = {
   nombre: '',
   categoria: '',
+  tipo: 'TERMINADO',
+  esVendible: true,
   precioVenta: '',
   stockActual: '',
   stockMinimo: '',
@@ -21,6 +23,10 @@ const esUrlValida = (url) => {
     return false
   }
 }
+
+const esEnteroNoNegativo = (v) =>
+  v !== '' && v !== null && v !== undefined && Number.isInteger(Number(v)) && Number(v) >= 0
+const esEnteroPositivo = (v) => esEnteroNoNegativo(v) && Number(v) > 0
 
 export function useValidacionProducto(valoresInicialesParam = VALORES_INICIALES) {
   const [valores, setValores] = useState({ ...valoresInicialesParam })
@@ -45,6 +51,11 @@ export function useValidacionProducto(valoresInicialesParam = VALORES_INICIALES)
 
   const validar = useCallback(() => {
     const errores = {}
+    // Si el formulario aún no trae tipo (modal sin actualizar), se asume Terminado
+    const tipo = valores.tipo ?? 'TERMINADO'
+    // Un Terminado siempre es vendible; en un Intermedio depende del toggle
+    const esVendible = tipo === 'TERMINADO' ? true : Boolean(valores.esVendible)
+
     if (!valores.nombre?.trim()) {
       errores.nombre = 'El nombre es obligatorio'
     } else if (valores.nombre.length > 100) {
@@ -55,21 +66,44 @@ export function useValidacionProducto(valoresInicialesParam = VALORES_INICIALES)
       errores.categoria = 'Selecciona una categoría'
     }
 
-    const precioNum = Number(valores.precioVenta)
-    if (valores.precioVenta === '' || valores.precioVenta === null || valores.precioVenta === undefined) {
-      errores.precioVenta = 'Ingresa un precio válido (0 o más)'
-    } else if (isNaN(precioNum) || precioNum < 0) {
-      errores.precioVenta = 'Ingresa un precio válido (0 o más)'
+    if (!['TERMINADO', 'INTERMEDIO'].includes(tipo)) {
+      errores.tipo = 'Selecciona el tipo de producto'
     }
 
-    const stockNum = Number(valores.stockActual)
-    if (valores.stockActual === '' || valores.stockActual === null || valores.stockActual === undefined) {
-      errores.stockActual = 'El stock debe ser un número entero (0 o más)'
-    } else if (!Number.isInteger(stockNum) || stockNum < 0) {
+    // Precio e imagen solo son obligatorios si el producto es vendible
+    if (esVendible) {
+      const precioNum = Number(valores.precioVenta)
+      if (valores.precioVenta === '' || valores.precioVenta == null || isNaN(precioNum) || precioNum <= 0) {
+        errores.precioVenta = 'Ingresa un precio de venta mayor a 0'
+      }
+    }
+
+    if (!esEnteroNoNegativo(valores.stockActual)) {
       errores.stockActual = 'El stock debe ser un número entero (0 o más)'
     }
 
-    if (valores.imagen && valores.imagen.trim() !== '' && !esUrlValida(valores.imagen)) {
+    if (valores.stockMinimo !== '' && valores.stockMinimo != null && !esEnteroNoNegativo(valores.stockMinimo)) {
+      errores.stockMinimo = 'El stock mínimo debe ser un entero (0 o más)'
+    }
+
+    if (!esEnteroPositivo(valores.cantMinimaProduccion)) {
+      errores.cantMinimaProduccion = 'Ingresa un entero mayor a 0'
+    }
+    if (!esEnteroPositivo(valores.cantMaximaProduccion)) {
+      errores.cantMaximaProduccion = 'Ingresa un entero mayor a 0'
+    }
+    if (
+      !errores.cantMinimaProduccion &&
+      !errores.cantMaximaProduccion &&
+      Number(valores.cantMinimaProduccion) > Number(valores.cantMaximaProduccion)
+    ) {
+      errores.cantMinimaProduccion = 'La cantidad mínima no puede superar la máxima'
+    }
+
+    const imagen = valores.imagen?.trim() ?? ''
+    if (esVendible && imagen === '') {
+      errores.imagen = 'Ingresa la URL de la imagen del producto'
+    } else if (imagen !== '' && !esUrlValida(imagen)) {
       errores.imagen = 'Ingrese una URL válida'
     }
 
@@ -82,7 +116,10 @@ export function useValidacionProducto(valoresInicialesParam = VALORES_INICIALES)
 
   const primerCampoInvalido = useCallback(() => {
     const errores = validar()
-    const orden = ['nombre', 'categoria', 'precioVenta', 'stockActual', 'imagen']
+    const orden = [
+      'nombre', 'categoria', 'tipo', 'precioVenta', 'stockActual', 'stockMinimo',
+      'cantMinimaProduccion', 'cantMaximaProduccion', 'imagen',
+    ]
     for (const campo of orden) {
       if (errores[campo]) return campo
     }

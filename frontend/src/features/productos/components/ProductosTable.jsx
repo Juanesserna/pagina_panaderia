@@ -93,14 +93,20 @@ export default function ProductosTable({ productos, onEdit, onVer, onEliminar, o
       <Table size="small">
         <TableHead>
           <TableRow>
-            <TableCell sx={HEADER_SX} style={{ width: 80 }}>
+            <TableCell sx={HEADER_SX} style={{ width: 90 }}>
               <SortableHeader nombre="CÓDIGO" columna="codigo" sortConfig={sortConfig} onSort={handleSort} />
             </TableCell>
             <TableCell sx={HEADER_SX} style={{ width: 240 }}>
               <SortableHeader nombre="PRODUCTO" columna="nombre" sortConfig={sortConfig} onSort={handleSort} />
             </TableCell>
-            <TableCell sx={HEADER_SX} style={{ width: 140 }}>
+            <TableCell sx={HEADER_SX} style={{ width: 130 }}>
               <HeaderLabel>CATEGORÍA</HeaderLabel>
+            </TableCell>
+            <TableCell sx={HEADER_SX} style={{ width: 110 }}>
+              <SortableHeader nombre="TIPO" columna="tipo" sortConfig={sortConfig} onSort={handleSort} />
+            </TableCell>
+            <TableCell sx={HEADER_SX} style={{ width: 100 }}>
+              <HeaderLabel>VENDIBLE</HeaderLabel>
             </TableCell>
             <TableCell sx={{ ...HEADER_SX, textAlign: 'right' }} style={{ width: 120 }}>
               <SortableHeader nombre="PRECIO VENTA" columna="precioVenta" sortConfig={sortConfig} onSort={handleSort} />
@@ -108,7 +114,7 @@ export default function ProductosTable({ productos, onEdit, onVer, onEliminar, o
             <TableCell sx={HEADER_SX} style={{ width: 80 }}>
               <SortableHeader nombre="STOCK" columna="stock" sortConfig={sortConfig} onSort={handleSort} />
             </TableCell>
-            <TableCell sx={HEADER_SX} style={{ width: 100 }}>
+            <TableCell sx={HEADER_SX} style={{ width: 110 }}>
               <HeaderLabel>ESTADO</HeaderLabel>
             </TableCell>
             <TableCell sx={{ ...HEADER_SX, textAlign: 'right' }} style={{ width: 100 }}>
