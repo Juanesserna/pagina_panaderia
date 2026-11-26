@@ -63,7 +63,7 @@ export function ProveedoresPage() {
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1.25 }}>
             <SearchInput
-              placeholder="Buscar empresa, NIT o ID…"
+              placeholder="Buscar empresa, NIT, contacto, teléfono, correo…"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)

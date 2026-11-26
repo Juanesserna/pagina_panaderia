@@ -7,7 +7,7 @@ import {
   changeEstadoProveedor,
 } from '../services/proveedoresService'
 import { PAGE_SIZE, filtrosVacios } from '../constants/proveedores.constants'
-import { esEmailValido } from '../utils/proveedoresHelpers'
+import { esEmailValido, coincideBusqueda } from '../utils/proveedoresHelpers'
 
 export function useProveedores({ mostrarNotificacion = () => {} } = {}) {
   const [proveedores, setProveedores] = useState([])
@@ -116,15 +116,8 @@ export function useProveedores({ mostrarNotificacion = () => {} } = {}) {
   const filtered = useMemo(() => {
     let data = proveedores
 
-    if (search) {
-      const txt = search.toLowerCase()
-      data = data.filter(
-        (p) =>
-          p.nombre.toLowerCase().includes(txt) ||
-          String(p.id).includes(txt) ||
-          p.nit.toLowerCase().includes(txt) ||
-          p.nombreContacto.toLowerCase().includes(txt)
-      )
+    if (search.trim()) {
+      data = data.filter((p) => coincideBusqueda(p, search))
     }
     if (filtrosActivos.estado)
       data = data.filter((p) => p.estado === (filtrosActivos.estado === 'true'))
