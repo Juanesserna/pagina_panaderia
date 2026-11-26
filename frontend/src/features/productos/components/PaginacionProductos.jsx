@@ -16,15 +16,15 @@ export default function PaginacionProductos({ paginaActual = 1, totalRegistros =
   const to = Math.min(paginaActual * porPagina, totalRegistros)
 
   return (
-     <Box
-       sx={{
-         display: 'flex',
-         alignItems: 'center',
-         justifyContent: 'space-between',
-         py: 2,
-         px: 3,
-       }}
-     >
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        py: 2,
+        px: 3,
+      }}
+    >
       <Typography
         variant="body2"
         sx={{ color: theme.palette.text.secondary }}
@@ -32,7 +32,11 @@ export default function PaginacionProductos({ paginaActual = 1, totalRegistros =
         Mostrando {from}–{to} de {totalRegistros} registros
       </Typography>
 
-      <Stack direction="row" spacing={0.5} alignItems="center">
+      <Stack
+        direction="row"
+        spacing={0.5}
+        sx={{ alignItems: 'center' }}
+      >
         <IconButton
           size="small"
           disabled={paginaActual <= 1}
