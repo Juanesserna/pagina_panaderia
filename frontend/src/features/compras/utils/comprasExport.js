@@ -1,13 +1,15 @@
 // Exportación de compras registradas a Excel/PDF.
 // Filtra por rango de fechas (dd/mm/yyyy de la compra) y descarga el archivo.
-import * as XLSX from 'xlsx'
-import { jsPDF } from 'jspdf'
-import autoTable from 'jspdf-autotable'
-import { etiquetaProveedor, formatearMoneda, parseFechaCompra } from './comprasHelpers'
+import {
+  etiquetaProveedor,
+  formatearMoneda,
+  parseFechaCompra,
+} from './comprasHelpers'
 
 export function filtrarComprasPorRango(compras, fechaDesde, fechaHasta) {
   const desde = fechaDesde ? new Date(`${fechaDesde}T00:00:00`) : null
   const hasta = fechaHasta ? new Date(`${fechaHasta}T23:59:59`) : null
+
   return compras.filter((c) => {
     if (!desde && !hasta) return true
     const fecha = parseFechaCompra(c)
@@ -43,16 +45,28 @@ function nombreArchivo(ext, fechaDesde, fechaHasta) {
   return `compras_${desde}_a_${hasta}.${ext}`
 }
 
-export function exportarComprasExcel(compras, proveedores, { fechaDesde, fechaHasta }) {
-  const datos = filasCompras(filtrarComprasPorRango(compras, fechaDesde, fechaHasta), proveedores)
-  if (datos.length === 0) throw new Error('No hay compras en el rango seleccionado')
+export async function exportarComprasExcel(
+  compras,
+  proveedores,
+  { fechaDesde, fechaHasta }
+) {
+  const filtradas = filtrarComprasPorRango(compras, fechaDesde, fechaHasta)
+  const datos = filasCompras(filtradas, proveedores)
+
+  if (datos.length === 0) {
+    throw new Error('No hay compras en el rango seleccionado')
+  }
+
+  // Carga Excel únicamente cuando se solicita la exportación.
+  const XLSX = await import('xlsx')
 
   const ws = XLSX.utils.json_to_sheet(datos)
   const wb = XLSX.utils.book_new()
+
   XLSX.utils.book_append_sheet(wb, ws, 'Compras')
 
-  // Hoja de detalle (una fila por ítem)
-  const detalle = filtrarComprasPorRango(compras, fechaDesde, fechaHasta).flatMap((c) =>
+  // Hoja de detalle (una fila por ítem).
+  const detalle = filtradas.flatMap((c) =>
     (c.detalle || []).map((d) => ({
       'ID orden': c.id,
       'Fecha': c.fecha,
@@ -65,19 +79,38 @@ export function exportarComprasExcel(compras, proveedores, { fechaDesde, fechaHa
       'Fecha vencimiento': d.fechaVencimiento || '',
     }))
   )
+
   if (detalle.length > 0) {
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detalle), 'Detalle')
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(detalle),
+      'Detalle'
+    )
   }
 
   XLSX.writeFile(wb, nombreArchivo('xlsx', fechaDesde, fechaHasta))
 }
 
-export function exportarComprasPDF(compras, proveedores, { fechaDesde, fechaHasta }) {
+export async function exportarComprasPDF(
+  compras,
+  proveedores,
+  { fechaDesde, fechaHasta }
+) {
   const filtradas = filtrarComprasPorRango(compras, fechaDesde, fechaHasta)
-  if (filtradas.length === 0) throw new Error('No hay compras en el rango seleccionado')
+
+  if (filtradas.length === 0) {
+    throw new Error('No hay compras en el rango seleccionado')
+  }
+
+  // Carga las librerías PDF en paralelo únicamente cuando se necesitan.
+  const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable'),
+  ])
 
   const doc = new jsPDF({ orientation: 'landscape' })
   const rango = `${fechaDesde || 'Inicio'} a ${fechaHasta || 'Fin'}`
+
   doc.setFontSize(14)
   doc.text('Registro de compras', 14, 16)
   doc.setFontSize(10)

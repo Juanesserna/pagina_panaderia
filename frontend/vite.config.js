@@ -6,12 +6,12 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@app': path.resolve(__dirname, './src/app'),
-      '@features': path.resolve(__dirname, './src/features'),
-      '@shared': path.resolve(__dirname, './src/shared'),
-      '@layouts': path.resolve(__dirname, './src/layouts'),
-      '@assets': path.resolve(__dirname, './src/assets'),
-      '@styles': path.resolve(__dirname, './src/styles'),
+      '@app': path.resolve(import.meta.dirname, './src/app'),
+      '@features': path.resolve(import.meta.dirname, './src/features'),
+      '@shared': path.resolve(import.meta.dirname, './src/shared'),
+      '@layouts': path.resolve(import.meta.dirname, './src/layouts'),
+      '@assets': path.resolve(import.meta.dirname, './src/assets'),
+      '@styles': path.resolve(import.meta.dirname, './src/styles'),
     },
   },
 })
