@@ -42,10 +42,9 @@ const NAV_GROUPS = [
     ]
   },
   {
-    key: "catalogo", label: "Catálogo", icon: <Layers size={18} />,
+    key: "categorias", label: "Categorías", icon: <Layers size={18} />,
     items: [
       { id: "categorias", label: "Categorías", icon: <Tag size={18} /> },
-      { id: "productos", label: "Productos", icon: <Layers size={18} /> },
     ]
   },
   {

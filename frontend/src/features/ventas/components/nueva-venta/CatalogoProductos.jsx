@@ -20,8 +20,8 @@ export default function CatalogoProductos({ productos, busqueda, onBusquedaChang
           borderColor: 'divider',
           borderRadius: 1.5,
           p: 1.25,
-          minHeight: 180,
-          maxHeight: 380,
+          minHeight: 220,
+          maxHeight: 440,
           overflowY: 'auto',
         }}
       >

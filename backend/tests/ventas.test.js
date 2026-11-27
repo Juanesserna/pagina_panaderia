@@ -13,11 +13,11 @@ test('listar: filtra, ordena y pagina', async () => {
   assert.equal(r.items[0].id, '#2851') // orden desc por id
 })
 
-test('transiciones: completado solo puede ir a cancelado', async () => {
+test('transiciones: completado solo puede ir a anulado', async () => {
   const { ventas } = await buildContainer()
   await assert.rejects(ventas.cambiarEstadoVenta.execute({ id: '#2851', estado: 'pendiente' }), { code: 'TRANSICION_INVALIDA' })
-  const v = await ventas.cambiarEstadoVenta.execute({ id: '#2851', estado: 'cancelado' })
-  assert.equal(v.estado, 'cancelado')
+  const v = await ventas.cambiarEstadoVenta.execute({ id: '#2851', estado: 'anulado' })
+  assert.equal(v.estado, 'anulado')
   await assert.rejects(ventas.cambiarEstadoVenta.execute({ id: '#2851', estado: 'completado' }), { code: 'TRANSICION_INVALIDA' })
 })
 

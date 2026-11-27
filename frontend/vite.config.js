@@ -14,4 +14,9 @@ export default defineConfig({
       '@styles': path.resolve(import.meta.dirname, './src/styles'),
     },
   },
+  build: {
+    rollupOptions: {
+      external: ['xlsx', 'jspdf', 'jspdf-autotable'],
+    },
+  },
 })

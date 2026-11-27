@@ -237,7 +237,7 @@ export function Navbar({ cartCount, onCartOpen, isDark, onToggleDark }) {
             }}
           >
             <MenuItem
-              onClick={() => goTo(ROUTES.PROFILE)}
+              onClick={() => goTo(ROUTES.PERFIL)}
               sx={{
                 py: 1.2,
                 px: 2,

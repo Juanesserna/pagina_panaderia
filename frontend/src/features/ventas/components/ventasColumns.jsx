@@ -1,8 +1,8 @@
-import { IconButton, Stack, Typography } from '@mui/material'
+import { Box, IconButton, Stack, Typography } from '@mui/material'
 import { IconReceipt, IconToggleRight } from '@tabler/icons-react'
 import { Button, StatusBadge } from '@shared/ui'
 import { canalOptions, estadoVariant } from '../constants/ventas.constants'
-import { cap, puedeVerComprobante } from '../utils/ventasHelpers'
+import { cap, obtenerNombreCliente, puedeVerComprobante } from '../utils/ventasHelpers'
 
 // Definición de columnas del DataTable de ventas.
 export function getVentasColumns({ onCambiarEstado, onPagos, onVerComprobante }) {
@@ -14,9 +14,18 @@ export function getVentasColumns({ onCambiarEstado, onPagos, onVerComprobante })
       accessor: (r) => <Typography variant="subtitle2">{r.id}</Typography>,
     },
     {
-      key: 'nit',
-      header: 'NIT/Cédula',
-      accessor: (r) => <Typography variant="body2">{r.nit || '—'}</Typography>,
+      key: 'cliente',
+      header: 'Cliente',
+      accessor: (r) => (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+          <Typography variant="body2" component="span" sx={{ color: 'text.primary' }}>
+            <b>{obtenerNombreCliente(r)}</b>
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            {r.nit ? `NIT: ${r.nit}` : 'Sin identificación'}
+          </Typography>
+        </Box>
+      ),
     },
     {
       key: 'metodo',

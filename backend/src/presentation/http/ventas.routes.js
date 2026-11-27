@@ -1,14 +1,16 @@
 import { Router } from 'express'
+import bcrypt from 'bcryptjs'
 import { presentarVenta } from './ventaPresenter.js'
 import { validar } from './validar.js'
 import { requireRol } from './auth.middleware.js'
+import { AuthError, ForbiddenError } from '../../domain/shared/errors.js'
 import {
   listarQuery, idParam, crearBody, estadoBody, abonoParams, abonoBody,
 } from './schemas/ventas.schemas.js'
 
 const normalizarId = (p) => (p.startsWith('#') ? p : `#${p}`)
 
-export function ventasRouter({ listarVentas, obtenerVenta, crearVenta, cambiarEstadoVenta, registrarAbono }) {
+export function ventasRouter({ listarVentas, obtenerVenta, crearVenta, cambiarEstadoVenta, registrarAbono, usuarioRepository }) {
   const r = Router()
   const wrap = (fn) => (req, res, next) => fn(req, res).catch(next)
 
@@ -32,7 +34,19 @@ export function ventasRouter({ listarVentas, obtenerVenta, crearVenta, cambiarEs
     validar(idParam, 'params'),
     validar(estadoBody),
     wrap(async (req, res) => {
-      const venta = await cambiarEstadoVenta.execute({ id: normalizarId(req.params.id), estado: req.body.estado })
+      const { estado, password } = req.body
+      if (estado === 'anulado' || estado === 'cancelado') {
+        if (req.usuario?.rol !== 'admin') {
+          throw new ForbiddenError('Solo el rol admin puede anular ventas')
+        }
+        if (usuarioRepository && password) {
+          const usuario = await usuarioRepository.buscarPorId(req.usuario.id)
+          if (!usuario || !(await bcrypt.compare(password, usuario.passwordHash))) {
+            throw new AuthError('Contraseña incorrecta')
+          }
+        }
+      }
+      const venta = await cambiarEstadoVenta.execute({ id: normalizarId(req.params.id), estado })
       res.json(presentarVenta(venta, { detalle: true }))
     }))
 

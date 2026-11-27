@@ -1,10 +1,17 @@
+import { Link as RouterLink } from 'react-router-dom'
 import { Box, Typography, IconButton } from '@mui/material'
 import { IconBrandInstagram, IconBrandFacebook, IconBrandX, IconMapPin, IconPhone, IconMail, IconClock } from '@tabler/icons-react'
 import { ImageWithFallback } from '@shared/components/ImageWithFallback'
 import { fonts } from '@app/theme/colors'
+import { ROUTES } from '@app/router/routes'
 import logoImg from '@assets/img/logo_claro.webp'
 
-const navLinks = ['Carta', 'Nosotros', 'Pedidos', 'Eventos especiales', 'Blog']
+const navLinks = [
+  { label: 'Carta', to: ROUTES.CATALOGO },
+  { label: 'Nosotros', to: { pathname: ROUTES.LANDING, hash: '#nosotros' } },
+  { label: 'Pedidos', to: { pathname: ROUTES.LANDING, hash: '#proceso' } },
+  { label: 'Licencias de Software', to: ROUTES.LICENCIAS },
+]
 
 const contactItems = [
   { icon: <IconMapPin size={14} stroke={1.5} />, text: 'Calle 93 #11-26, Bogotá' },
@@ -74,9 +81,9 @@ export function Footer() {
           </Typography>
           {navLinks.map((link) => (
             <Typography
-              key={link}
-              component="a"
-              href="#"
+              key={link.label}
+              component={RouterLink}
+              to={link.to}
               sx={{
                 display: 'block',
                 fontFamily: fonts.sans,
@@ -91,7 +98,7 @@ export function Footer() {
                 '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
               }}
             >
-              {link}
+              {link.label}
             </Typography>
           ))}
         </Box>
@@ -135,3 +142,4 @@ export function Footer() {
     </Box>
   )
 }
+

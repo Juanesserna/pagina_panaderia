@@ -20,4 +20,5 @@ export const ROUTES = {
   CATALOGO: '/catalogo',
   CHECKOUT: '/checkout',
   MIS_PEDIDOS: '/mis-pedidos',
+  LICENCIAS: '/licencias',
 }

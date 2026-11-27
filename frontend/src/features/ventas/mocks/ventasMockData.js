@@ -20,6 +20,7 @@ export const initialVentas = [
 export const usuarioAutenticado = {
   nombre: "Andrea Gómez",
   nit: "1020304050",
+  rol: "admin",
 };
 
 export const catalogoClientes = [

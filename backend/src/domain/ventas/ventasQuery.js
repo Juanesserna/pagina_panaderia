@@ -6,7 +6,12 @@ export function filtrarVentas(ventas, { search, estado, metodo, cantidadMin, can
   let data = ventas
   if (search) {
     const q = search.toLowerCase()
-    data = data.filter((v) => v.usuario.toLowerCase().includes(q) || (v.cliente ?? '').toLowerCase().includes(q) || v.id.includes(search))
+    data = data.filter((v) =>
+      v.usuario.toLowerCase().includes(q) ||
+      (v.cliente ?? '').toLowerCase().includes(q) ||
+      (v.nit ?? '').toLowerCase().includes(q) ||
+      v.id.includes(search)
+    )
   }
   if (estado) data = data.filter((v) => v.estado === estado)
   if (metodo) data = data.filter((v) => v.metodo === metodo)

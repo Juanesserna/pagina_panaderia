@@ -8,4 +8,5 @@ export class InMemoryUsuarioRepository {
     return new InMemoryUsuarioRepository([{ id: 1, nombre: 'Administrador', email, passwordHash, rol: 'admin' }])
   }
   async buscarPorEmail(email) { return this.usuarios.find((u) => u.email === email) ?? null }
+  async buscarPorId(id) { return this.usuarios.find((u) => u.id === id) ?? null }
 }

@@ -1,11 +1,11 @@
 import { Dialog, DialogTitle, DialogContent, IconButton, Box, Divider } from '@mui/material'
 import { IconX } from '@tabler/icons-react'
 
-const maxWidthBySize = { sm: 'xs', md: 'sm', lg: 'md' }
+const maxWidthBySize = { sm: 'xs', md: 'sm', lg: 'md', xl: 'lg', full: 'xl' }
 
 /**
  * Modal genérico del panel administrativo.
- * size: 'sm' | 'md' | 'lg'
+ * size: 'sm' | 'md' | 'lg' | 'xl' | 'full'
  * showDivider: muestra una línea entre el título y el contenido (por defecto no).
  * sx: estilos opcionales para el Paper del diálogo (ancho/alto propios de una instancia puntual).
  */

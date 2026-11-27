@@ -28,6 +28,7 @@ const UsuariosPage = lazy(() => import('@features/usuarios/pages/UsuariosPage'))
 const VentasPage = lazy(() => import('@features/ventas/pages/VentasPage'))
 const PedidosPage = lazy(() => import('@features/pedidos/pages/PedidosPage'))
 const MisPedidosPage = lazy(() => import('@features/perfil/pages/MisPedidosPage'))
+const LicenciasPage = lazy(() => import('@features/landing/pages/LicenciasPage'))
 
 export default function AppRouter() {
   return (
@@ -40,6 +41,7 @@ export default function AppRouter() {
             <Route path={ROUTES.CATALOGO} element={<CatalogoPage />} />
             <Route path={ROUTES.CHECKOUT} element={<CheckoutPage />} />
             <Route path={ROUTES.MIS_PEDIDOS} element={<MisPedidosPage />} />
+            <Route path={ROUTES.LICENCIAS} element={<LicenciasPage />} />
           </Route>
 
           {/* Login sin layout */}

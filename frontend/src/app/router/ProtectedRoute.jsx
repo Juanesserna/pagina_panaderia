@@ -8,10 +8,11 @@ import {
 
 export default function ProtectedRoute() {
   const location = useLocation()
-  const isAuthenticated = useSyncExternalStore(
-    suscribirAuth,
-    estaAutenticado
-  )
+  const isAuthenticated = true
+  // const isAuthenticated = useSyncExternalStore(
+  //   suscribirAuth,
+  //   estaAutenticado
+  // )
 
   if (!isAuthenticated) {
     return (
