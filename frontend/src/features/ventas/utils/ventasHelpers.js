@@ -34,10 +34,13 @@ export const opcionesEstadoParaFila = (estadoActual) =>
   estadoOptions.filter((o) => esTransicionValida(estadoActual, o.value))
 
 export const obtenerNombreCliente = (venta) => {
-  if (venta.origen === 'manual') {
-    return venta.cliente?.trim() || 'Cliente no especificado'
-  }
-  return venta.usuario
+  if (!venta) return 'No disponible'
+  const nombre = venta.origen === 'manual'
+    ? (venta.cliente?.trim() && venta.cliente.trim() !== 'Cliente no especificado' ? venta.cliente.trim() : null)
+    : (venta.usuario?.trim() || null)
+  if (nombre) return nombre
+  if (venta.nit && String(venta.nit).trim()) return String(venta.nit).trim()
+  return 'No disponible'
 }
 
 // Siguiente id disponible a partir de las ventas existentes ("#2851" → "#2852")

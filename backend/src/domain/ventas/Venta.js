@@ -28,15 +28,16 @@ export class Venta {
   // ---- Estados ----
   static esTransicionValida(actual, nuevo) {
     if (actual === nuevo) return true
-    if (actual === ESTADOS.CANCELADO) return false
-    if (actual === ESTADOS.COMPLETADO) return nuevo === ESTADOS.CANCELADO
+    if (actual === ESTADOS.ANULADO || actual === ESTADOS.CANCELADO) return false
+    if (actual === ESTADOS.COMPLETADO) return nuevo === ESTADOS.ANULADO || nuevo === ESTADOS.CANCELADO
     return true
   }
 
   cambiarEstado(nuevo) {
-    if (!Object.values(ESTADOS).includes(nuevo)) throw new ValidationError(`Estado inválido: ${nuevo}`)
-    if (!Venta.esTransicionValida(this.estado, nuevo)) throw new TransicionInvalidaError(this.estado, nuevo)
-    this.estado = nuevo
+    const normalizado = nuevo === 'cancelado' ? ESTADOS.ANULADO : nuevo
+    if (!Object.values(ESTADOS).includes(normalizado)) throw new ValidationError(`Estado inválido: ${nuevo}`)
+    if (!Venta.esTransicionValida(this.estado, normalizado)) throw new TransicionInvalidaError(this.estado, normalizado)
+    this.estado = normalizado
   }
 
   // ---- Pagos: 1 comprobante (100%) o 2 (50% c/u) ----
@@ -70,6 +71,17 @@ export class Venta {
   }
 
   // ---- Visibilidad ----
-  get puedeVerComprobante() { return this.estado === ESTADOS.COMPLETADO || this.estado === ESTADOS.CANCELADO }
-  get nombreCliente() { return this.origen === 'manual' ? (this.cliente?.trim() || 'Cliente no especificado') : this.usuario }
+  get puedeVerComprobante() { return this.estado === ESTADOS.COMPLETADO || this.estado === ESTADOS.ANULADO || this.estado === ESTADOS.CANCELADO }
+  get nombreCliente() {
+    if (this.cliente && this.cliente.trim() && this.cliente.trim() !== 'Cliente no especificado') {
+      return this.cliente.trim()
+    }
+    if (this.usuario && this.usuario.trim()) {
+      return this.usuario.trim()
+    }
+    if (this.nit && String(this.nit).trim()) {
+      return String(this.nit).trim()
+    }
+    return 'No disponible'
+  }
 }

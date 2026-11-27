@@ -8,7 +8,7 @@ export default function ResumenVenta({ items, total, puedeRegistrar, onCantidad,
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, minWidth: 0, width: '100%' }}>
       <FilterLabel>Resumen</FilterLabel>
-      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5, minHeight: 180, maxHeight: 380, overflowY: 'auto', flexGrow: 1 }}>
+      <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1.5, minHeight: 220, maxHeight: 440, overflowY: 'auto', flexGrow: 1 }}>
         {items.length === 0 ? (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 5 }}>
             <Typography variant="body1" sx={{ color: 'text.secondary' }}>

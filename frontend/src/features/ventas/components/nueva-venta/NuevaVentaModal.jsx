@@ -12,11 +12,11 @@ export default function NuevaVentaModal({ nuevaVenta: nv }) {
       open={nv.abierto}
       onClose={nv.cerrar}
       title="Nueva venta"
-      size="lg"
+      size="xl"
       showDivider
-      sx={{ width: '100%', maxWidth: 1100, minHeight: 600 }}
+      contentSx={{ maxHeight: '85vh' }}
     >
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: '20px' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 1.5 }}>
         <NuevaVentaEncabezado
           id={nv.id}
           fecha={nv.fecha}

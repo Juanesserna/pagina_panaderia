@@ -1,4 +1,4 @@
-﻿// Composition root: único lugar donde se conectan implementaciones concretas con casos de uso.
+// Composition root: único lugar donde se conectan implementaciones concretas con casos de uso.
 import { InMemoryVentaRepository } from '../infrastructure/ventas/InMemoryVentaRepository.js'
 import { InMemoryCatalogoClientes, InMemoryCatalogoProductos } from '../infrastructure/catalogos/InMemoryCatalogos.js'
 import { ProductoRepositoryInMemory } from '../infrastructure/catalogos/productoRepositoryInMemory.js'
@@ -60,6 +60,7 @@ export async function buildContainer(overrides = {}) {
     crearVenta: new CrearVenta({ ventaRepository, catalogoClientes, catalogoProductos }),
     cambiarEstadoVenta: new CambiarEstadoVenta({ ventaRepository }),
     registrarAbono: new RegistrarAbono({ ventaRepository }),
+    usuarioRepository,
   }
 
   const pedidoRepository = overrides.pedidoRepository ?? new InMemoryPedidoRepository()

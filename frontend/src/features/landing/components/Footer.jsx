@@ -1,10 +1,17 @@
+import { Link as RouterLink } from 'react-router-dom'
 import { Box, Typography, IconButton } from '@mui/material'
 import { IconBrandInstagram, IconBrandFacebook, IconBrandX, IconMapPin, IconPhone, IconMail, IconClock } from '@tabler/icons-react'
 import { ImageWithFallback } from '@shared/components/ImageWithFallback'
 import { fonts } from '@app/theme/colors'
+import { ROUTES } from '@app/router/routes'
 import logoImg from '@assets/img/logo_claro.png'
 
-const navLinks = ['Carta', 'Nosotros', 'Pedidos', 'Eventos especiales', 'Blog']
+const navLinks = [
+  { label: 'Carta', to: ROUTES.CATALOGO },
+  { label: 'Nosotros', to: { pathname: ROUTES.LANDING, hash: '#nosotros' } },
+  { label: 'Pedidos', to: { pathname: ROUTES.LANDING, hash: '#proceso' } },
+  { label: 'Licencias de Software', to: ROUTES.LICENCIAS },
+]
 
 const contactItems = [
   { icon: <IconMapPin size={14} stroke={1.5} />, text: 'Calle 93 #11-26, Bogotá' },
@@ -71,12 +78,22 @@ export function Footer() {
           </Typography>
           {navLinks.map((link) => (
             <Typography
-              key={link}
-              component="a"
-              href="#"
-              sx={{ display: 'block', fontFamily: fonts.sans, fontSize: 13, fontWeight: 300, color: 'rgba(243,233,220,0.55)', textDecoration: 'none', mb: 1.25, '&:hover': { color: '#C08552' } }}
+              key={link.label}
+              component={RouterLink}
+              to={link.to}
+              sx={{
+                display: 'block',
+                fontFamily: fonts.sans,
+                fontSize: 13,
+                fontWeight: 300,
+                color: 'rgba(243,233,220,0.55)',
+                textDecoration: 'none',
+                mb: 1.25,
+                transition: 'color 0.2s',
+                '&:hover': { color: '#C08552' },
+              }}
             >
-              {link}
+              {link.label}
             </Typography>
           ))}
         </Box>
@@ -106,15 +123,18 @@ export function Footer() {
       </Box>
 
       {/* Divider + copyright */}
-      <Box sx={{ borderTop: '1px solid rgba(192,133,82,0.2)', mt: 7, px: 3, maxWidth: 1200, mx: 'auto', pt: 2.5 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-          <Typography sx={{ fontFamily: fonts.sans, fontSize: 11, color: 'rgba(243,233,220,0.3)', letterSpacing: '0.04em' }}>
+      <Box sx={{ borderTop: '1px solid rgba(192,133,82,0.25)', mt: 7, px: 3, maxWidth: 1200, mx: 'auto', pt: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5 }}>
+          <Typography sx={{ fontFamily: fonts.sans, fontSize: 11.5, fontWeight: 300, color: 'rgba(243,233,220,0.72)', letterSpacing: '0.04em' }}>
             © 2026 Al Horno. Todos los derechos reservados a la institución educativa SENA
           </Typography>
           <Typography sx={{ fontFamily: fonts.sans, fontSize: 11, color: 'rgba(243,233,220,0.3)' }}>Hecho con amor en Colombia</Typography>
+          <Typography sx={{ fontFamily: fonts.sans, fontSize: 11.5, fontWeight: 300, color: 'rgba(243,233,220,0.72)' }}>
+            Hecho con amor en Colombia
+          </Typography>
         </Box>
       </Box>
-      <Box sx={{ height: 24 }} />
-    </Box>
+      </Box>
   )
 }
+

@@ -8,7 +8,7 @@ export const initialVentas = [
   { id: "#2849", usuario: "Ana García", origen: "pagina", canal: "pagina", pagoUnico: true, nit: "1003356886", productos: 4, total: 160.0, estado: "completado", fecha: "20/06/2026", hora: "09:18", metodo: "tarjeta" },
   { id: "#2848", usuario: "José Martínez", origen: "pagina", canal: "encargo", pagoUnico: false, nit: "1099529223", productos: 8, total: 340.0, estado: "pendiente", fecha: "20/06/2026", hora: "09:05", metodo: "transferencia" },
   { id: "#2847", usuario: "Laura Sánchez", origen: "pagina", canal: "presencial", pagoUnico: true, nit: "1036913810", productos: 2, total: 185.0, estado: "completado", fecha: "20/06/2026", hora: "08:52", metodo: "efectivo" },
-  { id: "#2846", usuario: "Pedro Flores", origen: "pagina", canal: "pagina", pagoUnico: true, nit: "1032868828", productos: 12, total: 210.0, estado: "cancelado", fecha: "20/06/2026", hora: "08:40", metodo: "tarjeta" },
+  { id: "#2846", usuario: "Pedro Flores", origen: "pagina", canal: "pagina", pagoUnico: true, nit: "1032868828", productos: 12, total: 210.0, estado: "anulado", fecha: "20/06/2026", hora: "08:40", metodo: "tarjeta" },
   { id: "#2845", usuario: "Sofía Torres", origen: "pagina", canal: "encargo", pagoUnico: true, nit: "1029958838", productos: 3, total: 430.0, estado: "completado", fecha: "19/06/2026", hora: "17:22", metodo: "tarjeta" },
   { id: "#2844", usuario: "Diego Romero", origen: "pagina", canal: "presencial", pagoUnico: true, nit: "1018728463", productos: 6, total: 780.0, estado: "completado", fecha: "19/06/2026", hora: "16:55", metodo: "efectivo" },
   { id: "#2843", usuario: "Valentina Cruz", origen: "pagina", canal: "pagina", pagoUnico: true, nit: "1098847493", productos: 2, total: 95.0, estado: "completado", fecha: "19/06/2026", hora: "16:12", metodo: "transferencia" },
@@ -21,6 +21,7 @@ export const initialVentas = [
 export const usuarioAutenticado = {
   nombre: "Andrea Gómez",
   nit: "1020304050",
+  rol: "admin",
 };
 
 export const catalogoClientes = [

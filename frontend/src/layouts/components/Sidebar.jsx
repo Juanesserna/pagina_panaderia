@@ -29,6 +29,7 @@ const NAV_GROUPS = [
     items: [
       { id: "produccion", label: "Producción", icon: <Factory size={18} /> },
       { id: "insumos", label: "Insumos", icon: <Package size={18} /> },
+      { id: "productos", label: "Productos", icon: <Layers size={18} /> },
     ]
   },
   {
@@ -39,10 +40,9 @@ const NAV_GROUPS = [
     ]
   },
   {
-    key: "catalogo", label: "Catálogo", icon: <Layers size={18} />,
+    key: "categorias", label: "Categorías", icon: <Layers size={18} />,
     items: [
       { id: "categorias", label: "Categorías", icon: <Tag size={18} /> },
-      { id: "productos", label: "Productos", icon: <Layers size={18} /> },
     ]
   },
   {

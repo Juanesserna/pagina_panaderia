@@ -20,7 +20,11 @@ export function filtrarVentas(ventas, search, filtros) {
   if (search) {
     const q = search.toLowerCase()
     data = data.filter(
-      (v) => v.usuario.toLowerCase().includes(q) || (v.cliente ?? '').toLowerCase().includes(q) || v.id.includes(search)
+      (v) =>
+        v.usuario.toLowerCase().includes(q) ||
+        (v.cliente ?? '').toLowerCase().includes(q) ||
+        (v.nit ?? '').toLowerCase().includes(q) ||
+        v.id.includes(search)
     )
   }
   if (filtros.estado) data = data.filter((v) => v.estado === filtros.estado)

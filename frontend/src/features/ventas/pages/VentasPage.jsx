@@ -1,4 +1,4 @@
-import { Box, Divider, Typography } from '@mui/material'
+import { Box, Divider } from '@mui/material'
 import { NotificacionesContainer, useNotificaciones } from '@shared/notifications'
 import { useAbonos } from '../hooks/useAbonos'
 import { useCambiarEstado } from '../hooks/useCambiarEstado'
@@ -21,7 +21,7 @@ export default function VentasPage() {
   const { ventas, cambiarEstado, marcarPagoParcial, agregarVenta } = useVentas()
 
   const listado = useVentasFiltros(ventas)
-  const estadoModal = useCambiarEstado(cambiarEstado)
+  const estadoModal = useCambiarEstado({ cambiarEstado, mostrarNotificacion })
   const comprobante = useComprobante(ventas)
   const pagos = useAbonos({ onPagoParcial: marcarPagoParcial })
   const nuevaVenta = useNuevaVenta({ ventas, onVentaCreada: agregarVenta, mostrarNotificacion })
@@ -70,7 +70,13 @@ export default function VentasPage() {
         abierto={estadoModal.abierto}
         venta={estadoModal.venta}
         estadoSeleccionado={estadoModal.estadoSeleccionado}
+        paso={estadoModal.paso}
+        password={estadoModal.password}
+        errorPassword={estadoModal.errorPassword}
+        procesando={estadoModal.procesando}
         onSeleccionar={estadoModal.setEstadoSeleccionado}
+        onPasswordChange={estadoModal.setPassword}
+        onRegresarASeleccion={estadoModal.regresarASeleccion}
         onCerrar={estadoModal.cerrar}
         onConfirmar={estadoModal.confirmar}
       />

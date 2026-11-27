@@ -21,7 +21,7 @@ export const listarQuery = z.object({
 export const idParam = z.object({ id: z.string().regex(/^#?\d{1,10}$/) })
 
 export const crearBody = z.object({
-  clienteNit: z.string().regex(/^\d{5,15}$/),
+  clienteNit: z.string().trim().min(2).max(20),
   metodo: z.enum(Object.values(METODOS)),
   pagoDividido: z.boolean().default(false),
   items: z.array(z.object({
@@ -30,7 +30,10 @@ export const crearBody = z.object({
   }).strict()).min(1).max(50),
 }).strict()
 
-export const estadoBody = z.object({ estado: z.enum(Object.values(ESTADOS)) }).strict()
+export const estadoBody = z.object({
+  estado: z.enum(Object.values(ESTADOS)),
+  password: z.string().optional(),
+}).strict()
 
 export const abonoParams = z.object({ id: idParam.shape.id, slot: z.coerce.number().int().min(1).max(2) })
 export const abonoBody = z.object({
