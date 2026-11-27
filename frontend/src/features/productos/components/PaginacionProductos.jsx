@@ -9,22 +9,22 @@ const pageButtonBase = {
   typography: 'subtitle1',
 }
 
-export default function PaginacionProductos({ paginaActual = 1, totalRegistros = 6, porPagina = 6 }) {
+export default function PaginacionProductos({ paginaActual = 1, totalRegistros = 0, porPagina = 10, totalPaginas = 1, onCambiarPagina }) {
   const theme = useTheme()
 
-  const from = (paginaActual - 1) * porPagina + 1
+  const from = totalRegistros === 0 ? 0 : (paginaActual - 1) * porPagina + 1
   const to = Math.min(paginaActual * porPagina, totalRegistros)
 
   return (
-     <Box
-       sx={{
-         display: 'flex',
-         alignItems: 'center',
-         justifyContent: 'space-between',
-         py: 2,
-         px: 3,
-       }}
-     >
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        py: 2,
+        px: 3,
+      }}
+    >
       <Typography
         variant="body2"
         sx={{ color: theme.palette.text.secondary }}
@@ -32,13 +32,21 @@ export default function PaginacionProductos({ paginaActual = 1, totalRegistros =
         Mostrando {from}–{to} de {totalRegistros} registros
       </Typography>
 
-      <Stack direction="row" spacing={0.5} alignItems="center">
+      <Stack
+        direction="row"
+        spacing={0.5}
+        sx={{ alignItems: 'center' }}
+      >
         <IconButton
           size="small"
+          disabled={paginaActual <= 1}
+          onClick={() => onCambiarPagina?.(paginaActual - 1)}
+          aria-label="Página anterior"
           sx={{
             ...pageButtonBase,
             color: theme.palette.text.secondary,
             '&:hover': { bgcolor: theme.palette.action.hover },
+            '&.Mui-disabled': { opacity: 0.4 },
           }}
         >
           <IconChevronLeft size={16} />
@@ -60,10 +68,14 @@ export default function PaginacionProductos({ paginaActual = 1, totalRegistros =
 
         <IconButton
           size="small"
+          disabled={paginaActual >= totalPaginas}
+          onClick={() => onCambiarPagina?.(paginaActual + 1)}
+          aria-label="Página siguiente"
           sx={{
             ...pageButtonBase,
             color: theme.palette.text.secondary,
             '&:hover': { bgcolor: theme.palette.action.hover },
+            '&.Mui-disabled': { opacity: 0.4 },
           }}
         >
           <IconChevronRight size={16} />

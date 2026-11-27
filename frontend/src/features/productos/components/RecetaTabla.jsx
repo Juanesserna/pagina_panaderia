@@ -100,10 +100,10 @@ export default function RecetaTabla({
           <TableHead>
             <TableRow sx={{ backgroundColor: theme.palette.ahSurface2 }}>
               <TableCell sx={HEADER_SX} style={{ width: 120 }}>
-                <HeaderLabel>ID PRODUCTO</HeaderLabel>
+                <HeaderLabel>ORIGEN</HeaderLabel>
               </TableCell>
               <TableCell sx={HEADER_SX} style={{ width: 160 }}>
-                <HeaderLabel>ID INSUMO / INSUMO</HeaderLabel>
+                <HeaderLabel>ID / COMPONENTE</HeaderLabel>
               </TableCell>
               <TableCell sx={HEADER_SX} style={{ width: 140 }}>
                 <HeaderLabel>UNIDAD DE MEDIDA</HeaderLabel>

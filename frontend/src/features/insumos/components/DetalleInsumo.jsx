@@ -1,7 +1,7 @@
 import { Box, Stack, Typography } from '@mui/material'
 import { Button, Modal, StatusBadge } from '@shared/ui'
 import { estadoVisualVariant } from '../constants/insumos.constants'
-import { formatoCodigo, formatoMoneda, nombreCategoria, unidadAbrev, getEstadoVisual } from '../utils/insumosHelpers'
+import { formatoMoneda, nombreCategoria, unidadAbrev, getEstadoVisual } from '../utils/insumosHelpers'
 import { CampoInfo } from './Campo'
 import { LotesCard } from './LotesCard'
 
@@ -28,7 +28,7 @@ export function DetalleInsumo({ open, insumo, onEditar, onCerrar }) {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <Typography variant="subtitle1">Información general</Typography>
           <Box sx={gridSx}>
-            <CampoInfo label="Código" value={formatoCodigo(insumo.id)} />
+            <CampoInfo label="ID" value={insumo.id} />
             <CampoInfo label="Categoría" value={nombreCategoria(insumo.idCategoria)} />
             <CampoInfo label="Nombre" value={insumo.nombre} sx={anchoCompletoSx} />
           </Box>
@@ -40,7 +40,7 @@ export function DetalleInsumo({ open, insumo, onEditar, onCerrar }) {
             <CampoInfo label="Unidad de medida" value={unidad} />
             <CampoInfo label="Stock actual" value={`${insumo.stockActual} ${unidad}`} />
             <CampoInfo label="Stock mínimo" value={`${insumo.stockMinimo} ${unidad}`} />
-            <CampoInfo label="Costo promedio" value={`${formatoMoneda(insumo.costoPromedio)} / ${unidad}`} />
+            <CampoInfo label="Costo máximo" value={`${formatoMoneda(insumo.costoMaximo)} / ${unidad}`} />
           </Box>
         </Box>
 

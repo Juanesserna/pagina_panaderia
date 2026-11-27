@@ -7,6 +7,7 @@ import {
 import { useTheme } from "@mui/material/styles";
 import { Bell, User, ChevronDown, LogOut, Check, Sun, Moon } from "lucide-react";
 import { useColorMode } from "@app/providers/ThemeProvider";
+import { cerrarSesion } from '@features/auth/services/authService'
 
 const SAMPLE_NOTIFICATIONS = [
   { id: "1", title: "Stock bajo", message: "Harina de trigo por debajo del mínimo requerido.", time: "hace 5 min", read: false, type: "warning" },
@@ -15,7 +16,8 @@ const SAMPLE_NOTIFICATIONS = [
 const PAGE_TITLES = {
   dashboard: "Dashboard", ventas: "Ventas", pedidos: "Pedidos", produccion: "Producción", compras: "Compras",
   proveedores: "Proveedores", insumos: "Insumos", productos: "Productos",
-  usuarios: "Usuarios", categorias: "Categorías", roles: "Roles",
+  usuarios: "Usuarios", categorias: "Categorías", roles: "Roles", clientes: "Clientes", 
+  empleados: "Empleados",
   perfil: "Mi perfil",
 };
 
@@ -28,6 +30,11 @@ export function Header({ page }) {
   const [notifAnchor, setNotifAnchor] = useState(null);
   const [userAnchor, setUserAnchor] = useState(null);
   const [notifications, setNotifications] = useState(SAMPLE_NOTIFICATIONS);
+  const handleLogout = () => {
+  setUserAnchor(null)
+  cerrarSesion()
+  window.location.replace(ROUTES.LANDING)
+}
 
   const unread = notifications.filter((n) => !n.read).length;
   const markAllRead = () => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
@@ -152,8 +159,9 @@ export function Header({ page }) {
             <User size={13} /> Mi perfil
           </MenuItem>
           <Divider />
-          <MenuItem sx={{ gap: 1.5, color: theme.palette.error.main, "&:hover": { bgcolor: theme.palette.error.dim } }}>
-            <LogOut size={13} /> Cerrar sesión
+          <MenuItem onClick={handleLogout}>
+              <LogOut size={18} />
+                Cerrar sesión
           </MenuItem>
         </Menu>
       </Toolbar>

@@ -121,23 +121,24 @@ export function Products({ isDark, onAddToCart, limit }) {
 function SectionHeader({ isDark, eyebrow, title }) {
   return (
     <Box sx={{ mb: 7 }}>
-      <Typography
-        sx={{
-          fontFamily: fonts.sans,
-          fontSize: 11,
-          fontWeight: 500,
-          letterSpacing: '0.18em',
-          textTransform: 'uppercase',
-          color: '#C08552',
-          display: 'block',
-          mb: 1.5,
-        }}
-      >
-        {eyebrow}
-      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.75 }}>
+        <Box sx={{ width: 32, height: '1px', bgcolor: '#C08552' }} />
+        <Typography
+          sx={{
+            fontFamily: fonts.sans,
+            fontSize: 11,
+            fontWeight: 500,
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color: '#C08552',
+          }}
+        >
+          {eyebrow}
+        </Typography>
+      </Box>
       <Typography
         component="h2"
-        sx={{ fontFamily: fonts.serif, fontSize: { xs: 36, md: 48 }, fontWeight: 300, color: isDark ? '#F3E9DC' : '#2E1810' }}
+        sx={{ fontFamily: fonts.serif, fontSize: { xs: 36, md: 48 }, fontWeight: 300, lineHeight: 1.12, color: isDark ? '#F3E9DC' : '#2E1810' }}
       >
         {title}
       </Typography>
@@ -156,12 +157,19 @@ export function ProductCard({ product, isDark, isAdded, onAdd }) {
       onMouseLeave={() => setHovered(false)}
       sx={{
         bgcolor: isDark ? '#2E1810' : '#FFFFFF',
-        borderRadius: 1,
+        borderRadius: '2px',
         overflow: 'hidden',
-        boxShadow: hovered ? '0 8px 32px rgba(46,24,16,0.14)' : '0 2px 12px rgba(46,24,16,0.06)',
-        transition: 'box-shadow 0.25s',
+        border: '1px solid',
+        borderColor: hovered ? 'rgba(192,133,82,0.45)' : 'rgba(192,133,82,0.16)',
+        boxShadow: hovered ? '0 12px 32px rgba(46,24,16,0.14)' : '0 2px 12px rgba(46,24,16,0.06)',
+        transform: hovered ? 'translateY(-3px)' : 'translateY(0)',
+        transition: 'box-shadow 0.3s ease, transform 0.3s ease, border-color 0.3s ease',
         display: 'flex',
         flexDirection: 'column',
+        '@media (prefers-reduced-motion: reduce)': {
+          transition: 'none',
+          transform: 'none',
+        },
       }}
     >
       {/* Imagen + categoría */}
@@ -177,22 +185,28 @@ export function ProductCard({ product, isDark, isAdded, onAdd }) {
             display: 'block',
             transition: 'transform 0.4s ease',
             transform: hovered ? 'scale(1.04)' : 'scale(1)',
+            '@media (prefers-reduced-motion: reduce)': {
+              transition: 'none',
+              transform: 'none',
+            },
           }}
         />
         <Typography
           sx={{
             position: 'absolute',
-            top: 12,
-            left: 12,
-            bgcolor: '#C08552',
+            top: 14,
+            left: 14,
+            bgcolor: 'rgba(46,24,16,0.82)',
+            backdropFilter: 'blur(4px)',
+            border: '1px solid rgba(192,133,82,0.4)',
             color: '#FAF5EE',
-            px: 1.25,
-            py: 0.4,
-            borderRadius: 0.5,
+            px: 1.4,
+            py: 0.45,
+            borderRadius: '2px',
             fontFamily: fonts.sans,
             fontSize: 10,
             fontWeight: 500,
-            letterSpacing: '0.1em',
+            letterSpacing: '0.14em',
             textTransform: 'uppercase',
           }}
         >
@@ -201,18 +215,18 @@ export function ProductCard({ product, isDark, isAdded, onAdd }) {
       </Box>
 
       {/* Contenido */}
-      <Box sx={{ px: 2.5, pt: 2.5, pb: 2.75, flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Typography sx={{ fontFamily: fonts.serif, fontSize: 22, color: isDark ? '#F3E9DC' : '#2E1810', mb: 0.75, lineHeight: 1.2 }}>
+      <Box sx={{ px: 3, pt: 2.75, pb: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <Typography sx={{ fontFamily: fonts.serif, fontSize: 23, fontWeight: 400, color: isDark ? '#F3E9DC' : '#2E1810', mb: 0.75, lineHeight: 1.2 }}>
           {product.name}
         </Typography>
         <Typography
           sx={{
             fontFamily: fonts.sans,
-            fontSize: 13,
+            fontSize: 13.5,
             fontWeight: 300,
-            color: isDark ? 'rgba(243,233,220,0.6)' : 'rgba(46,24,16,0.55)',
-            mb: 2,
-            lineHeight: 1.5,
+            color: isDark ? 'rgba(243,233,220,0.65)' : 'rgba(46,24,16,0.6)',
+            mb: 2.5,
+            lineHeight: 1.6,
             flex: 1,
           }}
         >
@@ -220,8 +234,16 @@ export function ProductCard({ product, isDark, isAdded, onAdd }) {
         </Typography>
 
         {/* Precio + botón */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography sx={{ fontFamily: fonts.serif, fontSize: 22, color: '#5B3023' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            pt: 2,
+            borderTop: '1px solid rgba(192,133,82,0.16)',
+          }}
+        >
+          <Typography sx={{ fontFamily: fonts.serif, fontSize: 23, fontWeight: 400, color: isDark ? '#C08552' : '#5B3023' }}>
             {formatPrice(product.price)}
           </Typography>
           <Button
@@ -231,12 +253,17 @@ export function ProductCard({ product, isDark, isAdded, onAdd }) {
               bgcolor: isAdded ? '#C08552' : 'transparent',
               color: isAdded ? '#FAF5EE' : '#C08552',
               border: '1px solid #C08552',
-              px: 1.75,
+              borderRadius: '2px',
+              px: 2,
               py: 0.85,
+              fontFamily: fonts.sans,
               fontSize: 12,
-              letterSpacing: '0.04em',
+              fontWeight: 500,
+              letterSpacing: '0.06em',
               textTransform: 'none',
+              transition: 'background-color 0.25s ease, color 0.25s ease',
               '&:hover': { bgcolor: '#C08552', color: '#FAF5EE' },
+              '&:focus-visible': { outline: '2px solid #C08552', outlineOffset: '2px' },
             }}
           >
             {isAdded ? 'Añadido' : 'Agregar'}

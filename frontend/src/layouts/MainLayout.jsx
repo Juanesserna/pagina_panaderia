@@ -17,6 +17,8 @@ const PATH_TO_PAGE = {
   [ROUTES.PRODUCTOS]: "productos",
   [ROUTES.USUARIOS]: "usuarios",
   [ROUTES.CATEGORIAS]: "categorias",
+  [ROUTES.CLIENTES]: "clientes",
+  [ROUTES.EMPLEADOS]: "empleados",
   [ROUTES.ROLES]: "roles",
 };
 

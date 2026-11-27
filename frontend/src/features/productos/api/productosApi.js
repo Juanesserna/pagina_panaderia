@@ -46,17 +46,28 @@ const headers = (extra = {}) => ({
   ...extra,
 })
 
-const soloCamposSchema = (datosProducto) => {
-  const estadoApi = estadoHaciaApi(datosProducto.estado)
-  const body = {
-    nombre: datosProducto.nombre,
-    categoria: datosProducto.categoria,
-    precio: datosProducto.precioVenta,
-    stock: datosProducto.stockActual ?? datosProducto.stock,
-    estado: estadoApi,
+// Construye el cuerpo para el backend solo con los campos presentes (sirve para crear y para editar parcial)
+const soloCamposSchema = (d) => {
+  const body = {}
+  if (d.nombre !== undefined) body.nombre = d.nombre
+  if (d.categoria !== undefined) body.categoria = d.categoria
+  if (d.tipo !== undefined) body.tipo = d.tipo
+  if (d.esVendible !== undefined) body.esVendible = d.esVendible
+  const precio = d.precioVenta ?? d.precio
+  if (precio !== undefined) body.precio = Number(precio) || 0
+  const stock = d.stockActual ?? d.stock
+  if (stock !== undefined) body.stock = Number(stock) || 0
+  if (d.stockMinimo !== undefined) body.stockMinimo = Number(d.stockMinimo) || 0
+  if (d.cantMinimaProduccion !== undefined) body.cantMinimaProduccion = Number(d.cantMinimaProduccion) || 1
+  if (d.cantMaximaProduccion !== undefined) body.cantMaximaProduccion = Number(d.cantMaximaProduccion) || 1
+  // El toggle del formulario es "activo" (boolean); "Agotado" no se guarda, se calcula en el backend
+  if (d.activo !== undefined) {
+    body.estado = d.activo ? 'ACTIVO' : 'INACTIVO'
+  } else if (d.estado !== undefined && d.estado !== 'Agotado') {
+    body.estado = estadoHaciaApi(d.estado)
   }
-  if (datosProducto.receta) body.receta = datosProducto.receta
-  const imagen = datosProducto.imagen ?? datosProducto.imagenUrl
+  if (d.receta !== undefined) body.receta = d.receta
+  const imagen = d.imagen ?? d.imagenUrl
   if (imagen && /^https?:\/\//.test(imagen)) body.imagen = imagen
   return body
 }
@@ -88,7 +99,18 @@ const extraerErrorBackend = async (response) => {
 
 export const productosApi = {
   async obtenerProductos(filtros = {}) {
-    const params = new URLSearchParams(filtros).toString();
+    // Solo se envían los filtros con valor; el estado se traduce al formato del backend
+    const parametros = new URLSearchParams();
+    if (filtros.buscar) parametros.set('buscar', filtros.buscar);
+    if (filtros.categoria) parametros.set('categoria', filtros.categoria);
+    if (filtros.estado) parametros.set('estado', estadoHaciaApi(filtros.estado));
+    if (filtros.tipo) parametros.set('tipo', filtros.tipo);
+    if (filtros.esVendible !== '' && filtros.esVendible != null) {
+      parametros.set('esVendible', String(filtros.esVendible));
+    }
+    parametros.set('pagina', String(filtros.pagina || 1));
+    parametros.set('limite', String(filtros.limite || 10));
+    const params = parametros.toString();
     const response = await fetchAuth(`${API_BASE_URL}?${params}`);
     if (!response.ok) {
       throw await extraerErrorBackend(response)
@@ -113,6 +135,7 @@ export const productosApi = {
 
   async actualizarProducto(id, datosProducto) {
     const body = soloCamposSchema(datosProducto)
+    delete body.stock // el stock no se edita desde el producto (lo mueven producción y ventas)
     const response = await fetchAuth(`${API_BASE_URL}/${id}`, {
       method: 'PUT',
       body: JSON.stringify(body),

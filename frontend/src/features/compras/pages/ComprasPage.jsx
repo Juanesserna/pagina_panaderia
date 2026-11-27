@@ -56,20 +56,38 @@ export default function ComprasPage() {
     if (await ejecutar(() => c.cambiarEstado(modal.id, nuevoEstado), 'Cambio de estado', `Estado de la orden ${modal.id} actualizado a ${nuevoEstado}`)) cerrar()
   }
 
-  const exportar = ({ fechaDesde, fechaHasta, formato }) => {
-    try {
-      const params = { fechaDesde, fechaHasta }
-      if (formato === 'pdf') {
-        exportarComprasPDF(c.compras, c.catalogos.proveedores, params)
-      } else {
-        exportarComprasExcel(c.compras, c.catalogos.proveedores, params)
-      }
-      setExportarAbierto(false)
-      notificar('exito', 'Exportación completada', `Archivo ${formato.toUpperCase()} generado correctamente`)
-    } catch (error) {
-      notificar('error', 'No se pudo exportar', error.message)
+  const exportar = async ({ fechaDesde, fechaHasta, formato }) => {
+  try {
+    const params = { fechaDesde, fechaHasta }
+
+    if (formato === 'pdf') {
+      await exportarComprasPDF(
+        c.compras,
+        c.catalogos.proveedores,
+        params
+      )
+    } else {
+      await exportarComprasExcel(
+        c.compras,
+        c.catalogos.proveedores,
+        params
+      )
     }
+
+    setExportarAbierto(false)
+
+    notificar(
+      'exito',
+      'Exportación completada',
+      `Archivo ${formato.toUpperCase()} generado correctamente`
+    )
+
+    return true
+  } catch (error) {
+    notificar('error', 'No se pudo exportar', error.message)
+    return false
   }
+}
 
   const mensajeVacio = c.cargando
     ? 'Cargando órdenes…'
