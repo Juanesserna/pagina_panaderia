@@ -26,7 +26,21 @@ export default function LandingPage() {
         <Button
           component={RouterLink}
           to={ROUTES.CATALOGO}
-          sx={{ border: '1px solid #C08552', color: '#C08552', px: 3.5, py: 1.4, fontSize: 13, '&:hover': { bgcolor: '#C08552', color: '#FAF5EE' } }}
+          sx={{
+            border: '1px solid #C08552',
+            borderRadius: '2px',
+            color: '#C08552',
+            px: 4.5,
+            py: 1.5,
+            fontFamily: fonts.sans,
+            fontSize: 12,
+            fontWeight: 500,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            transition: 'background-color 0.3s ease, color 0.3s ease',
+            '&:hover': { bgcolor: '#C08552', color: '#FAF5EE' },
+            '&:focus-visible': { outline: '2px solid #C08552', outlineOffset: '3px' },
+          }}
         >
           Ver catálogo completo
         </Button>
@@ -41,16 +55,33 @@ export default function LandingPage() {
           sx={{
             display: { xs: 'flex', md: 'none' },
             position: 'fixed', bottom: 0, left: 0, right: 0,
-            bgcolor: '#5B3023', px: 3, py: 2, zIndex: 90,
+            bgcolor: '#5B3023',
+            borderTop: '1px solid rgba(192,133,82,0.38)',
+            boxShadow: '0 -8px 24px rgba(46,24,16,0.2)',
+            px: 3, py: 1.75, zIndex: 90,
             alignItems: 'center', justifyContent: 'space-between',
           }}
         >
-          <Typography sx={{ fontFamily: fonts.sans, fontSize: 13, color: 'rgba(250,245,238,0.75)' }}>
+          <Typography sx={{ fontFamily: fonts.sans, fontSize: 13, fontWeight: 400, color: 'rgba(250,245,238,0.85)' }}>
             {count} {count === 1 ? 'producto' : 'productos'} en tu pedido
           </Typography>
           <Button
             onClick={openCart}
-            sx={{ bgcolor: '#C08552', color: '#FAF5EE', px: 2.5, py: 1.1, fontSize: 12, '&:hover': { bgcolor: '#a8723f' } }}
+            sx={{
+              bgcolor: '#C08552',
+              color: '#FAF5EE',
+              borderRadius: '2px',
+              px: 2.5,
+              py: 1,
+              fontFamily: fonts.sans,
+              fontSize: 11.5,
+              fontWeight: 500,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              transition: 'background-color 0.25s ease',
+              '&:hover': { bgcolor: '#a8723f' },
+              '&:focus-visible': { outline: '2px solid #FAF5EE', outlineOffset: '2px' },
+            }}
           >
             Ver pedido
           </Button>

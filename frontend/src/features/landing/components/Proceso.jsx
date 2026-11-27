@@ -28,15 +28,19 @@ export function Proceso({ isDark }) {
     <Box component="section" id="proceso" sx={{ bgcolor: isDark ? '#150a03' : '#FFFFFF', py: { xs: 8, md: 12.5 }, position: 'relative', overflow: 'hidden' }}>
       <Box sx={{ maxWidth: 1200, mx: 'auto', px: 3 }}>
         <Box sx={{ textAlign: 'center', mb: 10 }}>
-          <Typography sx={{ fontFamily: fonts.sans, fontSize: 11, fontWeight: 500, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#C08552', display: 'block', mb: 2 }}>
-            Simple y directo
-          </Typography>
-          <Typography component="h2" sx={{ fontFamily: fonts.serif, fontSize: { xs: 32, md: 48 }, fontWeight: 300, color: isDark ? '#F3E9DC' : '#2E1810' }}>
+          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+            <Box sx={{ width: 28, height: '1px', bgcolor: '#C08552' }} />
+            <Typography sx={{ fontFamily: fonts.sans, fontSize: 11, fontWeight: 500, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#C08552' }}>
+              Simple y directo
+            </Typography>
+            <Box sx={{ width: 28, height: '1px', bgcolor: '#C08552' }} />
+          </Box>
+          <Typography component="h2" sx={{ fontFamily: fonts.serif, fontSize: { xs: 34, md: 48 }, fontWeight: 300, lineHeight: 1.15, color: isDark ? '#F3E9DC' : '#2E1810' }}>
             Proceso de pedido
           </Typography>
         </Box>
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: { xs: 6, md: 0 }, position: 'relative' }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: { xs: 7, md: 0 }, position: 'relative' }}>
           {/* Línea conectora (solo desktop) */}
           <Box
             sx={{
@@ -45,8 +49,8 @@ export function Proceso({ isDark }) {
               top: 40,
               left: '16.66%',
               right: '16.66%',
-              height: 1,
-              bgcolor: 'rgba(192,133,82,0.3)',
+              height: '1px',
+              bgcolor: 'rgba(192,133,82,0.35)',
               zIndex: 0,
             }}
           />
@@ -57,13 +61,13 @@ export function Proceso({ isDark }) {
                 aria-hidden
                 sx={{
                   position: 'absolute',
-                  top: -24,
+                  top: -28,
                   left: '50%',
                   transform: 'translateX(-50%)',
                   fontFamily: fonts.serif,
-                  fontSize: 120,
+                  fontSize: { xs: 104, md: 124 },
                   fontWeight: 300,
-                  color: 'rgba(91,48,35,0.07)',
+                  color: isDark ? 'rgba(243,233,220,0.05)' : 'rgba(91,48,35,0.06)',
                   lineHeight: 1,
                   userSelect: 'none',
                   pointerEvents: 'none',
@@ -77,8 +81,9 @@ export function Proceso({ isDark }) {
                   width: 80,
                   height: 80,
                   borderRadius: '50%',
-                  border: '1px solid rgba(192,133,82,0.3)',
+                  border: '1px solid rgba(192,133,82,0.42)',
                   bgcolor: isDark ? '#2E1810' : '#FAF5EE',
+                  boxShadow: '0 8px 24px rgba(46,24,16,0.08)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -87,14 +92,25 @@ export function Proceso({ isDark }) {
                   color: '#C08552',
                   position: 'relative',
                   zIndex: 2,
+                  transition: 'border-color 0.3s ease, transform 0.3s ease',
+                  '&:hover': {
+                    borderColor: '#C08552',
+                    transform: 'translateY(-2px)',
+                  },
+                  '@media (prefers-reduced-motion: reduce)': {
+                    transition: 'none',
+                    '&:hover': { transform: 'none' },
+                  },
                 }}
               >
                 {step.icon}
               </Box>
 
-              <Typography sx={{ fontFamily: fonts.serif, fontSize: 26, color: isDark ? '#F3E9DC' : '#2E1810', mb: 1.5 }}>{step.title}</Typography>
+              <Typography sx={{ fontFamily: fonts.serif, fontSize: 26, fontWeight: 400, color: isDark ? '#F3E9DC' : '#2E1810', mb: 1.25 }}>
+                {step.title}
+              </Typography>
               <Typography
-                sx={{ fontFamily: fonts.sans, fontSize: 14, fontWeight: 300, lineHeight: 1.7, color: isDark ? 'rgba(243,233,220,0.6)' : 'rgba(46,24,16,0.55)', maxWidth: 240, mx: 'auto' }}
+                sx={{ fontFamily: fonts.sans, fontSize: 14, fontWeight: 300, lineHeight: 1.75, color: isDark ? 'rgba(243,233,220,0.65)' : 'rgba(46,24,16,0.6)', maxWidth: 250, mx: 'auto' }}
               >
                 {step.desc}
               </Typography>

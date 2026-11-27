@@ -1,16 +1,15 @@
 import { Box, Stack, Typography, Divider } from '@mui/material'
 import {
   IconBread,
-  IconTruck,
   IconLeaf,
   IconUsers,
 } from '@tabler/icons-react'
+import { fonts } from '@app/theme/colors'
 
 const items = [
-  { icon: <IconBread size={16} stroke={1.5} />, label: 'Horneado cada mañana' },
-  { icon: <IconLeaf size={16} stroke={1.5} />, label: 'Ingredientes locales' },
-  { icon: <IconTruck size={16} stroke={1.5} />, label: 'Entrega a domicilio' },
-  { icon: <IconUsers size={16} stroke={1.5} />, label: '+500 clientes felices' },
+  { icon: <IconBread size={17} stroke={1.35} />, label: 'Horneado cada mañana' },
+  { icon: <IconLeaf size={17} stroke={1.35} />, label: 'Ingredientes locales' },
+  { icon: <IconUsers size={17} stroke={1.35} />, label: 'NUESTRO AROMA EN TU HOGAR' },
 ]
 
 export function TrustBar() {
@@ -18,19 +17,22 @@ export function TrustBar() {
     <Box
       sx={{
         bgcolor: '#5B3023',
-        height: 90,
+        borderTop: '1px solid rgba(192,133,82,0.38)',
+        borderBottom: '1px solid rgba(192,133,82,0.38)',
+        minHeight: { md: 86 },
+        py: { xs: 3, md: 2.5 },
         display: 'flex',
         alignItems: 'center',
-        overflow: 'hidden',
       }}
     >
       <Stack
         direction="row"
-        spacing={6}
         sx={{
           flexWrap: 'wrap',
           alignItems: 'center',
-          justifyContent: 'center',
+          justifyContent: { xs: 'center', md: 'space-between' },
+          rowGap: 2,
+          columnGap: { xs: 3.5, md: 2 },
           maxWidth: 1200,
           mx: 'auto',
           px: 3,
@@ -39,42 +41,38 @@ export function TrustBar() {
       >
         {items.map((item, i) => (
           <Stack
-            key={i}
+            key={item.label}
             direction="row"
-            spacing={1.5}
-            sx={{ alignItems: 'center' }}
+            alignItems="center"
+            spacing={{ xs: 1.5, md: 4 }}
           >
-            <Box
-              sx={{
-                color: 'rgba(250,245,238,0.6)',
-                display: 'flex',
-              }}
-            >
-              {item.icon}
-            </Box>
-
-            <Typography
-              sx={{
-                fontFamily: "'Inter', sans-serif",
-                fontSize: 11,
-                fontWeight: 500,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color: 'rgba(250,245,238,0.8)',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {item.label}
-            </Typography>
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Box sx={{ color: '#C08552', display: 'flex' }}>
+                {item.icon}
+              </Box>
+              <Typography
+                sx={{
+                  fontFamily: fonts.sans,
+                  fontSize: 11,
+                  fontWeight: 500,
+                  letterSpacing: '0.16em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(250,245,238,0.88)',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {item.label}
+              </Typography>
+            </Stack>
 
             {i < items.length - 1 && (
               <Divider
                 orientation="vertical"
                 flexItem
                 sx={{
-                  display: { xs: 'none', sm: 'block' },
-                  borderColor: 'rgba(250,245,238,0.2)',
-                  height: 16,
+                  display: { xs: 'none', md: 'block' },
+                  borderColor: 'rgba(192,133,82,0.28)',
+                  height: 18,
                   my: 'auto',
                 }}
               />
