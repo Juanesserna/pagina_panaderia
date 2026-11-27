@@ -31,11 +31,7 @@ const NAV_GROUPS = [
     items: [
       { id: "produccion", label: "Producción", icon: <Factory size={18} /> },
       { id: "insumos", label: "Insumos", icon: <Package size={18} /> },
-<<<<<<< HEAD
-      { id: "productos", label: "Productos", icon: <Layers size={18} /> },
-=======
       { id: "empleados", label: "Empleados", icon: <UserCog size={18} /> },
->>>>>>> 3092597700e3f53f99923a4732096ed52a2586d0
     ]
   },
   {

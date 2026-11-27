@@ -3,12 +3,8 @@ import { Box, Typography, IconButton } from '@mui/material'
 import { IconBrandInstagram, IconBrandFacebook, IconBrandX, IconMapPin, IconPhone, IconMail, IconClock } from '@tabler/icons-react'
 import { ImageWithFallback } from '@shared/components/ImageWithFallback'
 import { fonts } from '@app/theme/colors'
-<<<<<<< HEAD
 import { ROUTES } from '@app/router/routes'
-import logoImg from '@assets/img/logo_claro.png'
-=======
 import logoImg from '@assets/img/logo_claro.webp'
->>>>>>> 3092597700e3f53f99923a4732096ed52a2586d0
 
 const navLinks = [
   { label: 'Carta', to: ROUTES.CATALOGO },
@@ -85,24 +81,9 @@ export function Footer() {
           </Typography>
           {navLinks.map((link) => (
             <Typography
-<<<<<<< HEAD
               key={link.label}
               component={RouterLink}
               to={link.to}
-              sx={{
-                display: 'block',
-                fontFamily: fonts.sans,
-                fontSize: 13,
-                fontWeight: 300,
-                color: 'rgba(243,233,220,0.55)',
-                textDecoration: 'none',
-                mb: 1.25,
-                transition: 'color 0.2s',
-                '&:hover': { color: '#C08552' },
-=======
-              key={link}
-              component="a"
-              href="#"
               sx={{
                 display: 'block',
                 fontFamily: fonts.sans,
@@ -115,7 +96,6 @@ export function Footer() {
                 '&:hover': { color: '#C08552' },
                 '&:focus-visible': { outline: '2px solid #C88A55', outlineOffset: '2px', borderRadius: '2px' },
                 '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
->>>>>>> 3092597700e3f53f99923a4732096ed52a2586d0
               }}
             >
               {link.label}
@@ -154,20 +134,12 @@ export function Footer() {
           <Typography sx={{ fontFamily: fonts.sans, fontSize: 11.5, fontWeight: 300, color: 'rgba(243,233,220,0.72)', letterSpacing: '0.04em' }}>
             © 2026 Al Horno. Todos los derechos reservados a la institución educativa SENA
           </Typography>
-<<<<<<< HEAD
-          <Typography sx={{ fontFamily: fonts.sans, fontSize: 11, color: 'rgba(243,233,220,0.3)' }}>Hecho con amor en Colombia</Typography>
-=======
->>>>>>> 3092597700e3f53f99923a4732096ed52a2586d0
           <Typography sx={{ fontFamily: fonts.sans, fontSize: 11.5, fontWeight: 300, color: 'rgba(243,233,220,0.72)' }}>
             Hecho con amor en Colombia
           </Typography>
         </Box>
       </Box>
-<<<<<<< HEAD
-      </Box>
-=======
     </Box>
->>>>>>> 3092597700e3f53f99923a4732096ed52a2586d0
   )
 }
 
